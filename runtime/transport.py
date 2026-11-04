@@ -23,7 +23,6 @@ import http.client
 import json
 import re
 import time
-from xml.sax.saxutils import escape as xml_escape
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -291,6 +290,10 @@ def read_bounded(response: Any, limit: int, *, mutating: bool = False) -> bytes:
                 ),
             )
     return bytes(buffer)
+
+
+def _xml_escaped(text: str) -> str:
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def _redact_bytes(raw: bytes, connection: Connection) -> bytes:
