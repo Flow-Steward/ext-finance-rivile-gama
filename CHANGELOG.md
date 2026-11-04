@@ -4,6 +4,12 @@
 
 Review fixes before the first release:
 
+- Round 2: record_locked only on HTTP 423 or a 400 whose errorMessage starts "423:", never over
+  an ambiguous 5xx write; one step deadline (600 s budget) for every request and backoff, with
+  fetch_all/export stopping in time and reporting next_page/resume_page; export saves what it has
+  at 200 MB; the API key is redacted from raw bodies before parsing; whole results metered,
+  oversized write echoes shortened instead of failed; linear error recovery.
+
 - `get_i06_doc` / `export_list` write files under the exact granted content type; the Rivilė
   file name/type are reported as `original_filename` / `original_content_type`.
 - Writes answered 502/503 are `timeout_unknown` and not retried; reads stay retryable.

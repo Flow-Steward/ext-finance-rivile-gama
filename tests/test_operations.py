@@ -634,3 +634,153 @@ def test_call_method_reports_a_consistent_effect_pair(make_factory) -> None:
 def test_unsupported_operation(make_factory) -> None:
     response = run(make_factory, FakeOpener(), payload("delete_everything"))
     assert response["error_code"] == "unsupported_operation"
+
+
+# --------------------------------------------------------------------------- review round 2
+
+
+def test_locked_text_never_overrides_an_ambiguous_write(make_factory) -> None:
+    body = "<RET_DOK><errorMessage>Įrašas užrakintas, gateway timeout</errorMessage></RET_DOK>"
+    opener = FakeOpener((500, body))
+    response = run(make_factory, opener, payload("edit_n08", {"data": {"N08": {"N08_PAV": "x"}}}))
+    assert response["error_code"] == "timeout_unknown"
+    assert response["retryable"] is False
+    assert len(opener.requests) == 1  # never resent
+
+
+def test_locked_words_in_echoed_data_are_a_plain_rejection(make_factory) -> None:
+    body = (
+        "<RET_DOK><errorMessage>Nepavyko</errorMessage><errors><error>"
+        "<data>423: užrakintas pavadinimas</data><dataErrors><dataError><tag>N08_PAV</tag>"
+        "<code>1</code><message>423 užrakintas</message></dataError></dataErrors>"
+        "</error></errors></RET_DOK>"
+    )
+    opener = FakeOpener((400, body))
+    response = run(make_factory, opener, payload("edit_n08", {"data": {"N08": {"N08_PAV": "x"}}}))
+    assert response["error_code"] == "upstream_validation_failed"
+    assert len(opener.requests) == 1
+
+
+def test_key_across_the_truncation_boundary_is_redacted(make_factory) -> None:
+    message = "x" * (300 - len(API_KEY) // 2) + API_KEY + " tail"
+    body = f"<RET_DOK><errorMessage>{message}</errorMessage></RET_DOK>"
+    response = run(make_factory, FakeOpener((400, body)), payload("get_n08_list"))
+    text = json.dumps(response)
+    assert API_KEY[: len(API_KEY) // 2] not in text
+    secret = API_KEY.split(".", 1)[1]
+    assert secret[:8] not in text
+
+
+def test_single_page_without_page_number_reports_page_one(make_factory) -> None:
+    full = ret_dok(*[n08(str(i)) for i in range(100)])
+    response = run(make_factory, FakeOpener((200, full)), payload("get_n08_list"))
+    assert response["result"]["page_number"] == 1 and response["result"]["next_page"] == 2
+
+
+def _ticking(make_factory, opener: FakeOpener, step: float):
+    now = [0.0]
+
+    def clock() -> float:
+        now[0] += step
+        return now[0]
+
+    def factory(connection):
+        transport = make_factory(opener)(connection)
+        transport.clock = clock
+        return transport
+
+    return factory
+
+
+def test_fetch_all_pages_stops_at_the_step_deadline(make_factory) -> None:
+    full = ret_dok(*[n08(str(i)) for i in range(100)])
+    opener = FakeOpener(*[(200, full)] * 10)
+    response = handle_runtime(
+        payload("get_n08_list", {"fetch_all_pages": True, "max_pages": 10}),
+        transport_factory=_ticking(make_factory, opener, 60.0),
+    )
+    result = response["result"]
+    assert response["ok"] is True
+    assert result["has_more"] is True and 0 < result["pages_fetched"] < 10
+    assert result["next_page"] == result["page_number"] + 1
+
+
+def test_backoff_never_waits_past_the_deadline(make_factory) -> None:
+    opener = FakeOpener(*[(429, "<RET_DOK/>")] * 5)
+    factory = _ticking(make_factory, opener, 200.0)
+    response = handle_runtime(payload("get_n08_list"), transport_factory=factory)
+    assert response["error_code"] in {"rate_limited", "timeout"}
+    assert len(opener.requests) < 5
+
+
+def test_export_saves_what_it_has_when_the_file_is_full(make_factory, monkeypatch) -> None:
+    from runtime import operations
+
+    full = ret_dok(*[n08(str(i)) for i in range(100)])
+    one_page = sum(
+        len((json.dumps({"_table": "N08", **r}, ensure_ascii=False) + "\n").encode())
+        for r in [
+            {
+                "Row_number": "1",
+                "N08_KODAS_KS": str(i),
+                "N08_PAV": 'UAB "Rivilė"',
+                "N08_ADR": None,
+                "N08_KODAS_DS": None,
+            }
+            for i in range(100)
+        ]
+    )
+    monkeypatch.setattr(operations, "MAX_EXPORT_BYTES", int(one_page * 2.5))
+    writer = GrantWriter("export_list")
+    response = run(
+        make_factory,
+        FakeOpener(*[(200, full)] * 3),
+        payload("export_list", {"method": "GET_N08_LIST"}),
+        artifact_writer=writer,
+    )
+    result = response["result"]
+    assert result["complete"] is False and result["pages_fetched"] == 2
+    assert result["resume_page"] == 3 and result["record_count"] == 200
+
+
+def test_fetch_all_meters_data_errors_too(make_factory, host_secret_guard) -> None:
+    errors_xml = "".join(
+        f"<error><data>d{i}</data><dataErrors><dataError><tag>T{i}</tag><code>{i}</code>"
+        f"<message>m{i}</message></dataError></dataErrors></error>"
+        for i in range(200)
+    )
+    page = ret_dok(*[n08(str(i)) for i in range(100)], extra=f"<errors>{errors_xml}</errors>")
+    response = run(
+        make_factory,
+        FakeOpener(*[(200, page)] * 10),
+        payload("get_n08_list", {"fetch_all_pages": True}),
+    )
+    assert response["ok"] is True and response["result"]["has_more"] is True
+    assert not host_secret_guard(response, [API_KEY])
+
+
+def test_oversized_write_echo_is_shortened_not_failed(make_factory) -> None:
+    wide = "".join(f"<F{f:03d}>{'v' * 40}</F{f:03d}>" for f in range(200))
+    rows = "".join(f"<N08><N08_KODAS_KS>{i}</N08_KODAS_KS>{wide}</N08>" for i in range(80))
+    response = run(
+        make_factory,
+        FakeOpener((200, ret_dok(rows))),
+        payload("edit_n08", {"data": {"N08": {"N08_PAV": "x"}}}),
+    )
+    assert response["ok"] is True
+    assert response["external_effect_status"] == "succeeded"
+    assert response["result"]["record"]["N08_KODAS_KS"] == "0"
+    assert budget.fits(response["result"])
+    assert "shortened" in response["result"]["data_errors"][-1]["message"]
+
+
+def test_recovering_errors_from_a_hostile_body_is_linear() -> None:
+    import time
+
+    from runtime import xml_response
+
+    hostile = b"<errorMessage>" + b"<dataError><tag>" * 250_000
+    started = time.monotonic()
+    parsed = xml_response.recover_errors(hostile)
+    assert time.monotonic() - started < 2.0
+    assert parsed.data_errors == []

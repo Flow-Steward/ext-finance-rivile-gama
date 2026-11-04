@@ -20,7 +20,7 @@ from . import budget, catalog, errors
 from .connection import Connection, connection_from_payload
 from .errors import ExtensionError, error_response
 from .models import Method
-from .transport import Reply, RivileTransport
+from .transport import DeadlineReached, Reply, RivileTransport
 
 PAGE_SIZE = 100
 DEFAULT_MAX_PAGES = 10
@@ -30,9 +30,12 @@ MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024
 MAX_EXPORT_BYTES = 200 * 1024 * 1024
 MAX_PARAM_TEXT = 30 * 1024 * 1024
-#: The entrypoint is given 600 s. An export stops reading at this point so the
-#: file is still written and the step returns in time.
-EXPORT_READ_DEADLINE_SECONDS = 360.0
+#: The entrypoint is given 600 s (extension.yaml). Every request must start early
+#: enough to finish inside it, with a margin for the response; an operation that
+#: saves a file keeps the artifact write's own timeout in reserve, so it can
+#: always save what it read.
+STEP_TIMEOUT_SECONDS = 600.0
+STEP_MARGIN_SECONDS = 30.0
 ARTIFACT_WRITE_TIMEOUT_SECONDS = 180.0
 
 #: Must equal the content types granted in contracts/artifact_policies.yaml: the
@@ -72,6 +75,9 @@ _SIGNATURES: tuple[tuple[bytes, str], ...] = (
     (b"MM\x00*", ".tif"),
     (b"<?xml", ".xml"),
 )
+
+#: Operations that save a workflow file after reading.
+_FILE_WRITING_OPS = frozenset({catalog.EXPORT_LIST, *(m.lower() for m in catalog.DOWNLOAD_METHODS)})
 
 TransportFactory = Callable[[Connection], RivileTransport]
 ArtifactWriter = Callable[..., Mapping[str, Any]]
@@ -119,6 +125,10 @@ def handle_runtime(
             payload, connection_ref=_text(operation_input.get("connection_ref"))
         )
         transport = transport_factory(connection)
+        reserve = ARTIFACT_WRITE_TIMEOUT_SECONDS if operation_id in _FILE_WRITING_OPS else 0.0
+        transport.deadline = (
+            transport.clock() + STEP_TIMEOUT_SECONDS - STEP_MARGIN_SECONDS - reserve
+        )
         context = _Context(
             payload=payload,
             operation_input=operation_input,
@@ -135,6 +145,12 @@ def handle_runtime(
             return _ok(_export_list(context))
         method = catalog.METHODS_BY_OPERATION[operation_id]
         return _ok(_run_method(context, method))
+    except DeadlineReached:
+        return error_response(
+            errors.TIMEOUT,
+            "The step ran out of time before Rivile could be called",
+            retry_facts={"definitely_no_external_effect": True, "external_effect_status": "failed"},
+        )
     except ExtensionError as exc:
         _mark_unsent(exc, transport)
         return error_response(
@@ -431,9 +447,41 @@ def _run_method(context: _Context, method: Method) -> dict[str, Any]:
         # A write never hands file content back: an echoed multi-MB upload would
         # overflow the step output after Rivile had already attached the file.
         _strip_documents(result["records"])
-    if not method.write:
-        budget.ensure_fits(result)
-    return _mark_write(result) if method.write else result
+    if method.write:
+        return _mark_write(_fit_write_result(result))
+    budget.ensure_fits(result)
+    return result
+
+
+def _fit_write_result(result: dict[str, Any]) -> dict[str, Any]:
+    """Shrink a write's echo until it fits; the write itself already happened.
+
+    Failing here would turn a saved document into an error the workflow might
+    retry, so the result keeps its success and loses detail instead: first the
+    extra rows, then the record's content except its codes.
+    """
+    if budget.fits(result):
+        return result
+    result["records"] = result["records"][:1]
+    result["other_tables"] = {}
+    result["count"] = len(result["records"])
+    result["data_errors"] = result["data_errors"][:20]
+    if not budget.fits(result):
+        record = result.get("record")
+        keys = {k: v for k, v in record.items() if "KODAS" in k} if isinstance(record, dict) else {}
+        result["records"] = [keys] if keys else []
+        result["record"] = keys or None
+        result["count"] = len(result["records"])
+    result["data_errors"].append(
+        {
+            "tag": "",
+            "code": "",
+            "message": "Rivile's answer was too large for the step output and was shortened; "
+            "the write was applied.",
+            "data": "",
+        }
+    )
+    return result
 
 
 def _page_size(method: Method, params: Mapping[str, Any]) -> int:
@@ -459,9 +507,9 @@ def _run_paged(
         reply = context.transport.call(method.method, params, data, mutating=method.write)
         result = _base_result(method.method, reply)
         has_more = reply.parsed.top_level_count >= page_size
-        page = params.get(page_param)
+        page = int(params.get(page_param) or 1)
         result["page_number"] = page
-        result["next_page"] = (page or 1) + 1 if has_more else None
+        result["next_page"] = page + 1 if has_more else None
         result["pages_fetched"] = 1
         result["has_more"] = has_more
         budget.ensure_fits(result)
@@ -471,20 +519,30 @@ def _run_paged(
     other: dict[str, list[dict[str, Any]]] = {}
     record_type: str | None = None
     data_errors: list[dict[str, str]] = []
+    # The fixed result fields are metered once up front, the pages as they come.
     meter = budget.Meter()
+    meter.admit({**_base_result(method.method, None), "page_number": 0, "next_page": 0})
     last: Reply | None = None
     last_page: int | None = None
     fetched = 0
     has_more = False
     while fetched < max_pages:
-        reply = context.transport.call(
-            method.method, {**params, page_param: page}, data, mutating=False
-        )
-        page_type = reply.parsed.record_type
-        record_type = record_type or page_type
+        try:
+            reply = context.transport.call(
+                method.method, {**params, page_param: page}, data, mutating=False
+            )
+        except DeadlineReached:
+            if fetched == 0:
+                raise
+            has_more = True  # out of time: continue from next_page
+            break
+        record_type = record_type or reply.parsed.record_type
         page_rows = reply.parsed.tables.get(record_type or "", [])
         page_other = {t: r for t, r in reply.parsed.tables.items() if t != record_type}
-        if not meter.admit({"records": page_rows, "other_tables": page_other}):
+        page_errors = list(reply.parsed.data_errors)
+        if not meter.admit(
+            {"records": page_rows, "other_tables": page_other, "data_errors": page_errors}
+        ):
             if fetched == 0:
                 raise budget.too_large()
             # This page does not fit in one step output: stop before it and let
@@ -496,7 +554,7 @@ def _run_paged(
         records.extend(page_rows)
         for tag, rows in page_other.items():
             other.setdefault(tag, []).extend(rows)
-        data_errors.extend(reply.parsed.data_errors)
+        data_errors.extend(page_errors)
         has_more = reply.parsed.top_level_count >= page_size
         if not has_more:
             break
@@ -516,6 +574,7 @@ def _run_paged(
             "has_more": has_more,
         }
     )
+    budget.ensure_fits(result)  # the whole object, as the host will see it
     return result
 
 
@@ -545,9 +604,10 @@ def _call_method(context: _Context) -> dict[str, Any]:
     result = _base_result(method, reply)
     if not mutating:
         budget.ensure_fits(result)
+        return _mark_write(result)
     # call_method is a declared external effect whatever it sends; "succeeded"
     # with "may have an effect" is the consistent, conservative pair.
-    return _mark_write(result)
+    return _mark_write(_fit_write_result(result))
 
 
 def _export_list(context: _Context) -> dict[str, Any]:
@@ -576,32 +636,42 @@ def _export_list(context: _Context) -> dict[str, Any]:
     )
     page = _whole("start_page", inputs.get("start_page"), default=1, maximum=1000000)
     page_size = _page_size(method, params)
-    started = context.clock()
+    # Records are buffered (one copy, at most 200 MB) and written once at the end:
+    # streaming the upload while paging Rivile would tie the file to every
+    # request, and a failure mid-way would lose the part already read.
     chunks: list[bytes] = []
     total = count = fetched = 0
     complete = False
     record_type: str | None = None
     while fetched < max_pages:
-        if context.clock() - started > EXPORT_READ_DEADLINE_SECONDS:
-            break
-        reply = context.transport.call(
-            method.method, {**params, page_param: page}, None, mutating=False
-        )
+        try:
+            reply = context.transport.call(
+                method.method, {**params, page_param: page}, None, mutating=False
+            )
+        except DeadlineReached:
+            if fetched == 0:
+                raise
+            break  # save what was read; resume_page continues
+        page_chunks = [
+            (json.dumps({"_table": tag, **record}, ensure_ascii=False) + "\n").encode()
+            for tag in reply.parsed.order
+            for record in reply.parsed.tables[tag]
+        ]
+        page_bytes = sum(len(chunk) for chunk in page_chunks)
+        if total + page_bytes > MAX_EXPORT_BYTES:
+            if fetched == 0:
+                raise ExtensionError(
+                    errors.RESPONSE_TOO_LARGE,
+                    "One Rivile page exceeds the 200 MB export limit",
+                    definitely_no_external_effect=True,
+                    external_effect_status="failed",
+                )
+            break  # the file is full: save it; resume_page continues
         fetched += 1
         record_type = record_type or reply.parsed.record_type
-        for tag in reply.parsed.order:
-            for record in reply.parsed.tables[tag]:
-                encoded = (
-                    json.dumps({"_table": tag, **record}, ensure_ascii=False) + "\n"
-                ).encode()
-                total += len(encoded)
-                if total > MAX_EXPORT_BYTES:
-                    raise ExtensionError(
-                        errors.RESPONSE_TOO_LARGE,
-                        "The export exceeds 200 MB; narrow it with a fil filter",
-                    )
-                chunks.append(encoded)
-                count += 1
+        chunks.extend(page_chunks)
+        total += page_bytes
+        count += len(page_chunks)
         page += 1
         if reply.parsed.top_level_count < page_size:
             complete = True
@@ -644,11 +714,19 @@ def _write_artifact(
         raise
     except Exception as exc:
         raise ExtensionError(
-            errors.ARTIFACT_OUTPUT_UNAVAILABLE, f"{what} could not be saved"
+            errors.ARTIFACT_OUTPUT_UNAVAILABLE,
+            f"{what} could not be saved",
+            definitely_no_external_effect=True,
+            external_effect_status="failed",
         ) from exc
     handle = _text(written.get("artifact_handle")) if isinstance(written, Mapping) else ""
     if not handle:
-        raise ExtensionError(errors.ARTIFACT_OUTPUT_UNAVAILABLE, f"{what} could not be saved")
+        raise ExtensionError(
+            errors.ARTIFACT_OUTPUT_UNAVAILABLE,
+            f"{what} could not be saved",
+            definitely_no_external_effect=True,
+            external_effect_status="failed",
+        )
     return handle
 
 

@@ -169,33 +169,50 @@ def parse(raw: bytes, *, trim: bool = True) -> ParsedResponse:
     return parsed
 
 
-_ERROR_MESSAGE_RE = re.compile(rb"<errorMessage>(.*?)</errorMessage>", re.S)
-_DATA_ERROR_RE = re.compile(rb"<dataError>(.*?)</dataError>", re.S)
-_PART_RE = {
-    key: re.compile(rb"<" + key.encode() + rb">(.*?)</" + key.encode() + rb">", re.S)
-    for key in ("tag", "code", "message")
-}
+#: Upper bound on how much of a broken body is searched, and on entries kept.
+_RECOVER_SCAN_BYTES = 4 * 1024 * 1024
+_RECOVER_MAX_ENTRIES = 200
+
+
+def _between(raw: bytes, start: int, open_tag: bytes, close_tag: bytes) -> tuple[bytes, int] | None:
+    """Content of the next ``open_tag``…``close_tag`` from ``start``, in linear time."""
+    begin = raw.find(open_tag, start)
+    if begin < 0:
+        return None
+    begin += len(open_tag)
+    end = raw.find(close_tag, begin)
+    if end < 0:
+        return None
+    return raw[begin:end], end + len(close_tag)
 
 
 def recover_errors(raw: bytes) -> ParsedResponse:
-    """Best-effort errorMessage and dataErrors from a cut or malformed error body."""
+    """Best-effort errorMessage and dataErrors from a cut or malformed error body.
+
+    Each tag is located with one forward ``find``, so a body full of unclosed
+    tags costs a single pass rather than a regex backtrack per start.
+    """
+    raw = raw[:_RECOVER_SCAN_BYTES]
     parsed = ParsedResponse()
 
     def text(value: bytes) -> str:
         return errors.safe_text(value.decode("utf-8", "replace"), 300)
 
-    found = _ERROR_MESSAGE_RE.search(raw)
+    found = _between(raw, 0, b"<errorMessage>", b"</errorMessage>")
     if found:
-        parsed.error_message = text(found.group(1))
-    for match in _DATA_ERROR_RE.finditer(raw):
-        entry = {"tag": "", "code": "", "message": "", "data": ""}
-        for key, pattern in _PART_RE.items():
-            part = pattern.search(match.group(1))
-            if part:
-                entry[key] = text(part.group(1))
-        parsed.data_errors.append(entry)
-        if len(parsed.data_errors) >= 200:
+        parsed.error_message = text(found[0])
+    position = 0
+    while len(parsed.data_errors) < _RECOVER_MAX_ENTRIES:
+        block = _between(raw, position, b"<dataError>", b"</dataError>")
+        if block is None:
             break
+        content, position = block
+        entry = {"tag": "", "code": "", "message": "", "data": ""}
+        for key in ("tag", "code", "message"):
+            part = _between(content, 0, f"<{key}>".encode(), f"</{key}>".encode())
+            if part:
+                entry[key] = text(part[0])
+        parsed.data_errors.append(entry)
     return parsed
 
 

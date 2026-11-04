@@ -23,6 +23,7 @@ import http.client
 import json
 import re
 import time
+from xml.sax.saxutils import escape as xml_escape
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -48,7 +49,16 @@ MIN_INTERVAL_SECONDS = 0.11
 #: 429/423 retries: wait 1, 2, 4, 8 seconds (Rivile asks for at least 1 s, doubling).
 BACKOFF_SECONDS: tuple[float, ...] = (1.0, 2.0, 4.0, 8.0)
 _USER_AGENT = "FlowSteward-RivileGama/1.0"
-_LOCKED_RE = re.compile(r"^\s*423\b|užrakintas", re.IGNORECASE)
+#: RGI_RAK: "423: Įrašas užrakintas kito vartotojo [VARTOTOJAS]. Bandykite vėliau",
+#: as the whole errorMessage of a refused request. Only that position counts: a
+#: dataError's echoed data is the caller's own text.
+_LOCKED_MESSAGE_RE = re.compile(r"^\s*423\s*:")
+#: Shortest window still worth starting a request in.
+MIN_CALL_WINDOW_SECONDS = 15.0
+
+
+class DeadlineReached(Exception):
+    """The invocation's time budget leaves no room for another request."""
 
 
 @dataclass
@@ -111,6 +121,12 @@ class RivileTransport:
         self.last_rate_limit = RateLimit()
         #: True once any request may have left this process.
         self.attempted = False
+        #: Monotonic time after which no request may start (set by the operation).
+        self.deadline: float | None = None
+        self._call_timeout = timeout_seconds
+
+    def remaining(self) -> float:
+        return float("inf") if self.deadline is None else self.deadline - self.clock()
 
     def call(
         self,
@@ -133,6 +149,10 @@ class RivileTransport:
                 definitely_no_external_effect=True,
             )
         for attempt in range(len(BACKOFF_SECONDS) + 1):
+            remaining = self.remaining()
+            if remaining < MIN_CALL_WINDOW_SECONDS:
+                raise DeadlineReached
+            self._call_timeout = min(self._timeout_seconds, remaining)
             try:
                 return self._send(encoded, mutating=mutating)
             except ExtensionError as exc:
@@ -142,6 +162,8 @@ class RivileTransport:
                 wait = BACKOFF_SECONDS[attempt]
                 if exc.retry_after_seconds:
                     wait = max(wait, min(float(exc.retry_after_seconds), 30.0))
+                if wait > self.remaining() - MIN_CALL_WINDOW_SECONDS:
+                    raise  # no time left to wait and try again
                 self._sleep(wait)
                 # The backoff already spaced the requests; no extra pacing sleep.
                 self._last_sent = None
@@ -161,6 +183,7 @@ class RivileTransport:
         )
         self._pace()
         status, raw, headers = self._open(request, mutating=mutating)
+        raw = _redact_bytes(raw, self._connection)
         rate_limit = _rate_limit(headers)
         self.last_rate_limit = rate_limit
         try:
@@ -198,7 +221,7 @@ class RivileTransport:
             self.attempted = True
             with self._opener(
                 request,
-                timeout_seconds=self._timeout_seconds,
+                timeout_seconds=self._call_timeout,
                 purpose="Rivile GAMA API",
             ) as response:
                 status = int(getattr(response, "status", 0) or getattr(response, "code", 0) or 0)
@@ -260,9 +283,24 @@ def read_bounded(response: Any, limit: int, *, mutating: bool = False) -> bytes:
         if len(buffer) > limit:
             raise ExtensionError(
                 errors.TIMEOUT_UNKNOWN if mutating else errors.RESPONSE_TOO_LARGE,
-                "The Rivile response exceeds its safe limit; narrow it with fil",
+                (
+                    "Rivile's answer to the write was too large to read; check in Rivile "
+                    "whether it was applied"
+                    if mutating
+                    else "The Rivile response exceeds its safe limit; narrow it with fil"
+                ),
             )
     return bytes(buffer)
+
+
+def _redact_bytes(raw: bytes, connection: Connection) -> bytes:
+    """Remove the key from a body before anything parses or truncates it."""
+    for secret in connection.secret_fragments():
+        for form in {secret, xml_escape(secret), xml_escape(secret, {'"': "&quot;"})}:
+            encoded = form.encode("utf-8")
+            if encoded and encoded in raw:
+                raw = raw.replace(encoded, b"[redacted]")
+    return raw
 
 
 def _redact(text: str, connection: Connection) -> str:
@@ -291,6 +329,7 @@ def _http_error(exc: HTTPError, connection: Connection, *, mutating: bool) -> Ex
 def _parse_error_body(raw: bytes, connection: Connection) -> ParsedResponse:
     if not raw:
         return ParsedResponse()
+    raw = _redact_bytes(raw, connection)
     try:
         parsed = xml_response.parse(raw)
     except ExtensionError:
@@ -303,10 +342,7 @@ def _parse_error_body(raw: bytes, connection: Connection) -> ParsedResponse:
 def _is_locked(status: int, parsed: ParsedResponse) -> bool:
     if status == 423:
         return True
-    texts = [parsed.error_message] + [
-        f"{item.get('code', '')} {item.get('message', '')}" for item in parsed.data_errors
-    ]
-    return any(_LOCKED_RE.search(text or "") for text in texts)
+    return status == 400 and bool(_LOCKED_MESSAGE_RE.match(parsed.error_message or ""))
 
 
 def _status_error(
@@ -407,6 +443,8 @@ def _transport_failure_facts(*, mutating: bool) -> dict[str, Any]:
 
 __all__ = [
     "BACKOFF_SECONDS",
+    "MIN_CALL_WINDOW_SECONDS",
+    "DeadlineReached",
     "DEFAULT_TIMEOUT_SECONDS",
     "MAX_ERROR_BODY_BYTES",
     "MAX_REQUEST_BODY_BYTES",

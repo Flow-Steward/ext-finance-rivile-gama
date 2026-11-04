@@ -67,8 +67,12 @@ def too_large() -> ExtensionError:
     )
 
 
+def fits(result: Any) -> bool:
+    return _within(measure(result))
+
+
 def ensure_fits(result: Any) -> None:
-    if not _within(measure(result)):
+    if not fits(result):
         raise too_large()
 
 
@@ -93,4 +97,4 @@ class Meter:
         return True
 
 
-__all__ = ["Meter", "ensure_fits", "measure", "too_large"]
+__all__ = ["Meter", "ensure_fits", "fits", "measure", "too_large"]
