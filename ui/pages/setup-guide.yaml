@@ -1,25 +1,25 @@
 page_id: setup-guide
 title: Setup Guide
-description: How to get a Rivilė GAMA API key and connect it — about a minute to read.
+description: How to get a Rivile GAMA API key and connect it — about a minute to read.
 components:
   - component_id: setup_rivile
     type: markdown
-    title: For the person who sets up Rivilė
+    title: For the person who sets up Rivile
     body: |
-      Usually the company's Rivilė administrator or Rivilė partner.
+      Usually the company's Rivile administrator or Rivile partner.
 
-      1. **Order the REST API service** from Rivilė or your Rivilė partner. Rivilė asks for: the licence owner's company name, company code and e-mail; the Rivilė GAMA company id (for example `01`); the base currency (for example `EUR`); the database name (for example `NAU_IMONE`); MSSQL or SYBASE; and the Rivilė GAMA WEB address. Rivilė GAMA must be version 119 or later.
-      2. **Rivilė sends two different credentials.** Keep them apart:
+      1. **Order the REST API service** from Rivile or your Rivile partner. Rivile asks for: the licence owner's company name, company code and e-mail; the Rivile GAMA company id (for example `01`); the base currency (for example `EUR`); the database name (for example `NAU_IMONE`); MSSQL or SYBASE; and the Rivile GAMA WEB address. Rivile GAMA must be version 119 or later.
+      2. **Rivile sends two different credentials.** Keep them apart:
          - `broker.username` and `broker.password` — only for the gateway's `global.properties` file. Never enter them in Flow Steward.
          - the **API key** `username.secret` — only for Flow Steward.
-      3. **Install Manorivile-Gateway** on a Windows computer next to the Rivilė GAMA database:
+      3. **Install Manorivile-Gateway** on a Windows computer next to the Rivile GAMA database:
          1. Allow outbound access to `gateway.manorivile.lt`, port 5671. The database's SQL port must be static.
-         2. Download the gateway from Rivilė's gateway page and unpack it to `C:/Manorivile-Gateway`.
+         2. Download the gateway from Rivile's gateway page and unpack it to `C:/Manorivile-Gateway`.
          3. Enter the `broker.*` values in `global.properties`, and create `<database name>.properties` with the database connection.
          4. Run `install.bat` as administrator and wait about five minutes.
-      4. **Rivilė GAMA rights:** the API works as the user named in the API key. The `RGI_*` parameters (Servisas → Administravimas → Parametrai) allow editing others' documents, payroll and personnel access and more.
+      4. **Rivile GAMA rights:** the API works as the user named in the API key. The `RGI_*` parameters (Servisas → Administravimas → Parametrai) allow editing others' documents, payroll and personnel access and more.
 
-      [Rivilė gateway guide and error list](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/manorivile-gateway) · [Rivilė API guide](https://gidas.rivile.lt/internetiniai_moduliai/api_rest)
+      [Rivile gateway guide and error list](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/manorivile-gateway) · [Rivile API guide](https://gidas.rivile.lt/internetiniai_moduliai/api_rest)
   - component_id: setup_flow_steward
     type: markdown
     title: For the person who connects in Flow Steward
@@ -29,4 +29,4 @@ components:
       1. Open **Connection** and add a connection. Name it after the company, for example `UAB X`.
       2. Paste the API key and save.
       3. Press **Test connection**.
-      4. In a workflow, add a Rivilė step and pick this connection. Start with the everyday steps on **Rivilė API — operations**.
+      4. In a workflow, add a Rivile step and pick this connection. Start with the everyday steps on **Rivile API**.

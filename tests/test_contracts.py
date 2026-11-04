@@ -58,8 +58,7 @@ def test_actions_step_ui_policies_and_reference_are_generated(built) -> None:
     assert _load("contracts/artifact_policies.yaml") == {
         "artifact_policies": built["artifact_policies"]
     }
-    assert _load("ui/pages/operations.yaml") == built["operations_page"]
-    assert _load("ui/pages/advanced-methods.yaml") == built["advanced_page"]
+    assert _load("ui/pages/rivile-api.yaml") == built["api_page"]
     assert _load("ui/pages/changelog.yaml") == built["changelog_page"]
     committed = (BUNDLE_ROOT / "runtime/methods.py").read_text("utf-8")
     # Compared as syntax trees: the formatter may re-wrap the generated source.
@@ -214,15 +213,22 @@ def test_every_shipped_page_is_in_the_ui_manifest() -> None:
     assert refs == shipped
 
 
-def test_advanced_page_lists_every_method_and_coverage(built) -> None:
-    bodies = "\n".join(c["body"] for c in built["advanced_page"]["components"])
+def test_api_page_lists_every_method_and_coverage(built) -> None:
+    bodies = "\n".join(c["body"] for c in built["api_page"]["components"])
     for row in built["rows"]:
         assert f"`{row['operation_id']}`" in bodies, row["method"]
     assert f"all {len(built['rows'])} methods" in bodies
 
 
-def test_operations_page_details_every_everyday_operation(built) -> None:
-    body = built["operations_page"]["components"][0]["body"]
+def test_api_page_details_every_everyday_operation_first(built) -> None:
+    components = built["api_page"]["components"]
+    assert [c["title"] for c in components[:3]] == [
+        "Everyday operations",
+        "How operations behave",
+        "Advanced methods",
+    ]
+    assert components[-1]["title"] == "Coverage"
+    body = components[0]["body"]
     for op in built["operations"]:
         if not op["display_name"].startswith("Advanced") and op["operation_id"] not in (
             "call_method",
@@ -245,3 +251,37 @@ def test_pages_do_not_list_effect_plumbing() -> None:
         text = path.read_text("utf-8")
         assert "external_effect_status" not in text, path.name
         assert "definitely_no_external_effect" not in text, path.name
+
+
+def _user_facing_texts() -> list[tuple[str, str]]:
+    """Names and descriptions a user reads, minus quoted Lithuanian text from the Rivile guide."""
+    texts: list[tuple[str, str]] = []
+    manifest = _load("extension.yaml")
+    listing = manifest.get("listing") or {}
+    texts += [("extension.display_name", manifest["display_name"])]
+    texts += [("extension.description", manifest["description"])]
+    texts += [("listing.summary", str(listing.get("summary", "")))]
+    texts += [("listing.tags", " ".join(listing.get("tags") or []))]
+    texts += [("account_scope", str((manifest.get("account_scope") or {}).get("description", "")))]
+    for ctype in _load("contracts/connection_types.yaml")["connection_types"]:
+        texts.append(("connection_type", yaml.safe_dump(ctype, allow_unicode=True)))
+    for op in _load("contracts/operation_manifest.yaml")["operations"]:
+        texts.append((op["operation_id"], op["display_name"]))
+        # Generated method descriptions end with the guide's Lithuanian text after "Rivile: ".
+        texts.append((op["operation_id"], op["description"].split(" Rivile: ")[0]))
+    for path in (BUNDLE_ROOT / "ui" / "pages").glob("*.yaml"):
+        page = yaml.safe_load(path.read_text("utf-8"))
+        texts += [(path.name, page["title"]), (path.name, page["description"])]
+        for component in page["components"]:
+            texts.append((path.name, str(component.get("title", ""))))
+            body = str(component.get("body", ""))
+            kept = [line for line in body.splitlines() if not line.startswith("Rivile: ")]
+            texts.append((path.name, "\n".join(kept)))
+    for doc in ("README.md", "CHANGELOG.md"):
+        texts.append((doc, (BUNDLE_ROOT / doc).read_text("utf-8")))
+    return texts
+
+
+def test_product_name_is_spelled_rivile_in_plain_latin() -> None:
+    offenders = [where for where, text in _user_facing_texts() if "Rivilė" in text]
+    assert offenders == []

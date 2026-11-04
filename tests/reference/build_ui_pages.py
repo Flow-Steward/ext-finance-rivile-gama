@@ -1,8 +1,7 @@
 """Render the UI pages that restate the operation registry, so they cannot drift.
 
-* ``ui/pages/operations.yaml``        — the everyday operations, in full detail, and how
-  operations behave
-* ``ui/pages/advanced-methods.yaml``  — every raw Rivile method, grouped by area, and coverage
+* ``ui/pages/rivile-api.yaml``        — the everyday operations in full detail, how operations
+  behave, every raw Rivile method grouped by area, and coverage
 * ``ui/pages/changelog.yaml``         — ``CHANGELOG.md``
 
 The platform renders page bodies as simple markdown: headings, paragraphs, bullet
@@ -76,18 +75,18 @@ LIST_RESULTS = ("page_number", "next_page", "pages_fetched", "has_more")
 BEHAVIOUR = """\
 ### Inputs
 
-- Every step needs a **connection**: the Rivilė API key it runs with.
-- Everyday steps take plain inputs. Codes your company sets up its own way — the account relation code for new clients (`PT001`) and products (`PR001`), the tax table (`PVM`), money accounts — are inputs; the defaults are the Rivilė guide's examples, so replace them with your own.
-- Advanced methods take Rivilė's params as separate inputs and a `data` block with Rivilė's own field names, as in the Rivilė guide, for example `{"N08": {"N08_KODAS_KS": "121411842", "N08_PAV": "UAB X"}}`. Document methods ending in `_FULL` take their lines inside the header.
+- Every step needs a **connection**: the Rivile API key it runs with.
+- Everyday steps take plain inputs. Codes your company sets up its own way — the account relation code for new clients (`PT001`) and products (`PR001`), the tax table (`PVM`), money accounts — are inputs; the defaults are the Rivile guide's examples, so replace them with your own.
+- Advanced methods take Rivile's params as separate inputs and a `data` block with Rivile's own field names, as in the Rivile guide, for example `{"N08": {"N08_KODAS_KS": "121411842", "N08_PAV": "UAB X"}}`. Document methods ending in `_FULL` take their lines inside the header.
 
 ### Results
 
-- Values are text exactly as Rivilė sent them. With **Trim values** on, only trailing padding is removed; leading spaces in Rivilė codes are kept.
-- Rivilė's refusals per field are in `data_errors` (tag, code, message).
+- Values are text exactly as Rivile sent them. With **Trim values** on, only trailing padding is removed; leading spaces in Rivile codes are kept.
+- Rivile's refusals per field are in `data_errors` (tag, code, message).
 
 ### Lists
 
-- Rivilė returns 100 records per page. Set `page_number`, or turn on `fetch_all_pages` (up to `max_pages`).
+- Rivile returns 100 records per page. Set `page_number`, or turn on `fetch_all_pages` (up to `max_pages`).
 - A step output has a size limit. A long read stops at the last page that fits and returns `has_more` and `next_page`. For whole tables use **Export a Rivile list to a JSONL file**.
 
 ### Files
@@ -98,17 +97,17 @@ BEHAVIOUR = """\
 ### Writes, retries and errors
 
 - Every write goes through Flow Steward's external-effect record, so a retried step does not send the same write twice. Test runs never write.
-- **HTTP 400:** Rivilė refused the data and nothing was saved. The step fails with Rivilė's message.
+- **HTTP 400:** Rivile refused the data and nothing was saved. The step fails with Rivile's message.
 - **HTTP 207:** part of a document was saved. The step succeeds with `partial_success: true`; check `data_errors`.
 - **Gateway unavailable (502/503) on a read:** retried.
-- **Timeout or 5xx on a write:** Rivilė may have saved it. The step fails as `timeout_unknown` and is not retried; check the document in Rivilė first.
+- **Timeout or 5xx on a write:** Rivile may have saved it. The step fails as `timeout_unknown` and is not retried; check the document in Rivile first.
 - **Record locked (423):** another user is editing the record. Retried after 1, 2, 4 and 8 seconds.
-- **Rate limit (429):** Rivilė allows 10 requests per second per key. The extension paces itself and backs off. Steps running in parallel on one key share that limit.
+- **Rate limit (429):** Rivile allows 10 requests per second per key. The extension paces itself and backs off. Steps running in parallel on one key share that limit.
 - If a step that writes several things fails half-way, it says exactly what was already created and is not retried.
 
 ### Empty values: MS SQL and Sybase
 
-- **Field left out:** Rivilė applies its default on both servers.
+- **Field left out:** Rivile applies its default on both servers.
 - **Empty text `""`:** MS SQL stores it empty; Sybase treats it like a left-out field and applies the default.
 - **One space `" "`:** on Sybase, the way to store an empty value.
 """
@@ -183,43 +182,37 @@ def _everyday_section(op: dict[str, Any]) -> list[str]:
         "",
         f"- Action id: `{op['operation_id']}`",
         f"- Kind: {_kind(op)}",
-        f"- Rivilė methods: {', '.join(_method_link(m) for m in methods)}",
+        f"- Rivile methods: {', '.join(_method_link(m) for m in methods)}",
         f"- Inputs: {_inputs(op)}",
         f"- Results: {_names(_results(op))}",
         "",
     ]
 
 
-def operations_page(ops: list[dict[str, Any]], rows: list[dict[str, Any]]) -> dict[str, Any]:
-    _remember_pages(rows)
+def _everyday_components(ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
     everyday = [op for op in ops if op["operation_id"] in FRIENDLY_METHODS]
     lines = [
-        "These steps take plain inputs and make the Rivilė calls for you. Each one names the "
-        "Rivilė methods it uses, with a link to the Rivilė guide. Every Rivilė method is also "
-        "available on its own, as **Advanced · …** — see **Rivilė API — advanced methods**.",
+        "These steps take plain inputs and make the Rivile calls for you. Each one names the "
+        "Rivile methods it uses, with a link to the Rivile guide. Every Rivile method is also "
+        "available on its own, as **Advanced · …** — see **Advanced methods** below.",
         "",
     ]
     for op in everyday:
         lines.extend(_everyday_section(op))
-    return {
-        "page_id": "operations",
-        "title": "Rivilė API — operations",
-        "description": "The everyday Rivilė steps: what each one does, needs and returns.",
-        "components": [
-            {
-                "component_id": "operations_everyday",
-                "type": "markdown",
-                "title": "Everyday operations",
-                "body": "\n".join(lines).rstrip() + "\n",
-            },
-            {
-                "component_id": "operations_behaviour",
-                "type": "markdown",
-                "title": "How operations behave",
-                "body": BEHAVIOUR,
-            },
-        ],
-    }
+    return [
+        {
+            "component_id": "operations_everyday",
+            "type": "markdown",
+            "title": "Everyday operations",
+            "body": "\n".join(lines).rstrip() + "\n",
+        },
+        {
+            "component_id": "operations_behaviour",
+            "type": "markdown",
+            "title": "How operations behave",
+            "body": BEHAVIOUR,
+        },
+    ]
 
 
 def _advanced_section(op: dict[str, Any], row: dict[str, Any] | None) -> list[str]:
@@ -230,7 +223,7 @@ def _advanced_section(op: dict[str, Any], row: dict[str, Any] | None) -> list[st
         method = "any — you name it"
         results_line = _names(results)
     else:
-        summary = f"Rivilė: {row['lt_description']}" if row.get("lt_description") else ""
+        summary = f"Rivile: {row['lt_description']}" if row.get("lt_description") else ""
         method = _method_link(row["method"])
         base = "standard results"
         if any(r in LIST_RESULTS for r in results):
@@ -240,7 +233,7 @@ def _advanced_section(op: dict[str, Any], row: dict[str, Any] | None) -> list[st
     if summary:
         lines += [summary, ""]
     lines += [
-        f"- Action id: `{op['operation_id']}` · {_kind(op)} · Rivilė method: {method}",
+        f"- Action id: `{op['operation_id']}` · {_kind(op)} · Rivile method: {method}",
         f"- Inputs: {_inputs(op)}",
         f"- Results: {results_line}",
         "",
@@ -253,16 +246,16 @@ def coverage_body(rows: list[dict[str, Any]]) -> str:
     return (
         "\n".join(
             [
-                f"- **Covered:** all {len(rows)} methods documented in the Rivilė GAMA API v2 guide, "
+                f"- **Covered:** all {len(rows)} methods documented in the Rivile GAMA API v2 guide, "
                 "each as its own operation.",
                 f"- **Params:** every documented param ({params} in all) is its own input, with the "
                 "guide's description, allowed values and required flag. The `data` input takes the "
                 "guide's field names; extra fields (`PAP_*`, `I49_DIM*`) pass through.",
                 "- **Newer than this release:** `extra_params` passes a param the guide added later; "
                 "**Call any Rivile method** sends any method (always treated as a write).",
-                "- **Not offered: JSON answers.** Answers are requested as XML, Rivilė's default; "
+                "- **Not offered: JSON answers.** Answers are requested as XML, Rivile's default; "
                 "values stay text, so codes such as `301` and `301.` stay distinct.",
-                "- **Not offered: automatic paging by last key.** Rivilė recommends filtering by the "
+                "- **Not offered: automatic paging by last key.** Rivile recommends filtering by the "
                 "last key received; set that filter in `fil`. The extension pages by `page_number`.",
                 "- **Not offered: rate coordination across steps.** Pacing works within one step; "
                 "use a separate API key per integration.",
@@ -276,7 +269,8 @@ def coverage_body(rows: list[dict[str, Any]]) -> str:
     )
 
 
-def advanced_page(ops: list[dict[str, Any]], rows: list[dict[str, Any]]) -> dict[str, Any]:
+def rivile_api_page(ops: list[dict[str, Any]], rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """One page, like Shopify's: everyday steps, behaviour, every method by area, coverage."""
     _remember_pages(rows)
     by_id = {row["operation_id"]: row for row in rows}
     groups: dict[str, list[dict[str, Any]]] = {}
@@ -288,8 +282,8 @@ def advanced_page(ops: list[dict[str, Any]], rows: list[dict[str, Any]]) -> dict
     intro = (
         "\n".join(
             [
-                "Every Rivilė GAMA API v2 method as its own step, named **Advanced · …** in the step "
-                "picker, grouped below by area. Each links to its page in the Rivilė guide.",
+                "Every Rivile GAMA API v2 method as its own step, named **Advanced · …** in the step "
+                "picker, grouped below by area. Each links to its page in the Rivile guide.",
                 "",
                 "Results every method returns:",
                 "",
@@ -302,18 +296,12 @@ def advanced_page(ops: list[dict[str, Any]], rows: list[dict[str, Any]]) -> dict
         )
         + "\n"
     )
-    components: list[dict[str, Any]] = [
+    components: list[dict[str, Any]] = _everyday_components(ops) + [
         {
             "component_id": "advanced_intro",
             "type": "markdown",
             "title": "Advanced methods",
             "body": intro,
-        },
-        {
-            "component_id": "advanced_coverage",
-            "type": "markdown",
-            "title": "Coverage",
-            "body": coverage_body(rows),
         },
     ]
     for index, group in enumerate(sorted(groups)):
@@ -339,10 +327,18 @@ def advanced_page(ops: list[dict[str, Any]], rows: list[dict[str, Any]]) -> dict
             "body": "\n".join(lines).rstrip() + "\n",
         }
     )
+    components.append(
+        {
+            "component_id": "advanced_coverage",
+            "type": "markdown",
+            "title": "Coverage",
+            "body": coverage_body(rows),
+        }
+    )
     return {
-        "page_id": "advanced-methods",
-        "title": "Rivilė API — advanced methods",
-        "description": "Every Rivilė GAMA API v2 method, grouped by area, with its inputs.",
+        "page_id": "rivile-api",
+        "title": "Rivile API",
+        "description": "Every Rivile step: what it does, which Rivile method it calls, its inputs and results.",
         "components": components,
     }
 

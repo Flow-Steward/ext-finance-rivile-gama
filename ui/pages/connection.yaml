@@ -1,10 +1,10 @@
 page_id: connection
 title: Connection
-description: Add and test the Rivilė GAMA API key.
+description: Add and test the Rivile GAMA API key.
 components:
   - component_id: rivile_connections
     type: connection_form
-    title: Rivilė GAMA API keys
+    title: Rivile GAMA API keys
     description: Add one connection per API key, then test it. The key is stored encrypted and never shown again.
     data:
       connection_kind: extension
@@ -23,12 +23,12 @@ components:
       - path: api_key
         widget: secret
         label: API key
-        help: The key from Rivilė, in the form username.secret.
+        help: The key from Rivile, in the form username.secret.
         required: true
       - path: trim_values
         widget: boolean
         label: Trim padding spaces in values
-        help: Rivilė pads fixed-width text fields with spaces. On by default.
+        help: Rivile pads fixed-width text fields with spaces. On by default.
     ui_schema:
       actions:
         test_label: Test connection
@@ -36,11 +36,11 @@ components:
     type: markdown
     title: How to get the API key
     body: |
-      1. Order the REST API service from Rivilė or your Rivilė partner (see **Setup Guide**).
-      2. Rivilė sends the API key, in the form `username.secret`.
+      1. Order the REST API service from Rivile or your Rivile partner (see **Setup Guide**).
+      2. Rivile sends the API key, in the form `username.secret`.
       3. Paste it above and press **Test connection**.
 
       **If the test fails:**
 
-      - **Authentication failed (401)** — the key is wrong, expired, or the service is not active. Check it with Rivilė.
+      - **Authentication failed (401)** — the key is wrong, expired, or the service is not active. Check it with Rivile.
       - **Gateway unavailable (502/503)** — the key is fine, but Manorivile-Gateway is not running on the computer next to the database. Start it.

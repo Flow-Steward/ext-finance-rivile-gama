@@ -2,7 +2,7 @@
 
 ## 0.1.0 — unreleased
 
-First release, not yet verified against a live Rivilė GAMA key (1.0.0 follows that check).
+First release, not yet verified against a live Rivile GAMA key (1.0.0 follows that check).
 
 ### Everyday operations
 
@@ -12,22 +12,26 @@ First release, not yet verified against a live Rivilė GAMA key (1.0.0 follows t
 - The 209 raw methods and Call any Rivile method are named "Advanced · …" (the step picker lists
   operations flat, by name; it has no grouping field).
 - Composite writes report exactly what was created when a later call fails, and are not retried.
-- Own connector icon; listing categories finance, inventory, hr.
-- Pages: a one-minute Setup Guide (one block for whoever sets up Rivilė and the gateway, one for
-  whoever connects in Flow Steward); Connection with "How to get the API key"; "Rivilė API —
-  operations" (each everyday step: Rivilė methods, inputs, results, and how steps behave);
-  "Rivilė API — advanced methods" (every method by area, with coverage); Changelog. No tables.
+- Icon: the official Rivile mark from https://www.rivile.lt/favicon.svg (© Rivile), scaled to
+  128×128 with proportions and colour unchanged, used to identify the integration. Listing
+  categories finance, inventory, hr.
+- The product name is written "Rivile" / "Rivile GAMA" in plain Latin letters everywhere users
+  read it; quoted Lithuanian text from the Rivile guide is unchanged.
+- Pages: a one-minute Setup Guide (one block for whoever sets up Rivile and the gateway, one for
+  whoever connects in Flow Steward); Connection with "How to get the API key"; one "Rivile API" page (each
+  everyday step with its Rivile methods, inputs and results; how steps behave; every method by
+  area; coverage); Changelog. No tables; internal effect fields are not listed as results.
 
-- Review round 3: Rivilė fields read case-insensitively (client debt was always 0 because T03 answers
+- Review round 3: Rivile fields read case-insensitively (client debt was always 0 because T03 answers
   in lower case); explicit `foreign_currency` (a base-currency code keeps net/gross price fields);
   several matches or conflicting identifiers refused before any write; `KIEKIS_U` sent with all three
   unit codes; codes allowlisted before they enter a filter; invoices with a number looked up first
   (`created` output); running out of time after a write reported as such; a created client without
   an echoed code read back; no posting without a document code; test-mode results carry every
-  declared output; Decimal money and quantities with Rivilė precision and bounds; stock with
+  declared output; Decimal money and quantities with Rivile precision and bounds; stock with
   `alt_unit`; prices changes for every product; documented datetime form; `Advanced ·` export.
 
-### Complete Rivilė GAMA API v2 coverage and hardening
+### Complete Rivile GAMA API v2 coverage and hardening
 
 Review fixes before the first release:
 
@@ -37,7 +41,7 @@ Review fixes before the first release:
   at 200 MB; the API key is redacted from raw bodies before parsing; whole results metered,
   oversized write echoes shortened instead of failed; linear error recovery.
 
-- `get_i06_doc` / `export_list` write files under the exact granted content type; the Rivilė
+- `get_i06_doc` / `export_list` write files under the exact granted content type; the Rivile
   file name/type are reported as `original_filename` / `original_content_type`.
 - Writes answered 502/503 are `timeout_unknown` and not retried; reads stay retryable.
 - The main table is no longer duplicated (`tables` → `other_tables`); multi-page reads stop at the
@@ -54,16 +58,16 @@ Review fixes before the first release:
   module list, GET_USER_PROC, GET_I06_DEBT); `list` values per method (GET_N17_LIST has F);
   `oper` on the FULL methods that document it; `top` sets the page size.
 - Data schemas: field lists and descriptions from the guide's field tables, one record per request.
-- Trailing padding trimmed, leading spaces kept; Rivilė error text redacted of the API key.
-- Category `finance` (+ inventory, hr); own connector icon (sheet with a stylised R), not the Rivilė mark.
+- Trailing padding trimmed, leading spaces kept; Rivile error text redacted of the API key.
+- Category `finance` (+ inventory, hr).
 
 Initial scope:
 
-- All 209 methods of the Rivilė GAMA API v2 guide as typed workflow operations
+- All 209 methods of the Rivile GAMA API v2 guide as typed workflow operations
   (91 read, 118 write), generated from the guide.
 - `test_connection`, `call_method` (any method) and `export_list` (JSONL export).
 - API-key connection type; fixed endpoint `api.manorivile.lt`.
 - Writes declared as external effects, suppressed in test runs.
-- Rivilė `dataError` details in failures; HTTP 207 as partial success.
-- Paged reads with Rivilė rate-limit pacing.
+- Rivile `dataError` details in failures; HTTP 207 as partial success.
+- Paged reads with Rivile rate-limit pacing.
 - Document attach from workflow files (`EDIT_I06_DOC`/`EDIT_I06_DOCS`) and download to a workflow file (`GET_I06_DOC`).

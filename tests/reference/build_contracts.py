@@ -12,7 +12,7 @@ Output (all generated, never edited by hand):
 * ``contracts/step_ui_manifest.yaml``   — the builder form of every operation
 * ``contracts/artifact_policies.yaml``  — file inputs/outputs (document attach/download, export)
 * ``ui/actions/actions.yaml``           — the same-id workflow-visible actions
-* ``ui/pages/operations.yaml``, ``advanced-methods.yaml``, ``changelog.yaml`` — via
+* ``ui/pages/rivile-api.yaml``, ``changelog.yaml`` — via
   ``build_ui_pages.py``
 * ``extension.yaml`` ``external_effects`` block (spliced between markers)
 
@@ -1154,8 +1154,7 @@ def outputs() -> dict[str, Any]:
         "artifact_policies": artifact_policies(),
         "effects": external_effects(ops),
         "registry": runtime_registry(rows),
-        "operations_page": build_ui_pages.operations_page(ops, rows),
-        "advanced_page": build_ui_pages.advanced_page(ops, rows),
+        "api_page": build_ui_pages.rivile_api_page(ops, rows),
         "changelog_page": build_ui_pages.changelog_page(),
     }
 
@@ -1170,8 +1169,7 @@ def main() -> None:
     )
     dump(ROOT / "ui" / "actions" / "actions.yaml", {"actions": built["actions"]})
     for name, key in (
-        ("operations.yaml", "operations_page"),
-        ("advanced-methods.yaml", "advanced_page"),
+        ("rivile-api.yaml", "api_page"),
         ("changelog.yaml", "changelog_page"),
     ):
         build_ui_pages.dump_page(ROOT / "ui" / "pages" / name, GENERATED_HEADER, built[key])
