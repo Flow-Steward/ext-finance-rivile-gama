@@ -3,13 +3,54 @@
 `flowsteward.rivile-gama` connects Flow Steward workflows to **Rivilė GAMA REST API v2**
 (`https://api.manorivile.lt/client/v2`). Every method documented in the Rivilė guide
 (<https://gidas.rivile.lt/internetiniai_moduliai/api_rest>) is a typed workflow operation:
-**209 methods** — 91 reads and 118 writes — plus:
+**209 methods** — 91 reads and 118 writes — plus eleven everyday operations (below) and:
 
 | Operation | What it does |
 |---|---|
 | `test_connection` | Checks the API key and the Manorivile-Gateway with `GET_N45_LIST`. |
 | `call_method` | Sends any Rivilė method with raw params and data (for methods Rivilė adds later). Treated as a write. |
 | `export_list` | Reads any list method page by page and saves every record to a JSONL workflow file. |
+
+## Everyday operations (start here)
+
+| Operation | Rivilė calls |
+|---|---|
+| `find_or_create_client` | `GET_N08_LIST` by company code → VAT code → client code; `EDIT_N08` only if none matches |
+| `create_sales_invoice` / `create_purchase_invoice` | optional client find-or-create, `EDIT_I06_FULL` (`errorAction` ROLLBACK), optional `EDIT_I06` oper P |
+| `attach_file_to_document` | `EDIT_I06_DOC` with a workflow file (`show_doc` 0) |
+| `download_document_file` | `GET_I06_DOC` → workflow file |
+| `register_payment` | `EDIT_I13` |
+| `find_or_create_product` | `GET_N17_LIST` / `GET_N37_LIST` / `GET_N40_LIST`; `EDIT_N17_FULL` with an `N40` barcode only if none matches |
+| `stock_levels` | `GET_I17_LIST` grouped by department, decimal quantities |
+| `product_prices` | `GET_PS_KAIN`, flattened |
+| `changes_since` | `GET_CLIENTS_TIME`, `GET_PROD_BY_BARCODE_TIME`, `GET_PRICES_TIME`, `GET_I17_LIST_TIME` (need `INIT_TRIGGER`), documents via `GET_I06_LIST` on `I06_R_DATE` |
+| `client_debt` | `GET_T03_LIST`: debit, credit, balance |
+
+A composite step that fails after an earlier write (for example the client was created, then the
+invoice refused) fails with "may have an effect", lists what was already created, and is not retried.
+A failed posting after a created invoice returns success with `posted: false` and `post_error`.
+
+### Mapping assumptions — unverified without a live key
+
+Taken from the guide's field tables and examples, not yet confirmed against a real Rivilė database:
+
+1. `I06_OP_TIP` 51 = sales invoice (Pardavimai: Važtaraštis), 1 = purchase invoice (Pirkimai: Važtaraštis).
+2. Posting = `EDIT_I06` with `oper` P and `I06_KODAS_PO` ("perkėlimas").
+3. Line quantity in decimals via `KIEKIS_U` (as in the `EDIT_I06_FULL` example) rather than `I07_KIEKIS`/`I07_FRAKCIJA`.
+4. Net price `I07_KAINA_BE`; gross `I07_KAINA_SU` with `I06_PVM_TIP` 1; with a currency, `I07_VAL_KAINA`.
+5. VAT: `vat_rate` → `I07_MOKESTIS` 1 + `I07_MOKESTIS_P`; `vat_code` → `I07_KODAS_KL` (Rivilė 109+); neither → Rivilė's
+   default from the product/client tax table (`I06_KODAS_XS` "fills from the client card").
+6. Due date → one `I08` term: 100 % after N days from the document date.
+7. Defaults from the guide's examples, company-specific in practice: client account relation `PT001`
+   (`N08_KODAS_DS`), product account relation `PR001` (`N17_KODAS_DS`), tax table `PVM` (`N08_KODAS_XS_P/T`).
+8. `N08_RUSIS` customer 1 / supplier 2 / both 3; `N08_TIPAS` legal entity 1 / person 2. Rivilė has no
+   country field; `location_code` maps to `N08_KODAS_VS`.
+9. New product barcode as an `N40` alternative barcode (the `EDIT_N17_FULL` example), not `N37_BAR_KODAS`.
+10. Payments via `EDIT_I13` on the document; `I13_KODAS_SS` is the company's money account code.
+11. Stock quantity = `des_likutis_us` when Rivilė sends it, else `I17_KIEKIS / I17_FRAKCIJA`.
+12. `lastDate` accepts `YYYY-MM-DD HH:MM[:SS]` as well as the documented `YYYY-MM-DD`; documents changed since a
+    date are read by `i06_r_date >= …` (there is no `*_TIME` method for documents).
+13. Debt `balance` = `T03_SUMA_DB − T03_SUMA_CR`; which side means "the client owes us" is not stated.
 
 ## Requirements on the Rivilė side
 

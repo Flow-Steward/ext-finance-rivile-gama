@@ -32,6 +32,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 
+import friendly_contracts  # noqa: E402
 from titles import DEFAULT_GROUP, GROUPS, TITLES  # noqa: E402
 
 SPEC_PATH = HERE / "rivile_api_v2_spec.json"
@@ -43,6 +44,10 @@ GENERATED_HEADER = (
     "# Do not edit by hand: tests/test_contracts.py fails when this file drifts.\n"
 )
 DOCS_BASE = "https://gidas.rivile.lt/internetiniai_moduliai/api_rest/"
+#: Raw Rivile methods sort after the friendly operations in the step picker,
+#: which lists operations flat by display name (no grouping field exists).
+ADVANCED_PREFIX = "Advanced · "
+FRIENDLY_DOWNLOAD_BINDING = "rivile_document_file"
 
 UPLOAD_METHODS = {"EDIT_I06_DOC", "EDIT_I06_DOCS"}
 DOWNLOAD_METHODS = {"GET_I06_DOC"}
@@ -657,7 +662,7 @@ def method_operation(row: dict[str, Any]) -> dict[str, Any]:
     )
     op: dict[str, Any] = {
         "operation_id": row["operation_id"],
-        "display_name": f"{row['title']} ({row['method']})",
+        "display_name": f"{ADVANCED_PREFIX}{row['title']} ({row['method']})",
         "description": clean(description, 1000),
         "operation_kind": "action" if row["write"] else "source",
         "category": CATEGORY,
@@ -750,7 +755,7 @@ def call_method_operation() -> dict[str, Any]:
     outputs = common_outputs(None, write=True)
     return {
         "operation_id": "call_method",
-        "display_name": "Call any Rivile method",
+        "display_name": f"{ADVANCED_PREFIX}Call any Rivile method",
         "description": (
             "Sends one request with any Rivile GAMA API v2 method, params and data. Treated as a "
             "write: suppressed in test runs and recorded in the external-effect ledger."
@@ -856,9 +861,41 @@ def export_list_operation(paged_methods: list[str]) -> dict[str, Any]:
     }
 
 
+def friendly_operation(spec: dict[str, Any]) -> dict[str, Any]:
+    write = spec["kind"] == "action"
+    files = spec["operation_id"] in {"attach_file_to_document", "download_document_file"}
+    op: dict[str, Any] = {
+        "operation_id": spec["operation_id"],
+        "display_name": spec["display_name"],
+        "description": spec["description"],
+        "operation_kind": spec["kind"],
+        "category": CATEGORY,
+        "connection_type_ids": [CONNECTION_TYPE_ID],
+        "workflow_visible": True,
+    }
+    if write:
+        op["effect_kind"] = effect_kind(spec["operation_id"])
+    outputs = list(spec["outputs"])
+    if write:
+        outputs += [
+            {"name": "external_effect_status", "value_type": "text", "schema": {"type": "string"}},
+            {
+                "name": "definitely_no_external_effect",
+                "value_type": "boolean",
+                "schema": {"type": "boolean"},
+            },
+        ]
+    op["inputs"] = spec["inputs"]
+    op["outputs"] = outputs
+    op["result_fields"] = [f"result.{o['name']}" for o in outputs]
+    op["error_codes"] = errors_for(None, write=write, files=files)
+    return op
+
+
 def build_operations(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     paged = [r["method"] for r in rows if r["paged"]]
     ops = [test_connection_operation()]
+    ops += [friendly_operation(spec) for spec in friendly_contracts.operations()]
     ops += [method_operation(r) for r in rows]
     ops += [call_method_operation(), export_list_operation(paged)]
     return ops
@@ -980,6 +1017,37 @@ def artifact_policies() -> list[dict[str, Any]]:
         )
     policies.append(
         {
+            "operation_id": "attach_file_to_document",
+            "inputs": [
+                {
+                    "kind": "artifact",
+                    "value_type": "artifact_handle",
+                    "binding_key": UPLOAD_BINDING,
+                    "field": "document_file",
+                    "required": True,
+                    "max_size_bytes": MAX_UPLOAD_BYTES,
+                }
+            ],
+        }
+    )
+    policies.append(
+        {
+            "operation_id": "download_document_file",
+            "outputs": [
+                {
+                    "kind": "artifact",
+                    "value_type": "artifact_handle",
+                    "binding_key": FRIENDLY_DOWNLOAD_BINDING,
+                    "filename": DOWNLOAD_FILENAME,
+                    "content_type": DOWNLOAD_CONTENT_TYPE,
+                    "max_size_bytes": MAX_DOWNLOAD_BYTES,
+                    "retention_class": "run_window",
+                }
+            ],
+        }
+    )
+    policies.append(
+        {
             "operation_id": "export_list",
             "outputs": [
                 {
@@ -1051,7 +1119,21 @@ def reference_page(rows: list[dict[str, Any]]) -> dict[str, Any]:
     groups: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
         groups.setdefault(row["group"], []).append(row)
+    start = ["| Operation | What it does | |", "|---|---|---|"]
+    for spec in friendly_contracts.operations():
+        mark = "✎" if spec["kind"] == "action" else ""
+        start.append(f"| **{spec['display_name']}** | {spec['description']} | {mark} |")
     components: list[dict[str, Any]] = [
+        {
+            "component_id": "reference_start_here",
+            "type": "markdown",
+            "title": "Start here",
+            "body": (
+                "Everyday tasks in plain terms — each step makes the Rivile calls it needs. "
+                "The raw Rivile methods follow below and appear in the step picker as "
+                "**Advanced · …**.\n\n" + "\n".join(start) + "\n"
+            ),
+        },
         {
             "component_id": "reference_intro",
             "type": "markdown",
@@ -1063,7 +1145,7 @@ def reference_page(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 "**Call any Rivile method** and **Export a Rivile list to a JSONL file**. "
                 "Writes are marked ✎. Each method links to its page in the Rivile guide."
             ),
-        }
+        },
     ]
     for index, group in enumerate(sorted(groups)):
         lines = ["| Operation | Rivile method | |", "|---|---|---|"]

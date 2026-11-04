@@ -4,13 +4,14 @@ lifecycle:
   data_migrations: []
 extension_id: flowsteward.rivile-gama
 kind: tool_provider
-version: 1.0.0
+version: 1.1.0
 release_stage: active
 billing_mode: free
 display_name: Rivilė GAMA
-description: Rivilė GAMA REST API v2 for workflows. Every documented method — clients, products, purchase
-  and sales documents, payments, inventory, general ledger, payroll, personnel, POS and more — is a typed
-  workflow operation, with document file attach/download, paged reads and JSONL export.
+description: Rivilė GAMA REST API v2 for workflows. Everyday steps — create sales and purchase invoices,
+  find or create clients and products, attach and download document files, register payments, stock levels,
+  prices, debts and changes since a date — plus every documented method (clients, products, documents,
+  payments, inventory, general ledger, payroll, personnel, POS and more) as a typed workflow operation.
 vendor:
   name: Flow Steward
   support_url: https://github.com/Flow-Steward/ext-accounting-rivile-gama/issues
@@ -27,8 +28,8 @@ listing:
   - vat
   - inventory
   - payroll
-  summary: Read and write everything Rivilė GAMA API v2 exposes — 209 methods as workflow steps, from
-    clients and goods to invoices with VAT, payments and stock.
+  summary: Everyday Rivilė GAMA steps — invoices, clients, products, payments, stock, prices, debts —
+    plus all 209 API v2 methods.
   categories:
   - finance
   - inventory
@@ -54,6 +55,36 @@ egress:
   hosts:
   - api.manorivile.lt
 external_effects:
+- operation_id: find_or_create_client
+  effect_kind: rivile_find_or_create_client
+  channel: rivile_gama_api_v2
+  idempotency: required
+  test_mode_behavior: suppress
+- operation_id: create_sales_invoice
+  effect_kind: rivile_create_sales_invoice
+  channel: rivile_gama_api_v2
+  idempotency: required
+  test_mode_behavior: suppress
+- operation_id: create_purchase_invoice
+  effect_kind: rivile_create_purchase_invoice
+  channel: rivile_gama_api_v2
+  idempotency: required
+  test_mode_behavior: suppress
+- operation_id: attach_file_to_document
+  effect_kind: rivile_attach_file_to_document
+  channel: rivile_gama_api_v2
+  idempotency: required
+  test_mode_behavior: suppress
+- operation_id: register_payment
+  effect_kind: rivile_register_payment
+  channel: rivile_gama_api_v2
+  idempotency: required
+  test_mode_behavior: suppress
+- operation_id: find_or_create_product
+  effect_kind: rivile_find_or_create_product
+  channel: rivile_gama_api_v2
+  idempotency: required
+  test_mode_behavior: suppress
 - operation_id: edit_a02
   effect_kind: rivile_edit_a02
   channel: rivile_gama_api_v2

@@ -126,7 +126,8 @@ def test_neutral_test_mode_result_has_every_declared_output() -> None:
     operations = {
         op["operation_id"]: op for op in _load("contracts/operation_manifest.yaml")["operations"]
     }
-    for operation_id in sorted(catalog.WRITE_OPERATION_IDS - {"call_method"}):
+    raw_writes = catalog.WRITE_OPERATION_IDS - {"call_method"} - catalog.FRIENDLY_WRITE_IDS
+    for operation_id in sorted(raw_writes):
         method = catalog.METHODS_BY_OPERATION[operation_id]
         data: dict[str, Any] | None = {method.data_roots[0]: {}} if method.data_roots else None
         inputs: dict[str, Any] = {"data": data} if data else {}
@@ -157,7 +158,7 @@ def test_health_command() -> None:
     health = json.loads(proc.stdout)
     assert health["status"] == "healthy"
     assert health["rivile_methods"] == 209
-    assert health["declared_operations"] == 212
+    assert health["declared_operations"] == 223
 
 
 def test_main_refuses_another_host_contract() -> None:

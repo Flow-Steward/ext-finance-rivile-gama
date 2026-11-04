@@ -16,7 +16,7 @@ from flowsteward_extension_sdk import (
     write_artifact_stream,
 )
 
-from . import budget, catalog, errors
+from . import budget, catalog, errors, friendly
 from .connection import Connection, connection_from_payload
 from .errors import ExtensionError, error_response
 from .models import Method
@@ -77,7 +77,9 @@ _SIGNATURES: tuple[tuple[bytes, str], ...] = (
 )
 
 #: Operations that save a workflow file after reading.
-_FILE_WRITING_OPS = frozenset({catalog.EXPORT_LIST, *(m.lower() for m in catalog.DOWNLOAD_METHODS)})
+_FILE_WRITING_OPS = frozenset(
+    {catalog.EXPORT_LIST, "download_document_file", *(m.lower() for m in catalog.DOWNLOAD_METHODS)}
+)
 
 TransportFactory = Callable[[Connection], RivileTransport]
 ArtifactWriter = Callable[..., Mapping[str, Any]]
@@ -143,6 +145,8 @@ def handle_runtime(
             return _ok(_call_method(context))
         if operation_id == catalog.EXPORT_LIST:
             return _ok(_export_list(context))
+        if operation_id in catalog.FRIENDLY_IDS:
+            return _ok(_run_friendly(context, operation_id))
         method = catalog.METHODS_BY_OPERATION[operation_id]
         return _ok(_run_method(context, method))
     except DeadlineReached:
@@ -334,6 +338,9 @@ def _method_request(
 
 
 def _validate_only(operation_id: str, operation_input: Mapping[str, Any]) -> None:
+    if operation_id in catalog.FRIENDLY_IDS:
+        friendly.validate(operation_id, operation_input)
+        return
     if operation_id == catalog.CALL_METHOD:
         _call_method_request(operation_input)
         return
@@ -696,6 +703,86 @@ def _export_list(context: _Context) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Friendly operations
+
+
+def _run_friendly(context: _Context, operation_id: str) -> dict[str, Any]:
+    call = context.transport.call
+    inputs = {k: v for k, v in context.operation_input.items() if k != "connection_ref"}
+    friendly.validate(operation_id, inputs)
+    progress = friendly.Progress()
+    result: dict[str, Any]
+    if operation_id == "find_or_create_client":
+        result = friendly.find_or_create_client(call, inputs, progress)
+    elif operation_id in {"create_sales_invoice", "create_purchase_invoice"}:
+        op_type = (
+            friendly.SALES_OP_TYPE
+            if operation_id == "create_sales_invoice"
+            else friendly.PURCHASE_OP_TYPE
+        )
+        result = friendly.create_invoice(call, inputs, progress, op_type=op_type)
+    elif operation_id == "attach_file_to_document":
+        result = _attach_file_to_document(context, inputs)
+    elif operation_id == "download_document_file":
+        result = _download_document_file(context, inputs)
+    elif operation_id == "register_payment":
+        result = friendly.register_payment(call, inputs)
+    elif operation_id == "find_or_create_product":
+        result = friendly.find_or_create_product(call, inputs, progress)
+    elif operation_id == "stock_levels":
+        result = friendly.stock_levels(call, inputs)
+    elif operation_id == "product_prices":
+        result = friendly.product_prices(call, inputs)
+    elif operation_id == "changes_since":
+        result = friendly.changes_since(call, inputs)
+    else:  # client_debt
+        result = friendly.client_debt(call, inputs)
+    if operation_id in catalog.FRIENDLY_WRITE_IDS:
+        if not budget.fits(result):
+            result["record"] = None
+        return _mark_write(result)
+    budget.ensure_fits(result)
+    return result
+
+
+def _attach_file_to_document(context: _Context, inputs: Mapping[str, Any]) -> dict[str, Any]:
+    code = friendly._text(inputs, "document_code", required=True, limit=12)
+    params: dict[str, Any] = {
+        "oper": "I",
+        "kodas_po": code,
+        "show_doc": 0,
+        "overwrite": 1 if friendly._bool(inputs, "replace_existing", False) else 0,
+    }
+    ext = friendly._text(inputs, "file_extension", limit=10)
+    if ext:
+        params["ext"] = ext if ext.startswith(".") else f".{ext}"
+    _attach_upload(context, params)
+    reply = context.transport.call("EDIT_I06_DOC", params, None, mutating=True)
+    records = reply.parsed.records
+    _strip_documents(records)
+    return {
+        "document_code": code,
+        "file_extension": params.get("ext", ""),
+        "record": records[0] if records else None,
+    }
+
+
+def _download_document_file(context: _Context, inputs: Mapping[str, Any]) -> dict[str, Any]:
+    code = friendly._text(inputs, "document_code", required=True, limit=12)
+    reply = context.transport.call("GET_I06_DOC", {"kodas_po": code}, None, mutating=False)
+    base = _base_result("GET_I06_DOC", reply)
+    _save_download(context, base, binding_key=catalog.FRIENDLY_DOWNLOAD_BINDING)
+    return {
+        "document_code": code,
+        "found": base["document_file"] is not None,
+        "document_file": base["document_file"],
+        "original_filename": base["original_filename"],
+        "original_content_type": base["original_content_type"],
+        "link": friendly._value(base["record"], "NUORODA"),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Files
 
 
@@ -788,7 +875,9 @@ def _extension_of(payload: Mapping[str, Any], handle: str) -> str:
     return ""
 
 
-def _save_download(context: _Context, result: dict[str, Any]) -> None:
+def _save_download(
+    context: _Context, result: dict[str, Any], *, binding_key: str = catalog.DOWNLOAD_BINDING
+) -> None:
     result["document_file"] = None
     result["original_filename"] = None
     result["original_content_type"] = None
@@ -818,7 +907,7 @@ def _save_download(context: _Context, result: dict[str, Any]) -> None:
     handle = _write_artifact(
         context,
         [body],
-        binding_key=catalog.DOWNLOAD_BINDING,
+        binding_key=binding_key,
         content_type=DOWNLOAD_CONTENT_TYPE,
         what="The document file",
     )

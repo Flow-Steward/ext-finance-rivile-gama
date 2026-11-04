@@ -20,11 +20,28 @@ components:
     title: 2. Connect
     body: |
       Open **Connection**, add a connection with the API key and press **Test connection**. Use one connection per API key; add more for other companies or integrations. Every workflow step names the connection it runs against.
+  - component_id: setup_start_here
+    type: markdown
+    title: 3. Start here — everyday steps
+    body: |
+      These steps take plain inputs and make the Rivilė calls for you:
+
+      - **Find or create customer / supplier** — by company code, VAT code or client code; creates the client only if none matches, so it is safe to run again.
+      - **Create sales invoice** / **Create purchase invoice** — header and lines in one request, the client found or created first, optional posting. A failed line rolls the whole document back.
+      - **Attach file to document** / **Download document file** — move the invoice PDF between the workflow and Rivilė.
+      - **Register payment** — a payment against a document.
+      - **Find or create product** — by code or barcode; creates it with its unit and barcode.
+      - **Stock levels**, **Product prices**, **Client debt** — plain lists and totals.
+      - **Changes since** — clients, products, prices, stock or documents changed since a date (run **Advanced · Enable change tracking (INIT_TRIGGER)** once first).
+
+      Codes that every company sets up differently — the account relation code for new clients (`PT001`) and products (`PR001`), the tax table (`PVM`), money accounts for payments — are inputs. The defaults are the Rivilė guide's examples: replace them with your own.
+
+      If a step that writes several things fails half-way (for example the client was created but the invoice was refused), the step fails, says exactly what was already created, and is not retried automatically.
   - component_id: setup_steps
     type: markdown
-    title: 3. Use it in workflows
+    title: 4. Every Rivilė method
     body: |
-      Add an **Extension tools** step and pick an operation. Each Rivilė method is its own operation, named in English with the Rivilė method code in brackets, for example **Clients: create, update or delete (EDIT_N08)**. The full list is on **API Reference**.
+      Every Rivilė method is also its own operation, listed after the everyday steps as **Advanced · …** with the Rivilė method code in brackets, for example **Advanced · Clients: create, update or delete (EDIT_N08)**. The full list is on **API Reference**.
 
       **Inputs.** Rivilė params are separate typed inputs (`oper`, `fil`, `list`, `error_action`, `page_number`…). The `data` input is Rivilė's data block with Rivilė's own field names, exactly as in the Rivilė guide:
 
@@ -44,7 +61,7 @@ components:
       **Anything else.** **Call any Rivile method** sends any method name with raw params and data, for methods Rivilė adds later.
   - component_id: setup_safety
     type: markdown
-    title: 4. Writes, retries and errors
+    title: 5. Writes, retries and errors
     body: |
       - **Every write is recorded.** All `EDIT_*` operations, `INIT_TRIGGER`, **Run a user stored procedure (GET_USER_PROC)** and **Call any Rivile method** go through the external-effect ledger: a retried step does not send the same write twice.
       - **Test runs never write.** Flow Steward suppresses writes in a test run before they reach the extension; reads still run.
@@ -56,7 +73,7 @@ components:
       - **Rate limit (429)** — Rivilė allows 10 requests per second per key (30 at peak). The extension paces with Rivilė's `X-RateLimit-*` headers and, on 429, stops and backs off 1, 2, 4, 8 seconds as Rivilė requires. Pacing is per step: steps running in parallel on the same key share Rivilė's budget, so prefer a separate key per integration.
   - component_id: setup_database_engine
     type: markdown
-    title: 5. MS SQL and Sybase treat empty values differently
+    title: 6. MS SQL and Sybase treat empty values differently
     body: |
       | Value sent | MS SQL server | Sybase server |
       |---|---|---|

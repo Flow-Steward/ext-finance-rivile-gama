@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+- Eleven everyday operations, listed first in the step picker: Find or create customer / supplier,
+  Create sales invoice, Create purchase invoice, Attach file to document, Download document file,
+  Register payment, Find or create product, Stock levels, Product prices, Changes since, Client debt.
+- The 209 raw methods and Call any Rivile method are named "Advanced · …" (the step picker lists
+  operations flat, by name; it has no grouping field).
+- Composite writes report exactly what was created when a later call fails, and are not retried.
+- Own connector icon; listing categories finance, inventory, hr.
+
 ## 1.0.0
 
 Review fixes before the first release:
