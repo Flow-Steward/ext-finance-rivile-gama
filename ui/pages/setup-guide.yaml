@@ -1,0 +1,66 @@
+page_id: setup-guide
+title: Setup Guide
+description: What Rivilė needs before the first request, and how the workflow steps behave.
+components:
+  - component_id: setup_requirements
+    type: markdown
+    title: 1. What you need from Rivilė
+    body: |
+      Rivilė GAMA API v2 is a paid Rivilė service. Before connecting:
+
+      1. **Order the API service** from Rivilė or your Rivilė representative. You need a valid version access agreement (versijų prieigos sutartis).
+      2. **Rivilė GAMA version 119 or later**, on Sybase SQL 11.0+ or SQL Server 2008 R2+.
+      3. **Install Manorivile-Gateway** on a computer or server that can reach the Rivilė GAMA database, and keep it running. Every request travels `Flow Steward → api.manorivile.lt → Manorivile-Gateway → your database`.
+      4. **Get the API key.** Rivilė issues it as `username.secret`; the username is the Rivilė GAMA user the API works as, so that user's rights apply.
+      5. **Rivilė GAMA parameters** (Servisas → Administravimas → Parametrai) control what the API may do: `RGI_ALL_EDIT` (edit operations created by other users), `RGI_N08_UNIK` (duplicate company codes), `RGI_KRED_LIM` (credit limit control), `RGI_A02_FIL` / `RGI_A06_FIL` / `RGI_K14_FIL` (payroll and personnel access — without them those methods see no data), `RGI_RAK` (record locking), `RGI_SUDENG` (debt settlement), `RGI_USR_EDIT` (passing a user code).
+
+      Rivilė guide: https://gidas.rivile.lt/internetiniai_moduliai/api_rest
+  - component_id: setup_connect
+    type: markdown
+    title: 2. Connect
+    body: |
+      Open **Connection**, add a connection with the API key and press **Test connection**. Use one connection per API key; add more for other companies or integrations. Every workflow step names the connection it runs against.
+  - component_id: setup_steps
+    type: markdown
+    title: 3. Use it in workflows
+    body: |
+      Add an **Extension tools** step and pick an operation. Each Rivilė method is its own operation, named in English with the Rivilė method code in brackets, for example **Clients: create, update or delete (EDIT_N08)**. The full list is on **API Reference**.
+
+      **Inputs.** Rivilė params are separate typed inputs (`oper`, `fil`, `list`, `error_action`, `page_number`…). The `data` input is Rivilė's data block with Rivilė's own field names, exactly as in the Rivilė guide:
+
+      ```json
+      {"N08": {"N08_KODAS_KS": "121411842", "N08_PAV": "UAB \"Rivilė\"", "N08_RUSIS": "3",
+               "N08_IM_KODAS": "121411842", "N08_PVM_KODAS": "LT214118411"}}
+      ```
+
+      Methods that create a document with lines (`*_FULL`) take the lines inside the header, for example `{"I06": {…, "I07": [{…}, {…}]}}`. Extra fields `PAP_1`, `PAP_2`… and dimensions `I49_DIM01`… pass through unchanged. `extra_params` passes any param this release does not list.
+
+      **Outputs.** Every operation returns `records` (the main returned table), `record` (the first one — for writes, the saved record with its new code), `tables` (every returned table by tag), `count`, `data_errors` (Rivilė's `tag`, `code`, `message` per refused field), `partial_success` and `http_status`. Values are text exactly as Rivilė sent them; numbers keep Rivilė's decimals.
+
+      **Lists.** Rivilė returns 100 records per page. Set `page_number`, or turn on `fetch_all_pages` (up to `max_pages`, default 10). For whole tables use **Export a Rivile list to a JSONL file**, which writes every record to a workflow file. Rivilė recommends filtering by the last key you received rather than paging deep, and the `*_TIME` methods (after **Enable change tracking (INIT_TRIGGER)**) for syncing only changes.
+
+      **Files.** **Purchase/sales document: attach… (EDIT_I06_DOC / EDIT_I06_DOCS)** take a workflow file in `document_file` — for example the invoice PDF from an earlier step — and Base64-encode it for Rivilė. **…download the attached file (GET_I06_DOC)** saves the attachment as a workflow file (`document_file` output).
+
+      **Anything else.** **Call any Rivile method** sends any method name with raw params and data, for methods Rivilė adds later.
+  - component_id: setup_safety
+    type: markdown
+    title: 4. Writes, retries and errors
+    body: |
+      - **Every write is recorded.** All `EDIT_*` operations, `INIT_TRIGGER` and **Call any Rivile method** go through the external-effect ledger: a retried step does not send the same write twice.
+      - **Test runs never write.** In a test run, writes are validated and then suppressed (`external_effect_status: suppressed`); reads still run.
+      - **HTTP 400** — Rivilė refused the data; nothing was saved. The step fails with Rivilė's message and every `dataError` (field, code, text) in its errors.
+      - **HTTP 207** — part succeeded (`*_FULL` methods with `error_action` EXIT or CONTINUE). The step succeeds with `partial_success: true`; read `data_errors` to see which lines were refused.
+      - **Gateway unavailable (502)** — the gateway is down; nothing reached the database. Safe to retry.
+      - **Timeout or 500/504 on a write** — Rivilė may or may not have saved it. The step fails with `timeout_unknown` and is not retried automatically: check the document in Rivilė first.
+      - **Rate limit** — Rivilė allows 10 requests per second per key (30 at peak). Multi-page reads and exports pace themselves using Rivilė's `X-RateLimit-*` headers.
+  - component_id: setup_database_engine
+    type: markdown
+    title: 5. MS SQL and Sybase treat empty values differently
+    body: |
+      | Value sent | MS SQL server | Sybase server |
+      |---|---|---|
+      | Field omitted | Rivilė applies its default | Rivilė applies its default |
+      | Empty `""` | Empty value; no default applied | Same as omitted: default applied |
+      | One space `" "` | Empty in text (CHAR) fields | The way to send "empty" and avoid the default |
+
+      Example: creating a sale without an address code. On MS SQL, omit `I06_KODAS_AK` to have the address assigned, or send `""` to leave it empty. On Sybase, send `" "` to leave it empty.

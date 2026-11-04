@@ -1,0 +1,2 @@
+# Runtime dependency: safe XML parsing of Rivile responses (no DTDs, no entities).
+defusedxml==0.7.1

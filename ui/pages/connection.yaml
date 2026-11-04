@@ -1,0 +1,45 @@
+page_id: connection
+title: Connection
+description: Add and test the Rivilė GAMA API keys this project uses.
+components:
+  - component_id: rivile_connections
+    type: connection_form
+    title: Rivilė GAMA API keys
+    description: Save one connection per API key, then test it. The key is stored encrypted and never shown again.
+    data:
+      connection_kind: extension
+      connection_type: rivile_gama
+      config_fields: [label, trim_values]
+      secret_fields: [api_key]
+      test_action: test_connection
+    defaults:
+      label: ''
+      trim_values: true
+    fields:
+      - path: label
+        widget: text
+        label: Label
+        placeholder: UAB Company — production
+      - path: api_key
+        widget: secret
+        label: API key
+        help: The key from Rivilė, in the form username.secret. Stored by Flow Steward as an encrypted project secret.
+        required: true
+      - path: trim_values
+        widget: boolean
+        label: Trim padding spaces in values
+        help: Rivilė pads fixed-width text fields with spaces. On by default.
+    ui_schema:
+      actions:
+        test_label: Test connection
+  - component_id: connection_notes
+    type: markdown
+    title: What the test checks
+    body: |
+      **Test connection** sends one read-only request, `GET_N45_LIST` (currencies), with the saved key.
+
+      - **Authentication failed** — the key is wrong, expired or the API service is not active. Check the key with Rivilė.
+      - **Gateway unavailable** — the key is fine, but Manorivile-Gateway is not running or cannot reach the Rivilė GAMA database. Start the gateway on the computer or server next to the database.
+      - **Success** — the key works and the company database answers. The `api_user` result is the Rivilė GAMA user the key logs in as.
+
+      **One key per integration.** Rivilė queues every request of one key, so two integrations sharing a key slow each other down. Rivilė recommends a separate key for each integration.

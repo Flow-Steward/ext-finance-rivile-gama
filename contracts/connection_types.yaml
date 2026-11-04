@@ -1,0 +1,33 @@
+connection_types:
+  - connection_type_id: rivile_gama
+    display_name: Rivilė GAMA API key
+    description: One Rivilė GAMA API v2 key (Manorivile). Each key logs in as one Rivilė GAMA user of one company database.
+    auth:
+      type: api_key
+    config_schema:
+      type: object
+      additionalProperties: false
+      properties:
+        label:
+          type: string
+          maxLength: 190
+          title: Label
+          description: Optional name for this connection, for example the company.
+        trim_values:
+          type: boolean
+          default: true
+          title: Trim values
+          description: Remove the padding spaces Rivilė adds to fixed-width text fields (for example "VNT  " becomes "VNT").
+    secret_schema:
+      type: object
+      additionalProperties: false
+      required: [api_key]
+      properties:
+        api_key:
+          type: string
+          minLength: 8
+          maxLength: 512
+          title: API key
+          description: The key Rivilė issued when the API service was ordered, in the form username.secret.
+    capabilities:
+      test_connection: true
