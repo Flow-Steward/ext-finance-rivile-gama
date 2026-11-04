@@ -299,7 +299,8 @@ def _xml_escaped(text: str) -> str:
 def _redact_bytes(raw: bytes, connection: Connection) -> bytes:
     """Remove the key from a body before anything parses or truncates it."""
     for secret in connection.secret_fragments():
-        for form in {secret, xml_escape(secret), xml_escape(secret, {'"': "&quot;"})}:
+        escaped = _xml_escaped(secret)
+        for form in {secret, escaped, escaped.replace('"', "&quot;")}:
             encoded = form.encode("utf-8")
             if encoded and encoded in raw:
                 raw = raw.replace(encoded, b"[redacted]")
