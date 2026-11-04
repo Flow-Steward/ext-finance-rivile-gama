@@ -19,7 +19,7 @@ components:
       - path: label
         widget: text
         label: Label
-        placeholder: UAB Company — production
+        placeholder: Shop 1 — UAB X
       - path: api_key
         widget: secret
         label: API key
@@ -32,6 +32,16 @@ components:
     ui_schema:
       actions:
         test_label: Test connection
+  - component_id: connection_projects
+    type: markdown
+    title: Several keys, companies and projects
+    body: |
+      - **Connections belong to a project.** Each connection is saved in the Flow Steward project you are in.
+      - **A project may hold several Rivilė connections** — for example two companies or databases, or two websites each with its own key. Every workflow step chooses which connection it runs against.
+      - **Projects do not share connections.** A connection in project A is not visible in project B; project B adds its own, with its own key.
+      - **One key per integration.** Rivilė queues every request of one key, so integrations sharing a key slow each other down. Ask Rivilė for a separate key for each integration.
+      - **Name it clearly.** Use a Label that says which company and integration it is, for example `Shop 1 — UAB X`.
+      - **Only the API key goes here** (`username.secret`). The gateway's `broker.username` and `broker.password` stay in `global.properties` on the gateway server.
   - component_id: connection_notes
     type: markdown
     title: What the test checks
@@ -42,4 +52,3 @@ components:
       - **Gateway unavailable** — the key is fine, but Manorivile-Gateway is not running or cannot reach the Rivilė GAMA database. Start the gateway on the computer or server next to the database.
       - **Success** — the key works and the company database answers. The `api_user` result is the Rivilė GAMA user the key logs in as.
 
-      **One key per integration.** Rivilė queues every request of one key, so two integrations sharing a key slow each other down. Rivilė recommends a separate key for each integration.

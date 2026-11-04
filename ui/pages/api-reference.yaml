@@ -60,6 +60,41 @@ components:
   body: This release covers all 209 methods of the Rivile GAMA API v2 guide (90 read, 119 write), plus
     **Test the connection**, **Call any Rivile method** and **Export a Rivile list to a JSONL file**.
     Writes are marked ✎. Each method links to its page in the Rivile guide.
+- component_id: reference_coverage
+  type: markdown
+  title: Coverage
+  body: '**Covered.** All 209 methods documented in the Rivile GAMA API v2 guide, each as its own operation.
+    Every documented param — 438 across all methods — is a typed input with the guide''s description,
+    allowed values and required flags; the `data` input takes the guide''s field names for every documented
+    table, and extra fields (`PAP_*`, `I49_DIM*`) pass through.
+
+
+    **Newer than this release.** `extra_params` passes a param the guide added later; **Call any Rivile
+    method** sends any method name with raw params and data (always treated as a write).
+
+
+    **Deliberately not offered:**
+
+
+    - **JSON responses.** Every answer is requested as XML, Rivile''s default. Values stay text exactly
+    as Rivile stores them, so codes such as `301` and `301.` stay distinct and the gateway''s `response.returnStrings`
+    setting does not matter.
+
+    - **Automatic paging by last key.** Rivile recommends filtering by the last key received instead of
+    paging deep; set that filter yourself in `fil`. The extension pages by `page_number` (100 records
+    per page) and reports `next_page`.
+
+    - **Rate coordination across steps.** Pacing with Rivile''s `X-RateLimit-*` headers and the 429 backoff
+    work within one step. Steps running in parallel on the same key share Rivile''s budget; use a separate
+    key per integration.
+
+    - **The gateway''s own settings and `/client/ping`.** Installing, configuring and updating Manorivile-Gateway
+    happens on your server; **Test the connection** checks the key and the gateway with one read (`GET_N45_LIST`).
+
+    - **File content in write answers.** `show_doc` defaults to 0 for the document attach methods; download
+    a file with **Download document file** or `GET_I06_DOC`.
+
+    '
 - component_id: reference_group_1
   type: markdown
   title: CRM and document management

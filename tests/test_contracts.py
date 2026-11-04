@@ -59,6 +59,7 @@ def test_actions_step_ui_policies_and_reference_are_generated(built) -> None:
         "artifact_policies": built["artifact_policies"]
     }
     assert _load("ui/pages/api-reference.yaml") == built["reference_page"]
+    assert _load("ui/pages/changelog.yaml") == built["changelog_page"]
     committed = (BUNDLE_ROOT / "runtime/methods.py").read_text("utf-8")
     # Compared as syntax trees: the formatter may re-wrap the generated source.
     assert ast.dump(ast.parse(committed)) == ast.dump(ast.parse(built["registry"]))
@@ -204,3 +205,19 @@ def test_main_refuses_another_host_contract() -> None:
 
 def test_icon_is_present() -> None:
     assert Path(BUNDLE_ROOT / "icon.png").read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_every_shipped_page_is_in_the_ui_manifest() -> None:
+    refs = {page["ref"] for page in _load("ui/ui_manifest.yaml")["pages"]}
+    shipped = {f"pages/{path.name}" for path in (BUNDLE_ROOT / "ui" / "pages").glob("*.yaml")}
+    assert refs == shipped
+
+
+def test_reference_page_states_coverage(built) -> None:
+    coverage = next(
+        c
+        for c in built["reference_page"]["components"]
+        if c["component_id"] == "reference_coverage"
+    )
+    assert f"All {len(built['rows'])} methods" in coverage["body"]
+    assert "Deliberately not offered" in coverage["body"]

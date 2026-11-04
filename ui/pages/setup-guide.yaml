@@ -4,22 +4,60 @@ description: What Rivilė needs before the first request, and how the workflow s
 components:
   - component_id: setup_requirements
     type: markdown
-    title: 1. What you need from Rivilė
+    title: 1. Order the service and install the gateway
     body: |
-      Rivilė GAMA API v2 is a paid Rivilė service. Before connecting:
+      **For the person who orders the Rivilė service and installs the gateway** — usually the company's Rivilė administrator or Rivilė partner.
 
-      1. **Order the API service** from Rivilė or your Rivilė representative. You need a valid version access agreement (versijų prieigos sutartis).
-      2. **Rivilė GAMA version 119 or later**, on Sybase SQL 11.0+ or SQL Server 2008 R2+.
-      3. **Install Manorivile-Gateway** on a computer or server that can reach the Rivilė GAMA database, and keep it running. Every request travels `Flow Steward → api.manorivile.lt → Manorivile-Gateway → your database`.
-      4. **Get the API key.** Rivilė issues it as `username.secret`; the username is the Rivilė GAMA user the API works as, so that user's rights apply.
-      5. **Rivilė GAMA parameters** (Servisas → Administravimas → Parametrai) control what the API may do: `RGI_ALL_EDIT` (edit operations created by other users), `RGI_N08_UNIK` (duplicate company codes), `RGI_KRED_LIM` (credit limit control), `RGI_A02_FIL` / `RGI_A06_FIL` / `RGI_K14_FIL` (payroll and personnel access — without them those methods see no data), `RGI_RAK` (record locking), `RGI_SUDENG` (debt settlement), `RGI_USR_EDIT` (passing a user code).
+      Rivilė GAMA API v2 is a paid Rivilė service. It needs Rivilė GAMA 119 or later (Sybase SQL 11.0+ or SQL Server 2008 R2+) and a valid version access agreement (versijų prieigos sutartis). Every request travels `Flow Steward → api.manorivile.lt → Manorivile-Gateway → your database`.
+
+      **1. Order the REST API service** from Rivilė or your Rivilė representative. For the first connection Rivilė asks for:
+
+      - the name, company code and e-mail of the company that owns the Rivilė GAMA licence;
+      - the Rivilė GAMA company id (for example `01`);
+      - the company's base currency code (for example `EUR`);
+      - the Rivilė GAMA database name (for example `NAU_IMONE`);
+      - the database server: MSSQL or SYBASE;
+      - the Rivilė GAMA WEB address (for example `55245597`).
+
+      **2. Rivilė sends back two different sets of credentials.** Keep them apart:
+
+      | Credential | Where it goes |
+      |---|---|
+      | `broker.username` and `broker.password` | Only into the gateway's `global.properties` file on your server. **Never into Flow Steward.** |
+      | The API key, `username.secret` | Only into the Flow Steward connection (section 2). The username is the Rivilė GAMA user the API works as, so that user's rights apply. |
+
+      **3. Install Manorivile-Gateway** on a Windows computer or server that can reach the Rivilė GAMA database, and keep it running:
+
+      1. The machine needs outbound internet access to `gateway.manorivile.lt`, port 5671, and access to the database server's SQL port. The SQL port must be static.
+      2. Download the latest gateway (32-bit or 64-bit, matching Windows) from the link on Rivilė's gateway page, and unpack it to `C:/Manorivile-Gateway`.
+      3. In `global.properties`, enter the `broker.username` and `broker.password` from Rivilė. `response.returnStrings` affects only JSON answers; this extension asks Rivilė for XML and reads every value as text, so leave it as it is.
+      4. For each database, create `<database name>.properties` (the file name must equal the database name; `gama_example.properties` is the template) with the MS SQL or Sybase connection settings.
+      5. Run `install.bat` as administrator. It creates and starts the Windows service **ManoRivile-Gateway**. After a fresh install, allow about five minutes for it to synchronise.
+
+      **4. Rivilė GAMA parameters** (Servisas → Administravimas → Parametrai) control what the API may do: `RGI_ALL_EDIT` (edit operations created by other users), `RGI_N08_UNIK` (duplicate company codes), `RGI_KRED_LIM` (credit limit control), `RGI_A02_FIL` / `RGI_A06_FIL` / `RGI_K14_FIL` (payroll and personnel access — without them those methods see no data), `RGI_RAK` (record locking), `RGI_SUDENG` (debt settlement), `RGI_USR_EDIT` (passing a user code).
+
+      **If Test connection fails:**
+
+      - **Authentication failed (401)** — the API key is wrong, expired, or the service is not active. Check the key with Rivilė.
+      - **Gateway unavailable (502/503)** — the key is fine, but the gateway is not running or cannot reach the database. Check that the ManoRivile-Gateway service is started and read `log/manorivile-gateway.log` on the gateway machine.
+      - `ACCESS_REFUSED` in the gateway log — the `broker.*` values in `global.properties` are wrong, or no database is registered for the service.
+      - `Cannot open database` or `Connection refused` in the log — fix the `<database name>.properties` settings or the SQL user's rights (the user needs db_owner).
+
+      Gateway installation, updates and the full error list: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/manorivile-gateway
 
       Rivilė guide: https://gidas.rivile.lt/internetiniai_moduliai/api_rest
   - component_id: setup_connect
     type: markdown
-    title: 2. Connect
+    title: 2. Connect in Flow Steward
     body: |
-      Open **Connection**, add a connection with the API key and press **Test connection**. Use one connection per API key; add more for other companies or integrations. Every workflow step names the connection it runs against.
+      **For the person who connects in Flow Steward.** You need only the API key (`username.secret`) — not the gateway's broker username or password.
+
+      1. Open the project, then **Connection**, and add a connection.
+      2. Give it a **Label** that says which company and integration it is, for example `Shop 1 — UAB X`.
+      3. Paste the API key and save. It is stored encrypted and never shown again.
+      4. Press **Test connection**.
+
+      **Several keys and companies.** A connection belongs to one Flow Steward project. A project may hold several Rivilė connections — for example two companies or databases, or two websites each with its own key — and every workflow step chooses the connection it runs against. A connection in one project is not visible in another; each project adds its own. Use one key per integration: Rivilė queues all requests of one key, so integrations sharing a key slow each other down.
   - component_id: setup_start_here
     type: markdown
     title: 3. Start here — everyday steps
