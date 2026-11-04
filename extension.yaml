@@ -16,7 +16,7 @@ vendor:
   support_url: https://github.com/Flow-Steward/ext-accounting-rivile-gama/issues
   website_url: https://github.com/Flow-Steward/ext-accounting-rivile-gama
 listing:
-  category: accounting
+  category: finance
   tags:
   - rivile
   - rivile-gama
@@ -582,6 +582,11 @@ external_effects:
   test_mode_behavior: suppress
 - operation_id: edit_pap
   effect_kind: rivile_edit_pap
+  channel: rivile_gama_api_v2
+  idempotency: required
+  test_mode_behavior: suppress
+- operation_id: get_user_proc
+  effect_kind: rivile_get_user_proc
   channel: rivile_gama_api_v2
   idempotency: required
   test_mode_behavior: suppress

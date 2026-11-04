@@ -24,11 +24,15 @@ def dispatch_runtime(payload: dict[str, Any]) -> dict[str, Any]:
     except ValueError as exc:
         response = error_response(errors.INVALID_HOST_ENVELOPE, str(exc))
         response["definitely_no_external_effect"] = True
+        response["external_effect_status"] = "failed"
         return response
     if _operation_id(payload) not in OPERATION_IDS:
-        return error_response(
+        response = error_response(
             errors.UNSUPPORTED_OPERATION, "That operation is not part of this extension"
         )
+        response["definitely_no_external_effect"] = True
+        response["external_effect_status"] = "failed"
+        return response
     return handle_runtime(payload)
 
 

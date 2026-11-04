@@ -88,6 +88,127 @@ def xml_records(text: str) -> list[str]:
     return roots
 
 
+_TAG_RE = re.compile(r"<(/?)([A-Za-z_][A-Za-z0-9_]*)[^>]*?(/?)>")
+
+
+def _xml_tree(fragment: str) -> list:
+    """A tolerant tag tree of one documentation XML fragment: [(tag, children)]."""
+    fragment = re.sub(r"<!--.*?-->", "", fragment, flags=re.S)
+    fragment = re.sub(r"<!\[CDATA\[.*?\]\]>", "", fragment, flags=re.S)
+    fragment = re.sub(r"<\?.*?\?>", "", fragment, flags=re.S)
+    root: list = []
+    stack: list[list] = [root]
+    for m in _TAG_RE.finditer(fragment):
+        closing, tag, selfclose = m.group(1), m.group(2), m.group(3)
+        if closing:
+            if len(stack) > 1:
+                stack.pop()
+            continue
+        node: tuple = (tag, [])
+        stack[-1].append(node)
+        if not selfclose:
+            stack.append(node[1])
+    return root
+
+
+def xml_examples(text: str) -> list[dict]:
+    """Request examples written as XML: their params names and data tree."""
+    found = []
+    for block in re.findall(r"```\n(.*?)\n```", text, flags=re.S):
+        if "<method>" not in block or "<RET_DOK>" in block:
+            continue
+        tree = _xml_tree(block)
+        body = next((children for tag, children in tree if tag == "body"), tree)
+        params = [tag for tag, children in _first(body, "params")]
+        data = _first(body, "data")
+        found.append({"params": params, "data": data})
+    return found
+
+
+def _first(nodes: list, name: str) -> list:
+    for tag, children in nodes:
+        if tag == name:
+            return children
+    return []
+
+
+def merge_xml_fields(target: dict, nodes: list) -> None:
+    for tag, children in nodes:
+        if children and any(grand for _t, grand in children):
+            child = target.setdefault("children", {}).setdefault(
+                tag, {"fields": [], "is_list": True}
+            )
+            merge_xml_fields(child, children)
+        elif children:
+            child = target.setdefault("children", {}).setdefault(
+                tag, {"fields": [], "is_list": True}
+            )
+            for leaf, _ in children:
+                if leaf not in child["fields"]:
+                    child["fields"].append(leaf)
+        elif tag not in target["fields"]:
+            target["fields"].append(tag)
+
+
+def field_tables(text: str) -> dict[str, list[dict]]:
+    """The field tables under "### Lentelės": field, type, description, EDIT notes."""
+    tables: dict[str, list[dict]] = {}
+    i = text.find("### Lentelės")
+    if i < 0:
+        return tables
+    for section_match in re.finditer(
+        r"\n#### ([A-Za-z0-9_]+)\n(.*?)(?=\n#### |\n### |\Z)", text[i:], flags=re.S
+    ):
+        tag, body = section_match.group(1).upper(), section_match.group(2)
+        rows = []
+        for raw_row in body.split("\n|\n")[1:]:
+            cells: list[str] = []
+            current: list[str] = []
+            for line in raw_row.splitlines():
+                if line.endswith("|"):
+                    current.append(line[:-1].strip())
+                    cells.append(" ".join(c for c in current if c))
+                    current = []
+                elif line.strip():
+                    current.append(line.strip())
+            if not cells or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", cells[0]):
+                continue
+            if cells[0] in {"Laukas", "Lauko"}:
+                continue
+            rows.append(
+                {
+                    "name": cells[0],
+                    "type": cells[1] if len(cells) > 1 else "",
+                    "description": cells[2] if len(cells) > 2 else "",
+                    "notes": cells[3] if len(cells) > 3 else "",
+                }
+            )
+        if rows:
+            tables[tag] = rows
+    return tables
+
+
+def is_required(text: str) -> bool:
+    lowered = text.lower()
+    return bool(re.search(r"(?<!ne)privalom", lowered)) and "privalomas ar ne" not in lowered
+
+
+def list_values(params_block: str) -> list[str]:
+    i = params_block.find("`list`")
+    if i < 0:
+        return []
+    window = params_block[i : i + 900]
+    segment_text = "\n- ".join(window.split("\n- ", 2)[:2])
+    values = re.findall(r"\n([A-Z])(?: \(default\))? \|", segment_text)
+    values += re.findall(r"`([A-Z])`", segment_text)
+    values += re.findall(r"(?:^|[\s:])([A-Z]) [-–]", segment_text)
+    ordered = []
+    for value in values:
+        if value not in ordered:
+            ordered.append(value)
+    return ordered
+
+
 def merge_fields(target: dict, value) -> None:
     """Collect field names of a data root from one example value."""
     items = value if isinstance(value, list) else [value]
@@ -172,6 +293,8 @@ def parse_page(path: Path) -> dict | None:
     params = list(parse_bullets(params_block))
     data_entries = parse_bullets(data_block.split("\n", 1)[1] if "\n" in data_block else "")
     examples = json_examples(text)
+    xml_requests = xml_examples(text)
+    tables = field_tables(text)
     example_params: list[str] = []
     data_roots: dict[str, dict] = {}
     for ex in examples:
@@ -186,23 +309,70 @@ def parse_page(path: Path) -> dict | None:
                     entry["is_list"] = True
                 if isinstance(value, (dict, list)):
                     merge_fields(entry, value)
+    for ex in xml_requests:
+        for k in ex["params"]:
+            if k not in example_params:
+                example_params.append(k)
+        for root, children in ex["data"]:
+            entry = data_roots.setdefault(root, {"fields": [], "is_list": False})
+            merge_xml_fields(entry, children)
+    # Field tables complete what the examples show (keys for update/delete…).
+    for root, entry in data_roots.items():
+        for row in tables.get(root.upper(), []):
+            if row["name"] not in entry["fields"] and row["name"] not in entry.get("children", {}):
+                entry["fields"].append(row["name"])
+        for child, child_entry in entry.get("children", {}).items():
+            for row in tables.get(child.upper(), []):
+                if row["name"] not in child_entry["fields"]:
+                    child_entry["fields"].append(row["name"])
+
+    def root_fields(root: dict) -> set[str]:
+        names = set(root["fields"])
+        for child in root.get("children", {}).values():
+            names |= root_fields(child)
+        return names
+
+    example_fields = (
+        set().union(*(root_fields(r) for r in data_roots.values())) if data_roots else set()
+    )
     # Data-region bullets that are really params (EDIT_I06_DOC style) or root tables.
     roots_doc: dict[str, str] = {}
     example_roots = set(data_roots)
+    json_params = {k.lower() for k in example_params}
+    current_root = ""
     for d in data_entries:
         if re.fullmatch(r"[A-Z][A-Z0-9_]*", d["name"]):
             if example_roots and d["name"] not in example_roots:
                 continue
             roots_doc[d["name"]] = d["description"]
             data_roots.setdefault(d["name"], {"fields": [], "is_list": False})
+            current_root = d["name"]
+        elif d["name"] in example_fields:
+            continue
+        elif current_root and d["name"].lower() not in json_params:
+            # A field listed under a data root (EDIT_PAP: PAP.forma, PAP.kodas1…).
+            if d["name"] not in data_roots[current_root]["fields"]:
+                data_roots[current_root]["fields"].append(d["name"])
         elif not any(p["name"] == d["name"] for p in params):
             params.append(d)
+    for p in params:
+        p["required"] = is_required(" ".join([p.get("description", ""), *p.get("notes", [])]))
+    lvalues = list_values(params_block)
     params = [p for p in params if p["name"] not in {"data", "method", "params"}]
     names = {p["name"].lower() for p in params}
     for k in example_params:
         if k.lower() not in names:
             names.add(k.lower())
-            params.append({"name": k, "description": "", "options": [], "notes": [], "table": ""})
+            params.append(
+                {
+                    "name": k,
+                    "description": "",
+                    "options": [],
+                    "notes": [],
+                    "table": "",
+                    "required": False,
+                }
+            )
     method = title
     kind = (
         "read"
@@ -218,6 +388,8 @@ def parse_page(path: Path) -> dict | None:
         "data_roots": {
             k: {**v, "description": roots_doc.get(k, "")} for k, v in data_roots.items()
         },
+        "list_values": lvalues,
+        "field_tables": tables,
         "response_roots": xml_records(text),
         "examples": examples,
         "body_text": body.strip(),

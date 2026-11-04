@@ -19,6 +19,37 @@ if str(GENERATOR_ROOT) not in sys.path:
 
 from runtime.transport import RivileTransport  # noqa: E402
 
+
+def _core_secret_guard():
+    """The host's own value_exposes_secret, loaded from the Flow Steward checkout.
+
+    Loaded by file path (no Core package import chain). The gate and the
+    Development test runner mount the checkout at /app; FLOW_STEWARD_ROOT
+    overrides that.
+    """
+    import importlib.util
+    import os
+
+    candidates = [os.environ.get("FLOW_STEWARD_ROOT", ""), "/app", *map(str, BUNDLE_ROOT.parents)]
+    for root in candidates:
+        path = Path(root) / "core/application/extensions/secret_reflection.py" if root else None
+        if path and path.is_file():
+            spec = importlib.util.spec_from_file_location("fs_core_secret_reflection", path)
+            if spec and spec.loader:
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                return module.value_exposes_secret
+    return None
+
+
+@pytest.fixture
+def host_secret_guard():
+    guard = _core_secret_guard()
+    if guard is None:
+        pytest.skip("Flow Steward checkout not found; set FLOW_STEWARD_ROOT")
+    return guard
+
+
 CONNECTION_ID = "conn-rivile-1"
 API_KEY = "APIUSER.s3cr3t-fixture-key-0001"  # pragma: allowlist secret
 ROOT_SCOPE: dict[str, Any] = {

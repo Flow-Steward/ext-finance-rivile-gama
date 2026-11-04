@@ -17,7 +17,7 @@ connection_types:
           type: boolean
           default: true
           title: Trim values
-          description: Remove the padding spaces Rivilė adds to fixed-width text fields (for example "VNT  " becomes "VNT").
+          description: Remove the trailing padding spaces Rivilė adds to fixed-width text fields (for example "VNT  " becomes "VNT"). Leading spaces are kept — in Rivilė codes they are significant.
     secret_schema:
       type: object
       additionalProperties: false

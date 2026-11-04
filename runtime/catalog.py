@@ -1,4 +1,4 @@
-"""Operation registry: every Rivile method plus the four extension operations."""
+"""Operation registry: every Rivile method plus the three extension operations."""
 
 from __future__ import annotations
 
@@ -23,6 +23,8 @@ WRITE_OPERATION_IDS: frozenset[str] = frozenset(
 #: Files attach to / come from purchase and sales documents.
 UPLOAD_METHODS: frozenset[str] = frozenset({"EDIT_I06_DOC", "EDIT_I06_DOCS"})
 DOWNLOAD_METHODS: frozenset[str] = frozenset({"GET_I06_DOC"})
+#: show_doc is sent as 0 unless the step sets it (Rivile's default 1 echoes files).
+SHOW_DOC_DEFAULT_ZERO: frozenset[str] = frozenset({"EDIT_I06_DOC", "EDIT_I06_DOCS", "GET_I06_DOCS"})
 UPLOAD_BINDING = "rivile_document_upload"
 DOWNLOAD_BINDING = "rivile_document_download"
 EXPORT_BINDING = "rivile_export"
@@ -40,6 +42,7 @@ __all__ = [
     "METHOD_NAME_RE",
     "OPERATION_IDS",
     "PAGED_METHODS",
+    "SHOW_DOC_DEFAULT_ZERO",
     "SPECIAL_OPERATION_IDS",
     "TEST_CONNECTION",
     "UPLOAD_BINDING",

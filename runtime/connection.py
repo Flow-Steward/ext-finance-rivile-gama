@@ -45,6 +45,14 @@ class Connection:
         head, _, _rest = self._api_key.partition(".")
         return head if _rest else ""
 
+    def secret_fragments(self) -> tuple[str, ...]:
+        """The key and its secret part, for redacting text Rivile echoes back."""
+        _head, _, secret = self._api_key.partition(".")
+        parts = [self._api_key]
+        if len(secret) >= 6:
+            parts.append(secret)
+        return tuple(parts)
+
     def headers(self) -> dict[str, str]:
         return {"ApiKey": self._api_key}
 
@@ -57,9 +65,17 @@ class Connection:
 def _api_key(value: Any) -> str:
     text = value.strip() if isinstance(value, str) else ""
     if not text:
-        raise ExtensionError(errors.INVALID_CONNECTION, "Add the Rivile API key to this connection")
+        raise ExtensionError(
+            errors.INVALID_CONNECTION,
+            "Add the Rivile API key to this connection",
+            definitely_no_external_effect=True,
+        )
     if len(text) < MIN_KEY_LENGTH or len(text) > MAX_KEY_LENGTH or _KEY_RE.fullmatch(text) is None:
-        raise ExtensionError(errors.INVALID_CONNECTION, "The Rivile API key is not usable")
+        raise ExtensionError(
+            errors.INVALID_CONNECTION,
+            "The Rivile API key is not usable",
+            definitely_no_external_effect=True,
+        )
     return text
 
 
@@ -68,7 +84,11 @@ def _flag(value: Any, default: bool) -> bool:
         return default
     if isinstance(value, bool):
         return value
-    raise ExtensionError(errors.INVALID_CONNECTION, "trim_values must be true or false")
+    raise ExtensionError(
+        errors.INVALID_CONNECTION,
+        "trim_values must be true or false",
+        definitely_no_external_effect=True,
+    )
 
 
 def connection_from_payload(payload: Mapping[str, Any], *, connection_ref: str) -> Connection:
@@ -81,24 +101,36 @@ def connection_from_payload(payload: Mapping[str, Any], *, connection_ref: str) 
     target = action.get("target") if isinstance(action, Mapping) else None
     connection = target.get("connection") if isinstance(target, Mapping) else None
     if not isinstance(connection, Mapping):
-        raise ExtensionError(errors.INVALID_CONNECTION, "The selected connection is unavailable")
+        raise ExtensionError(
+            errors.INVALID_CONNECTION,
+            "The selected connection is unavailable",
+            definitely_no_external_effect=True,
+        )
     connection_id = str(connection.get("connection_id") or "")
     if not connection_id or (connection_ref and connection_id != connection_ref):
         raise ExtensionError(
-            errors.INVALID_CONNECTION, "The selected connection does not match connection_ref"
+            errors.INVALID_CONNECTION,
+            "The selected connection does not match connection_ref",
+            definitely_no_external_effect=True,
         )
     connection_type = str(
         connection.get("connection_type_id") or connection.get("connection_type") or ""
     )
     if connection_type and connection_type != CONNECTION_TYPE_ID:
-        raise ExtensionError(errors.INVALID_CONNECTION, "The selected connection is not supported")
+        raise ExtensionError(
+            errors.INVALID_CONNECTION,
+            "The selected connection is not supported",
+            definitely_no_external_effect=True,
+        )
     config = connection.get("config")
     config = config if isinstance(config, Mapping) else {}
     secrets = connection.get("secrets")
     secrets = secrets if isinstance(secrets, Mapping) else {}
     if set(secrets) - SECRET_FIELDS:
         raise ExtensionError(
-            errors.INVALID_CONNECTION, "The connection carries unsupported secrets"
+            errors.INVALID_CONNECTION,
+            "The connection carries unsupported secrets",
+            definitely_no_external_effect=True,
         )
     return Connection(
         connection_id=connection_id,

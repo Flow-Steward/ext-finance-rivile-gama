@@ -16,6 +16,7 @@ INVALID_CONNECTION = "invalid_connection"
 UNSUPPORTED_OPERATION = "unsupported_operation"
 AUTHENTICATION_FAILED = "authentication_failed"
 RATE_LIMITED = "rate_limited"
+RECORD_LOCKED = "record_locked"
 UPSTREAM_VALIDATION_FAILED = "upstream_validation_failed"
 UPSTREAM_FAILURE = "upstream_failure"
 GATEWAY_UNAVAILABLE = "gateway_unavailable"
@@ -38,6 +39,7 @@ SAFE_ERROR_CODES: frozenset[str] = frozenset(
         UNSUPPORTED_OPERATION,
         AUTHENTICATION_FAILED,
         RATE_LIMITED,
+        RECORD_LOCKED,
         UPSTREAM_VALIDATION_FAILED,
         UPSTREAM_FAILURE,
         GATEWAY_UNAVAILABLE,

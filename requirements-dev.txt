@@ -1,3 +1,4 @@
 pytest
 PyYAML
 defusedxml==0.7.1
+flowsteward-extension-sdk==0.4.0

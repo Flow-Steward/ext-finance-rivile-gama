@@ -21,6 +21,7 @@ however many rows Rivile sent.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -66,7 +67,10 @@ def _leaf(element: Any, trim: bool) -> str | None:
     text = element.text
     if text is None:
         return None
-    return text.strip() if trim else text
+    # Rivile pads fixed-width codes on the right. Trailing spaces carry no meaning,
+    # leading ones do ('A01' = 'A01 ', but 'A01' != ' A01'; guide §2.9), so only
+    # the right side is trimmed.
+    return text.rstrip() if trim else text
 
 
 def _record(element: Any, trim: bool, depth: int = 0) -> dict[str, Any]:
@@ -147,7 +151,7 @@ def parse(raw: bytes, *, trim: bool = True) -> ParsedResponse:
         tag = _local(child.tag)
         if tag == "durationMs":
             text = (child.text or "").strip()
-            parsed.duration_ms = int(text) if text.isdigit() else None
+            parsed.duration_ms = int(text) if re.fullmatch(r"[0-9]{1,12}", text) else None
             continue
         if tag == "errorMessage":
             parsed.error_message = errors.safe_text(child.text, 300)
@@ -165,4 +169,34 @@ def parse(raw: bytes, *, trim: bool = True) -> ParsedResponse:
     return parsed
 
 
-__all__ = ["MAX_DEPTH", "ParsedResponse", "parse"]
+_ERROR_MESSAGE_RE = re.compile(rb"<errorMessage>(.*?)</errorMessage>", re.S)
+_DATA_ERROR_RE = re.compile(rb"<dataError>(.*?)</dataError>", re.S)
+_PART_RE = {
+    key: re.compile(rb"<" + key.encode() + rb">(.*?)</" + key.encode() + rb">", re.S)
+    for key in ("tag", "code", "message")
+}
+
+
+def recover_errors(raw: bytes) -> ParsedResponse:
+    """Best-effort errorMessage and dataErrors from a cut or malformed error body."""
+    parsed = ParsedResponse()
+
+    def text(value: bytes) -> str:
+        return errors.safe_text(value.decode("utf-8", "replace"), 300)
+
+    found = _ERROR_MESSAGE_RE.search(raw)
+    if found:
+        parsed.error_message = text(found.group(1))
+    for match in _DATA_ERROR_RE.finditer(raw):
+        entry = {"tag": "", "code": "", "message": "", "data": ""}
+        for key, pattern in _PART_RE.items():
+            part = pattern.search(match.group(1))
+            if part:
+                entry[key] = text(part.group(1))
+        parsed.data_errors.append(entry)
+        if len(parsed.data_errors) >= 200:
+            break
+    return parsed
+
+
+__all__ = ["MAX_DEPTH", "ParsedResponse", "parse", "recover_errors"]

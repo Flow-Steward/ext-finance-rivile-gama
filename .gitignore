@@ -3,3 +3,5 @@ __pycache__/
 dist/
 .fs-python/
 logs/
+.mypy_cache/
+.ruff_cache/

@@ -6,16 +6,17 @@ import base64
 import binascii
 import json
 import re
-from collections.abc import Callable, Mapping
+import time
+from collections.abc import Callable, Iterable, Mapping
 from typing import Any
 
 from flowsteward_extension_sdk import (
     find_artifact_descriptor,
     read_artifact_bytes,
-    write_artifact_bytes,
+    write_artifact_stream,
 )
 
-from . import catalog, errors
+from . import budget, catalog, errors
 from .connection import Connection, connection_from_payload
 from .errors import ExtensionError, error_response
 from .models import Method
@@ -29,11 +30,22 @@ MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024
 MAX_EXPORT_BYTES = 200 * 1024 * 1024
 MAX_PARAM_TEXT = 30 * 1024 * 1024
+#: The entrypoint is given 600 s. An export stops reading at this point so the
+#: file is still written and the step returns in time.
+EXPORT_READ_DEADLINE_SECONDS = 360.0
+ARTIFACT_WRITE_TIMEOUT_SECONDS = 180.0
+
+#: Must equal the content types granted in contracts/artifact_policies.yaml: the
+#: SDK refuses an upload whose type differs from the signed grant.
+DOWNLOAD_CONTENT_TYPE = "application/octet-stream"
+EXPORT_CONTENT_TYPE = "application/x-ndjson"
+EXPORT_FILENAME = "rivile-export.jsonl"
 
 _ALLOWED_ACTION_KEYS = frozenset(
     {"action_id", "operation_id", "page_id", "component_id", "context", "input", "target"}
 )
 _UPPER_PARAMS = frozenset({"oper", "erroraction", "list", "listtype"})
+_DIGITS = re.compile(r"[0-9]{1,9}")
 _EXT_RE = re.compile(r"^\.?[A-Za-z0-9]{1,10}$")
 _CONTENT_TYPES = {
     ".pdf": "application/pdf",
@@ -50,12 +62,28 @@ _CONTENT_TYPES = {
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
+#: File signatures used when a workflow file has no extension in its name.
+_SIGNATURES: tuple[tuple[bytes, str], ...] = (
+    (b"%PDF", ".pdf"),
+    (b"\x89PNG\r\n\x1a\n", ".png"),
+    (b"\xff\xd8\xff", ".jpg"),
+    (b"GIF8", ".gif"),
+    (b"II*\x00", ".tif"),
+    (b"MM\x00*", ".tif"),
+    (b"<?xml", ".xml"),
+)
 
 TransportFactory = Callable[[Connection], RivileTransport]
+ArtifactWriter = Callable[..., Mapping[str, Any]]
 
 
 def _invalid(message: str) -> ExtensionError:
-    return ExtensionError(errors.INVALID_PAYLOAD, message, definitely_no_external_effect=True)
+    return ExtensionError(
+        errors.INVALID_PAYLOAD,
+        message,
+        definitely_no_external_effect=True,
+        external_effect_status="failed",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -67,20 +95,24 @@ def handle_runtime(
     *,
     transport_factory: TransportFactory = RivileTransport,
     artifact_reader: Callable[..., bytes] = read_artifact_bytes,
-    artifact_writer: Callable[..., Mapping[str, Any]] = write_artifact_bytes,
+    artifact_writer: ArtifactWriter = write_artifact_stream,
 ) -> dict[str, Any]:
     """Dispatch one invocation through the closed registry."""
+    transport: RivileTransport | None = None
     try:
         operation_id, raw_input = _envelope(payload)
         if operation_id not in catalog.OPERATION_IDS:
             raise ExtensionError(
-                errors.UNSUPPORTED_OPERATION, "That operation is not part of this extension"
+                errors.UNSUPPORTED_OPERATION,
+                "That operation is not part of this extension",
+                definitely_no_external_effect=True,
+                external_effect_status="failed",
             )
         operation_input = _as_input(raw_input)
         write = operation_id in catalog.WRITE_OPERATION_IDS
         if write and _test_mode(payload):
-            # Validated first, then suppressed before the connection is even read:
-            # a rehearsal can never reach Rivile.
+            # The host suppresses test-mode writes before spawning the extension;
+            # this is the backstop. Validated first, then nothing is sent.
             _validate_only(operation_id, operation_input)
             return _ok(_neutral_result(operation_id))
         connection = connection_from_payload(
@@ -104,11 +136,27 @@ def handle_runtime(
         method = catalog.METHODS_BY_OPERATION[operation_id]
         return _ok(_run_method(context, method))
     except ExtensionError as exc:
+        _mark_unsent(exc, transport)
         return error_response(
             exc.code, exc.message, retry_facts=exc.retry_facts(), data_errors=exc.data_errors
         )
     except Exception:
-        return error_response(errors.INTERNAL_ERROR, "The operation could not be completed")
+        unsent = transport is None or not transport.attempted
+        response = error_response(errors.INTERNAL_ERROR, "The operation could not be completed")
+        if unsent:
+            response["definitely_no_external_effect"] = True
+            response["external_effect_status"] = "failed"
+        return response
+
+
+def _mark_unsent(exc: ExtensionError, transport: RivileTransport | None) -> None:
+    """A failure before any request left the process cannot have had an effect."""
+    if transport is not None and transport.attempted:
+        return
+    if exc.definitely_no_external_effect is None:
+        exc.definitely_no_external_effect = True
+    if exc.definitely_no_external_effect and exc.external_effect_status is None:
+        exc.external_effect_status = "failed"
 
 
 class _Context:
@@ -120,7 +168,7 @@ class _Context:
         connection: Connection,
         transport: RivileTransport,
         artifact_reader: Callable[..., bytes],
-        artifact_writer: Callable[..., Mapping[str, Any]],
+        artifact_writer: ArtifactWriter,
     ) -> None:
         self.payload = payload
         self.operation_input = operation_input
@@ -128,6 +176,10 @@ class _Context:
         self.transport = transport
         self.artifact_reader = artifact_reader
         self.artifact_writer = artifact_writer
+
+    def clock(self) -> float:
+        clock = getattr(self.transport, "clock", None)
+        return float(clock()) if callable(clock) else time.monotonic()
 
 
 # ---------------------------------------------------------------------------
@@ -180,9 +232,12 @@ def _scalar(name: str, value: Any) -> Any:
     raise _invalid(f"{name} must be text or a number")
 
 
-def _positive_int(name: str, value: Any, *, default: int, maximum: int) -> int:
+def _whole(name: str, value: Any, *, default: int, maximum: int) -> int:
+    """A whole number from 1 to ``maximum``; ASCII digit strings are accepted."""
     if value is None:
         return default
+    if isinstance(value, str) and _DIGITS.fullmatch(value.strip()):
+        value = int(value.strip())
     if isinstance(value, bool) or not isinstance(value, int) or value < 1 or value > maximum:
         raise _invalid(f"{name} must be a whole number from 1 to {maximum}")
     return value
@@ -209,6 +264,16 @@ def _allowed_inputs(method: Method) -> set[str]:
     return names
 
 
+def _normalize_param(name: str, wire: str, value: Any) -> Any:
+    value = _scalar(name, value)
+    if wire.lower() in _UPPER_PARAMS and isinstance(value, str):
+        value = value.strip().upper()
+    if wire.lower() == "pagenumber":
+        # Rivile's own examples send the page both as 1 and as "1".
+        value = _whole(name, value, default=1, maximum=1000000)
+    return value
+
+
 def _method_request(
     method: Method, operation_input: Mapping[str, Any]
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
@@ -216,19 +281,17 @@ def _method_request(
     unknown = set(operation_input) - _allowed_inputs(method)
     if unknown:
         raise _invalid(f"Unknown input: {', '.join(sorted(unknown))}")
+    missing = [
+        name
+        for name in method.required
+        if name not in operation_input or operation_input[name] in ("", None)
+    ]
+    if missing:
+        raise _invalid(f"Required input missing: {', '.join(missing)}")
     params: dict[str, Any] = {}
     for name, wire in method.params:
-        if name not in operation_input:
-            continue
-        value = _scalar(name, operation_input[name])
-        if wire.lower() in _UPPER_PARAMS and isinstance(value, str):
-            value = value.strip().upper()
-        if wire.lower() == "pagenumber":
-            # Rivile's own examples send the page both as 1 and as "1".
-            if isinstance(value, str) and value.strip().isdigit():
-                value = int(value.strip())
-            value = _positive_int(name, value, default=1, maximum=1000000)
-        params[wire] = value
+        if name in operation_input:
+            params[wire] = _normalize_param(name, wire, operation_input[name])
     extra = operation_input.get("extra_params")
     if extra is not None:
         if not isinstance(extra, Mapping):
@@ -247,6 +310,10 @@ def _method_request(
     if method.write and method.data_roots and not data:
         roots = ", ".join(method.data_roots)
         raise _invalid(f"data is required: give the {roots} block")
+    if method.method in catalog.SHOW_DOC_DEFAULT_ZERO:
+        wire = method.wire_name("show_doc")
+        if wire and wire not in params:
+            params[wire] = 0
     return params, data
 
 
@@ -255,7 +322,9 @@ def _validate_only(operation_id: str, operation_input: Mapping[str, Any]) -> Non
         _call_method_request(operation_input)
         return
     method = catalog.METHODS_BY_OPERATION[operation_id]
-    _method_request(method, operation_input)
+    params, _data = _method_request(method, operation_input)
+    if method.method in catalog.UPLOAD_METHODS:
+        _upload_needs_content(params, has_file=bool(_text(operation_input.get("document_file"))))
 
 
 # ---------------------------------------------------------------------------
@@ -268,12 +337,17 @@ def _base_result(method: str, reply: Reply | None) -> dict[str, Any]:
     if parsed and parsed.error_message and not data_errors and reply and reply.status != 200:
         data_errors.append({"tag": "", "code": "", "message": parsed.error_message, "data": ""})
     records = parsed.records if parsed else []
+    other = (
+        {tag: rows for tag, rows in parsed.tables.items() if tag != parsed.record_type}
+        if parsed
+        else {}
+    )
     return {
         "method": method,
         "records": records,
         "record": records[0] if records else None,
         "record_type": parsed.record_type if parsed else None,
-        "tables": dict(parsed.tables) if parsed else {},
+        "other_tables": other,
         "count": len(records),
         "data_errors": data_errors,
         "partial_success": bool(reply and reply.status == 207),
@@ -283,16 +357,15 @@ def _base_result(method: str, reply: Reply | None) -> dict[str, Any]:
 
 
 def _neutral_result(operation_id: str) -> dict[str, Any]:
-    method = (
-        catalog.METHODS_BY_OPERATION[operation_id].method
-        if operation_id in catalog.METHODS_BY_OPERATION
-        else ""
-    )
-    result = _base_result(method, None)
     method_row = catalog.METHODS_BY_OPERATION.get(operation_id)
+    result = _base_result(method_row.method if method_row else "", None)
     if method_row is not None and method_row.paged:
-        result.update({"page_number": None, "pages_fetched": 0, "has_more": False})
-    result["external_effect_status"] = "suppressed"
+        result.update(
+            {"page_number": None, "next_page": None, "pages_fetched": 0, "has_more": False}
+        )
+    # Nothing was sent. "failed" + definitely-no-effect is the pair Core accepts
+    # for "no external effect happened"; an extension may not report "suppressed".
+    result["external_effect_status"] = "failed"
     result["definitely_no_external_effect"] = True
     return result
 
@@ -315,6 +388,13 @@ def _ok(result: Mapping[str, Any]) -> dict[str, Any]:
         response["external_effect_status"] = result["external_effect_status"]
         response["definitely_no_external_effect"] = result["definitely_no_external_effect"]
     return response
+
+
+def _strip_documents(rows: Iterable[Any]) -> None:
+    """Drop inline Base64 file content (DOC) from returned rows."""
+    for row in rows:
+        if isinstance(row, dict) and row.get("DOC"):
+            row["DOC"] = None
 
 
 # ---------------------------------------------------------------------------
@@ -345,7 +425,24 @@ def _run_method(context: _Context, method: Method) -> dict[str, Any]:
     result = _base_result(method.method, reply)
     if method.method in catalog.DOWNLOAD_METHODS:
         _save_download(context, result)
+    if method.method in catalog.UPLOAD_METHODS or (
+        method.method in catalog.SHOW_DOC_DEFAULT_ZERO and params.get("show_doc") != 1
+    ):
+        # A write never hands file content back: an echoed multi-MB upload would
+        # overflow the step output after Rivile had already attached the file.
+        _strip_documents(result["records"])
+    if not method.write:
+        budget.ensure_fits(result)
     return _mark_write(result) if method.write else result
+
+
+def _page_size(method: Method, params: Mapping[str, Any]) -> int:
+    """Records per page: 100, or the documented ``top`` when the step sets it."""
+    wire = method.wire_name("top")
+    value = params.get(wire) if wire else None
+    if value is None:
+        return PAGE_SIZE
+    return _whole("top", value, default=PAGE_SIZE, maximum=PAGE_SIZE)
 
 
 def _run_paged(
@@ -353,49 +450,68 @@ def _run_paged(
 ) -> dict[str, Any]:
     inputs = context.operation_input
     fetch_all = _bool("fetch_all_pages", inputs.get("fetch_all_pages"), False)
-    max_pages = _positive_int(
+    max_pages = _whole(
         "max_pages", inputs.get("max_pages"), default=DEFAULT_MAX_PAGES, maximum=MAX_PAGES
     )
-    page_param = method.page_param
+    page_param = method.page_param or "pagenumber"
+    page_size = _page_size(method, params)
     if not fetch_all:
-        reply = context.transport.call(method.method, params, data, mutating=False)
+        reply = context.transport.call(method.method, params, data, mutating=method.write)
         result = _base_result(method.method, reply)
-        result["page_number"] = params.get(page_param) if page_param else None
+        has_more = reply.parsed.top_level_count >= page_size
+        page = params.get(page_param)
+        result["page_number"] = page
+        result["next_page"] = (page or 1) + 1 if has_more else None
         result["pages_fetched"] = 1
-        result["has_more"] = reply.parsed.top_level_count >= PAGE_SIZE
+        result["has_more"] = has_more
+        budget.ensure_fits(result)
         return result
-    page = int(params.get(page_param, 1)) if page_param else 1
-    merged: dict[str, list[dict[str, Any]]] = {}
-    order: list[str] = []
+    page = int(params.get(page_param, 1))
+    records: list[dict[str, Any]] = []
+    other: dict[str, list[dict[str, Any]]] = {}
+    record_type: str | None = None
     data_errors: list[dict[str, str]] = []
+    meter = budget.Meter()
     last: Reply | None = None
+    last_page: int | None = None
     fetched = 0
     has_more = False
     while fetched < max_pages:
-        page_params = {**params, page_param or "pagenumber": page}
-        last = context.transport.call(method.method, page_params, data, mutating=False)
+        reply = context.transport.call(
+            method.method, {**params, page_param: page}, data, mutating=False
+        )
+        page_type = reply.parsed.record_type
+        record_type = record_type or page_type
+        page_rows = reply.parsed.tables.get(record_type or "", [])
+        page_other = {t: r for t, r in reply.parsed.tables.items() if t != record_type}
+        if not meter.admit({"records": page_rows, "other_tables": page_other}):
+            if fetched == 0:
+                raise budget.too_large()
+            # This page does not fit in one step output: stop before it and let
+            # the workflow continue from next_page.
+            has_more = True
+            break
+        last, last_page = reply, page
         fetched += 1
-        for tag in last.parsed.order:
-            if tag not in merged:
-                merged[tag] = []
-                order.append(tag)
-            merged[tag].extend(last.parsed.tables[tag])
-        data_errors.extend(last.parsed.data_errors)
-        has_more = last.parsed.top_level_count >= PAGE_SIZE
+        records.extend(page_rows)
+        for tag, rows in page_other.items():
+            other.setdefault(tag, []).extend(rows)
+        data_errors.extend(reply.parsed.data_errors)
+        has_more = reply.parsed.top_level_count >= page_size
         if not has_more:
             break
         page += 1
     result = _base_result(method.method, last)
-    records = merged.get(order[0], []) if order else []
     result.update(
         {
             "records": records,
             "record": records[0] if records else None,
-            "record_type": order[0] if order else None,
-            "tables": merged,
+            "record_type": record_type,
+            "other_tables": other,
             "count": len(records),
             "data_errors": data_errors,
-            "page_number": page,
+            "page_number": last_page,
+            "next_page": ((last_page or page - 1) + 1) if has_more else None,
             "pages_fetched": fetched,
             "has_more": has_more,
         }
@@ -423,19 +539,20 @@ def _call_method_request(
 
 def _call_method(context: _Context) -> dict[str, Any]:
     method, params, data = _call_method_request(context.operation_input)
-    mutating = not method.startswith(("GET_", "MGAMA_GET_"))
+    known = catalog.METHODS_BY_NAME.get(method)
+    mutating = known.write if known else not method.startswith(("GET_", "MGAMA_GET_"))
     reply = context.transport.call(method, params, data, mutating=mutating)
     result = _base_result(method, reply)
-    if mutating:
-        return _mark_write(result)
-    result["external_effect_status"] = "succeeded"
-    result["definitely_no_external_effect"] = True
-    return result
+    if not mutating:
+        budget.ensure_fits(result)
+    # call_method is a declared external effect whatever it sends; "succeeded"
+    # with "may have an effect" is the consistent, conservative pair.
+    return _mark_write(result)
 
 
 def _export_list(context: _Context) -> dict[str, Any]:
     inputs = context.operation_input
-    unknown = set(inputs) - {"connection_ref", "method", "params", "max_pages"}
+    unknown = set(inputs) - {"connection_ref", "method", "params", "max_pages", "start_page"}
     if unknown:
         raise _invalid(f"Unknown input: {', '.join(sorted(unknown))}")
     method_name = _text(inputs.get("method")).upper()
@@ -446,22 +563,27 @@ def _export_list(context: _Context) -> dict[str, Any]:
     if not isinstance(raw_params, Mapping):
         raise _invalid("params must be an object")
     page_param = method.page_param or "pagenumber"
-    params = {
-        str(k): _scalar(f"params.{k}", v)
-        for k, v in raw_params.items()
-        if str(k).lower() != "pagenumber"
-    }
-    max_pages = _positive_int(
+    params: dict[str, Any] = {}
+    for key, value in raw_params.items():
+        key_text = str(key).strip()
+        if key_text.lower() == "pagenumber":
+            continue
+        params[method.wire_name(key_text.lower()) or key_text] = _normalize_param(
+            f"params.{key_text}", key_text, value
+        )
+    max_pages = _whole(
         "max_pages", inputs.get("max_pages"), default=EXPORT_MAX_PAGES, maximum=EXPORT_MAX_PAGES
     )
+    page = _whole("start_page", inputs.get("start_page"), default=1, maximum=1000000)
+    page_size = _page_size(method, params)
+    started = context.clock()
     chunks: list[bytes] = []
-    total = 0
-    count = 0
-    fetched = 0
+    total = count = fetched = 0
     complete = False
     record_type: str | None = None
-    page = 1
     while fetched < max_pages:
+        if context.clock() - started > EXPORT_READ_DEADLINE_SECONDS:
+            break
         reply = context.transport.call(
             method.method, {**params, page_param: page}, None, mutating=False
         )
@@ -469,8 +591,9 @@ def _export_list(context: _Context) -> dict[str, Any]:
         record_type = record_type or reply.parsed.record_type
         for tag in reply.parsed.order:
             for record in reply.parsed.tables[tag]:
-                line = json.dumps({"_table": tag, **record}, ensure_ascii=False) + "\n"
-                encoded = line.encode("utf-8")
+                encoded = (
+                    json.dumps({"_table": tag, **record}, ensure_ascii=False) + "\n"
+                ).encode()
                 total += len(encoded)
                 if total > MAX_EXPORT_BYTES:
                     raise ExtensionError(
@@ -479,36 +602,25 @@ def _export_list(context: _Context) -> dict[str, Any]:
                     )
                 chunks.append(encoded)
                 count += 1
-        if reply.parsed.top_level_count < PAGE_SIZE:
+        page += 1
+        if reply.parsed.top_level_count < page_size:
             complete = True
             break
-        page += 1
-    try:
-        written = context.artifact_writer(
-            dict(context.payload),
-            b"".join(chunks),
-            binding_key=catalog.EXPORT_BINDING,
-            content_type="application/x-ndjson",
-            timeout_seconds=300.0,
-        )
-    except ExtensionError:
-        raise
-    except Exception as exc:
-        raise ExtensionError(
-            errors.ARTIFACT_OUTPUT_UNAVAILABLE, "The export file could not be saved"
-        ) from exc
-    handle = _text(written.get("artifact_handle")) if isinstance(written, Mapping) else ""
-    if not handle:
-        raise ExtensionError(
-            errors.ARTIFACT_OUTPUT_UNAVAILABLE, "The export file could not be saved"
-        )
+    handle = _write_artifact(
+        context,
+        chunks,
+        binding_key=catalog.EXPORT_BINDING,
+        content_type=EXPORT_CONTENT_TYPE,
+        what="The export file",
+    )
     return {
         "artifact_handle": handle,
-        "filename": f"rivile-{method.method.lower()}.jsonl",
-        "content_type": "application/x-ndjson",
+        "filename": EXPORT_FILENAME,
+        "content_type": EXPORT_CONTENT_TYPE,
         "record_count": count,
         "pages_fetched": fetched,
         "complete": complete,
+        "resume_page": None if complete else page,
         "record_type": record_type,
     }
 
@@ -517,16 +629,43 @@ def _export_list(context: _Context) -> dict[str, Any]:
 # Files
 
 
+def _write_artifact(
+    context: _Context, chunks: list[bytes], *, binding_key: str, content_type: str, what: str
+) -> str:
+    try:
+        written = context.artifact_writer(
+            dict(context.payload),
+            chunks,
+            binding_key=binding_key,
+            content_type=content_type,
+            timeout_seconds=ARTIFACT_WRITE_TIMEOUT_SECONDS,
+        )
+    except ExtensionError:
+        raise
+    except Exception as exc:
+        raise ExtensionError(
+            errors.ARTIFACT_OUTPUT_UNAVAILABLE, f"{what} could not be saved"
+        ) from exc
+    handle = _text(written.get("artifact_handle")) if isinstance(written, Mapping) else ""
+    if not handle:
+        raise ExtensionError(errors.ARTIFACT_OUTPUT_UNAVAILABLE, f"{what} could not be saved")
+    return handle
+
+
+def _upload_needs_content(params: Mapping[str, Any], *, has_file: bool) -> None:
+    """Attaching (oper I) needs content; updating metadata (U) or deleting (D) does not."""
+    oper = str(params.get("oper") or "I").upper()
+    if oper == "I" and not has_file and not params.get("doc") and not params.get("nuoroda"):
+        raise _invalid("Give document_file, doc (Base64) or nuoroda (a link)")
+    if has_file and params.get("doc"):
+        raise _invalid("Give either document_file or doc, not both")
+
+
 def _attach_upload(context: _Context, params: dict[str, Any]) -> None:
     handle = _text(context.operation_input.get("document_file"))
+    _upload_needs_content(params, has_file=bool(handle))
     if not handle:
-        if not params.get("doc") and not params.get("nuoroda"):
-            oper = str(params.get("oper") or "I").upper()
-            if oper != "D":
-                raise _invalid("Give document_file, doc (Base64) or nuoroda (a link)")
         return
-    if params.get("doc"):
-        raise _invalid("Give either document_file or doc, not both")
     try:
         body = context.artifact_reader(dict(context.payload), artifact_id=handle)
     except ExtensionError:
@@ -536,14 +675,25 @@ def _attach_upload(context: _Context, params: dict[str, Any]) -> None:
             errors.ARTIFACT_INPUT_UNAVAILABLE,
             "document_file could not be read from Flow Steward storage",
             definitely_no_external_effect=True,
+            external_effect_status="failed",
         ) from exc
     if not isinstance(body, (bytes, bytearray)) or not body:
         raise _invalid("document_file is empty")
     if len(body) > MAX_UPLOAD_BYTES:
         raise _invalid("document_file is larger than 15 MB")
-    params["doc"] = base64.b64encode(bytes(body)).decode("ascii")
     if not params.get("ext"):
-        params["ext"] = _extension_of(context.payload, handle) or ".pdf"
+        ext = _extension_of(context.payload, handle) or _sniff_extension(bytes(body[:16]))
+        if not ext:
+            raise _invalid("The file type of document_file is unknown; set ext, for example .pdf")
+        params["ext"] = ext
+    params["doc"] = base64.b64encode(bytes(body)).decode("ascii")
+
+
+def _sniff_extension(head: bytes) -> str:
+    for signature, ext in _SIGNATURES:
+        if head.startswith(signature):
+            return ext
+    return ""
 
 
 def _extension_of(payload: Mapping[str, Any], handle: str) -> str:
@@ -562,7 +712,8 @@ def _extension_of(payload: Mapping[str, Any], handle: str) -> str:
 
 def _save_download(context: _Context, result: dict[str, Any]) -> None:
     result["document_file"] = None
-    result["document_filename"] = None
+    result["original_filename"] = None
+    result["original_content_type"] = None
     if not _bool("save_document_file", context.operation_input.get("save_document_file"), True):
         return
     record = result.get("record")
@@ -586,31 +737,25 @@ def _save_download(context: _Context, result: dict[str, Any]) -> None:
     if ext and not ext.startswith("."):
         ext = "." + ext
     code = re.sub(r"[^A-Za-z0-9_-]+", "", str(record.get("KODAS_PO") or "document")) or "document"
-    filename = f"{code}{ext}"
-    try:
-        written = context.artifact_writer(
-            dict(context.payload),
-            body,
-            binding_key=catalog.DOWNLOAD_BINDING,
-            content_type=_CONTENT_TYPES.get(ext, "application/octet-stream"),
-            timeout_seconds=120.0,
-        )
-    except Exception as exc:
-        raise ExtensionError(
-            errors.ARTIFACT_OUTPUT_UNAVAILABLE, "The document file could not be saved"
-        ) from exc
-    handle = _text(written.get("artifact_handle")) if isinstance(written, Mapping) else ""
-    if not handle:
-        raise ExtensionError(
-            errors.ARTIFACT_OUTPUT_UNAVAILABLE, "The document file could not be saved"
-        )
-    # The file now travels as a handle; the Base64 copy is dropped so the step
-    # output stays small.
-    for row in result["records"]:
-        if isinstance(row, dict) and "DOC" in row:
-            row["DOC"] = None
+    handle = _write_artifact(
+        context,
+        [body],
+        binding_key=catalog.DOWNLOAD_BINDING,
+        content_type=DOWNLOAD_CONTENT_TYPE,
+        what="The document file",
+    )
+    # The file travels as a handle; the Base64 copy is dropped from the output.
+    _strip_documents(result["records"])
     result["document_file"] = handle
-    result["document_filename"] = filename
+    result["original_filename"] = f"{code}{ext}"
+    result["original_content_type"] = _CONTENT_TYPES.get(ext, DOWNLOAD_CONTENT_TYPE)
 
 
-__all__ = ["DEFAULT_MAX_PAGES", "MAX_PAGES", "PAGE_SIZE", "handle_runtime"]
+__all__ = [
+    "DEFAULT_MAX_PAGES",
+    "DOWNLOAD_CONTENT_TYPE",
+    "EXPORT_CONTENT_TYPE",
+    "MAX_PAGES",
+    "PAGE_SIZE",
+    "handle_runtime",
+]

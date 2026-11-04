@@ -23,20 +23,29 @@
 - Operation id = Rivilė method in lower case: `EDIT_N08` → `edit_n08`, `GET_I06_LIST` → `get_i06_list`.
 - Every documented param is a typed input (`oper`, `fil`, `list`, `error_action`, `page_number`, …);
   `data` is Rivilė's data block with Rivilė's field names; `extra_params` passes undocumented params.
-- Outputs: `records`, `record`, `record_type`, `tables`, `count`, `data_errors`, `partial_success`,
-  `http_status`, `duration_ms` (+ `page_number`, `pages_fetched`, `has_more` for lists).
-- Lists: `page_number`, or `fetch_all_pages` + `max_pages` (paced with Rivilė's `X-RateLimit-*` headers).
-- Files: `edit_i06_doc` / `edit_i06_docs` take a workflow file in `document_file`;
-  `get_i06_doc` saves the attachment as a workflow file.
+- Outputs: `records`, `record`, `record_type`, `other_tables`, `count`, `data_errors`, `partial_success`,
+  `http_status`, `duration_ms` (+ `page_number`, `next_page`, `pages_fetched`, `has_more` for lists).
+- Lists: `page_number`, or `fetch_all_pages` + `max_pages`. Reads stop at the last page that fits one
+  step output (the host's secret-scan budget and the 4.5 MiB output cap) and report `next_page`.
+- Files: `edit_i06_doc` / `edit_i06_docs` take a workflow file in `document_file` (sent with
+  `show_doc` 0); `get_i06_doc` saves the attachment as a workflow file (`rivile-document.bin`,
+  `application/octet-stream`; the Rivilė name/type are in `original_filename` / `original_content_type`).
+- `export_list` stops reading after 360 s, saves what it has, and returns `complete: false` with
+  `resume_page` (pass it as `start_page`).
+- Page param: the guide spells it `pagenumber` on most pages and `pageNumber` on a few (`GET_N07_LIST`,
+  `GET_N09_LIST`); each operation sends the spelling its own page documents. Not verified against a live key.
 
 ## Writes and failures
 
-All writes (`EDIT_*`, `INIT_TRIGGER`, `call_method`) are declared external effects: recorded in the
-host ledger, suppressed in test runs. HTTP 400 fails with Rivilė's `dataError` details and no effect;
-207 succeeds with `partial_success: true`; 502 (gateway down) is retryable with no effect; a timeout,
-500 or 504 on a write is `timeout_unknown` and is not retried.
+All writes (`EDIT_*`, `INIT_TRIGGER`, `GET_USER_PROC`, `call_method`) are declared external effects:
+recorded in the host ledger, suppressed in test runs. HTTP 400 fails with Rivilė's `dataError` details
+and no effect; 207 succeeds with `partial_success: true`; 429 and 423 (record locked) are retried with
+1/2/4/8 s backoff; on reads 502/503 are retryable; on writes a timeout or 500/502/503/504 is
+`timeout_unknown` and is not retried. Pacing is per process (per step).
 
-Responses are parsed as XML with `defusedxml` (no DTDs or entities). The API key is never echoed.
+Responses are parsed as XML with `defusedxml` (no DTDs or entities). The API key is never echoed, and is
+redacted from any Rivilė error text. Trailing padding is trimmed; leading spaces (significant in Rivilė
+codes) are kept.
 
 ## Development
 

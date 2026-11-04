@@ -115,6 +115,8 @@ def test_every_documented_example_is_accepted(method_name: str, example: dict[st
         pytest.skip("the documented example has no data block")
     params, data = _method_request(method, operation_input)
     documented = {k.lower() for k in (example.get("params") or {})}
+    if method.method in catalog.SHOW_DOC_DEFAULT_ZERO:
+        documented.add("show_doc")  # this extension sends show_doc=0 by default
     assert {k.lower() for k in params} == documented
     if isinstance(example.get("data"), dict):
         assert data == example["data"]
@@ -130,6 +132,8 @@ def test_neutral_test_mode_result_has_every_declared_output() -> None:
         inputs: dict[str, Any] = {"data": data} if data else {}
         if method.method in catalog.UPLOAD_METHODS:
             inputs["doc"] = "AA=="
+        for name in method.required:
+            inputs.setdefault(name, "PO" if name == "module" else "X")
         response = handle_runtime(payload(operation_id, inputs, test_mode=True))
         assert response["ok"] is True, (operation_id, response)
         declared = {o["name"] for o in operations[operation_id]["outputs"]}
@@ -140,7 +144,8 @@ def test_no_forbidden_json_authoring_files() -> None:
     forbidden = [
         p
         for p in BUNDLE_ROOT.rglob("*.json")
-        if "tests" not in p.relative_to(BUNDLE_ROOT).parts and ".fs-python" not in p.parts
+        if "tests" not in p.relative_to(BUNDLE_ROOT).parts
+        and not any(part.startswith(".") for part in p.relative_to(BUNDLE_ROOT).parts)
     ]
     assert forbidden == []
 

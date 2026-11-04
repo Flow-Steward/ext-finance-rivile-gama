@@ -21,10 +21,18 @@ class Method:
     data_roots: tuple[str, ...]
     title: str
     group: str
+    required: tuple[str, ...] = ()
 
     @property
     def operation_id(self) -> str:
         return self.method.lower()
+
+    def wire_name(self, lowered: str) -> str:
+        """The documented wire name of a param, matched case-insensitively, or ''."""
+        for _name, wire in self.params:
+            if wire.lower() == lowered:
+                return wire
+        return ""
 
     @property
     def page_param(self) -> str:

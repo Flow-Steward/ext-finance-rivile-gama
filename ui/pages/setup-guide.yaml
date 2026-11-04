@@ -35,24 +35,25 @@ components:
 
       Methods that create a document with lines (`*_FULL`) take the lines inside the header, for example `{"I06": {…, "I07": [{…}, {…}]}}`. Extra fields `PAP_1`, `PAP_2`… and dimensions `I49_DIM01`… pass through unchanged. `extra_params` passes any param this release does not list.
 
-      **Outputs.** Every operation returns `records` (the main returned table), `record` (the first one — for writes, the saved record with its new code), `tables` (every returned table by tag), `count`, `data_errors` (Rivilė's `tag`, `code`, `message` per refused field), `partial_success` and `http_status`. Values are text exactly as Rivilė sent them; numbers keep Rivilė's decimals.
+      **Outputs.** Every operation returns `records` (the main returned table), `record` (the first one — for writes, the saved record with its new code), `other_tables` (any further top-level tables, by tag), `count`, `data_errors` (Rivilė's `tag`, `code`, `message` per refused field), `partial_success` and `http_status`. Values are text exactly as Rivilė sent them; numbers keep Rivilė's decimals. With **Trim values** on, only trailing padding is removed — leading spaces in Rivilė codes are significant and are kept.
 
-      **Lists.** Rivilė returns 100 records per page. Set `page_number`, or turn on `fetch_all_pages` (up to `max_pages`, default 10). For whole tables use **Export a Rivile list to a JSONL file**, which writes every record to a workflow file. Rivilė recommends filtering by the last key you received rather than paging deep, and the `*_TIME` methods (after **Enable change tracking (INIT_TRIGGER)**) for syncing only changes.
+      **Lists.** Rivilė returns 100 records per page. Set `page_number`, or turn on `fetch_all_pages` (up to `max_pages`, default 10). One step output has a size limit, so a multi-page read stops at the last page that fits and reports `has_more` and `next_page` — continue from there, or use **Export a Rivile list to a JSONL file** for whole tables. A long export stops before the step time limit, saves what it read and returns `complete: false` with `resume_page` for the next run (`start_page`). Rivilė recommends filtering by the last key you received rather than paging deep, and the `*_TIME` methods (after **Enable change tracking (INIT_TRIGGER)**) for syncing only changes.
 
-      **Files.** **Purchase/sales document: attach… (EDIT_I06_DOC / EDIT_I06_DOCS)** take a workflow file in `document_file` — for example the invoice PDF from an earlier step — and Base64-encode it for Rivilė. **…download the attached file (GET_I06_DOC)** saves the attachment as a workflow file (`document_file` output).
+      **Files.** **Purchase/sales document: attach… (EDIT_I06_DOC / EDIT_I06_DOCS)** take a workflow file in `document_file` — for example the invoice PDF from an earlier step — and Base64-encode it for Rivilė; `ext` comes from the file name or content, otherwise set it. Rivilė is asked not to echo the file back (`show_doc` 0). **…download the attached file (GET_I06_DOC)** saves the attachment as a workflow file (`document_file` output, stored as `rivile-document.bin`); `original_filename` and `original_content_type` give its name and type in Rivilė.
 
       **Anything else.** **Call any Rivile method** sends any method name with raw params and data, for methods Rivilė adds later.
   - component_id: setup_safety
     type: markdown
     title: 4. Writes, retries and errors
     body: |
-      - **Every write is recorded.** All `EDIT_*` operations, `INIT_TRIGGER` and **Call any Rivile method** go through the external-effect ledger: a retried step does not send the same write twice.
-      - **Test runs never write.** In a test run, writes are validated and then suppressed (`external_effect_status: suppressed`); reads still run.
+      - **Every write is recorded.** All `EDIT_*` operations, `INIT_TRIGGER`, **Run a user stored procedure (GET_USER_PROC)** and **Call any Rivile method** go through the external-effect ledger: a retried step does not send the same write twice.
+      - **Test runs never write.** Flow Steward suppresses writes in a test run before they reach the extension; reads still run.
       - **HTTP 400** — Rivilė refused the data; nothing was saved. The step fails with Rivilė's message and every `dataError` (field, code, text) in its errors.
       - **HTTP 207** — part succeeded (`*_FULL` methods with `error_action` EXIT or CONTINUE). The step succeeds with `partial_success: true`; read `data_errors` to see which lines were refused.
-      - **Gateway unavailable (502)** — the gateway is down; nothing reached the database. Safe to retry.
-      - **Timeout or 500/504 on a write** — Rivilė may or may not have saved it. The step fails with `timeout_unknown` and is not retried automatically: check the document in Rivilė first.
-      - **Rate limit** — Rivilė allows 10 requests per second per key (30 at peak). Multi-page reads and exports pace themselves using Rivilė's `X-RateLimit-*` headers.
+      - **Gateway unavailable (502/503) on a read** — the gateway is down. The read is retried.
+      - **Timeout or 500/502/503/504 on a write** — Rivilė may or may not have saved it (the gateway can fail after committing). The step fails with `timeout_unknown` and is not retried automatically: check the document in Rivilė first.
+      - **Record locked (423)** — another Rivilė user is editing the record (`RGI_RAK`); nothing was changed. The request is repeated after 1, 2, 4 and 8 seconds, then the step fails as retryable.
+      - **Rate limit (429)** — Rivilė allows 10 requests per second per key (30 at peak). The extension paces with Rivilė's `X-RateLimit-*` headers and, on 429, stops and backs off 1, 2, 4, 8 seconds as Rivilė requires. Pacing is per step: steps running in parallel on the same key share Rivilė's budget, so prefer a separate key per integration.
   - component_id: setup_database_engine
     type: markdown
     title: 5. MS SQL and Sybase treat empty values differently
