@@ -14,8 +14,8 @@ description: Rivilė GAMA REST API v2 for workflows. Everyday steps — create s
   payments, inventory, general ledger, payroll, personnel, POS and more) as a typed workflow operation.
 vendor:
   name: Flow Steward
-  support_url: https://github.com/Flow-Steward/ext-accounting-rivile-gama/issues
-  website_url: https://github.com/Flow-Steward/ext-accounting-rivile-gama
+  support_url: https://github.com/Flow-Steward/ext-finance-rivile/issues
+  website_url: https://github.com/Flow-Steward/ext-finance-rivile
 listing:
   category: finance
   tags:
