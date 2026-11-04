@@ -47,7 +47,7 @@ CHUNK_BYTES = 64 * 1024
 MIN_INTERVAL_SECONDS = 0.11
 #: 429/423 retries: wait 1, 2, 4, 8 seconds (Rivile asks for at least 1 s, doubling).
 BACKOFF_SECONDS: tuple[float, ...] = (1.0, 2.0, 4.0, 8.0)
-_USER_AGENT = "FlowSteward-RivileGama/1.0"
+_USER_AGENT = "FlowSteward-RivileGama/0.1"
 #: RGI_RAK: "423: Įrašas užrakintas kito vartotojo [VARTOTOJAS]. Bandykite vėliau",
 #: as the whole errorMessage of a refused request. Only that position counts: a
 #: dataError's echoed data is the caller's own text.

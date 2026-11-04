@@ -1,6 +1,10 @@
 # Changelog
 
-## 1.1.0
+## 0.1.0 — unreleased
+
+First release, not yet verified against a live Rivilė GAMA key (1.0.0 follows that check).
+
+### Everyday operations
 
 - Eleven everyday operations, listed first in the step picker: Find or create customer / supplier,
   Create sales invoice, Create purchase invoice, Attach file to document, Download document file,
@@ -10,7 +14,7 @@
 - Composite writes report exactly what was created when a later call fails, and are not retried.
 - Own connector icon; listing categories finance, inventory, hr.
 
-## 1.0.0
+### Complete Rivilė GAMA API v2 coverage and hardening
 
 Review fixes before the first release:
 
