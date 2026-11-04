@@ -29,6 +29,10 @@ listing:
   - payroll
   summary: Read and write everything Rivilė GAMA API v2 exposes — 209 methods as workflow steps, from
     clients and goods to invoices with VAT, payments and stock.
+  categories:
+  - finance
+  - inventory
+  - hr
 features:
 - tool
 - action
