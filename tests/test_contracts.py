@@ -236,3 +236,12 @@ def test_no_page_uses_a_markdown_table() -> None:
         for component in yaml.safe_load(path.read_text("utf-8"))["components"]:
             for line in str(component.get("body", "")).splitlines():
                 assert not line.lstrip().startswith("|"), f"{path.name}: {line}"
+
+
+def test_pages_do_not_list_effect_plumbing() -> None:
+    for path in (BUNDLE_ROOT / "ui" / "pages").glob("*.yaml"):
+        if path.name == "changelog.yaml":
+            continue
+        text = path.read_text("utf-8")
+        assert "external_effect_status" not in text, path.name
+        assert "definitely_no_external_effect" not in text, path.name

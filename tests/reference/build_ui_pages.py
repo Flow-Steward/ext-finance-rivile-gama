@@ -145,8 +145,13 @@ def _inputs(op: dict[str, Any]) -> str:
     return ", ".join(parts) if parts else "none"
 
 
+#: Host plumbing for the external-effect record: declared in the contract, not shown to users.
+HIDDEN_RESULTS = frozenset(WRITE_RESULTS)
+
+
 def _results(op: dict[str, Any]) -> list[str]:
-    return [name.removeprefix("result.") for name in op["result_fields"]]
+    names = [name.removeprefix("result.") for name in op["result_fields"]]
+    return [name for name in names if name not in HIDDEN_RESULTS]
 
 
 def _kind(op: dict[str, Any]) -> str:
@@ -230,8 +235,6 @@ def _advanced_section(op: dict[str, Any], row: dict[str, Any] | None) -> list[st
         base = "standard results"
         if any(r in LIST_RESULTS for r in results):
             base += " + list results"
-        if any(r in WRITE_RESULTS for r in results):
-            base += " + write results"
         results_line = base + (f", {_names(extra)}" if extra else "")
     lines = [f"### {_plain_title(op)}", ""]
     if summary:
@@ -292,9 +295,6 @@ def advanced_page(ops: list[dict[str, Any]], rows: list[dict[str, Any]]) -> dict
                 "",
                 "- **Standard results:** " + _names(list(COMMON_RESULTS)) + ".",
                 "- **List results** (methods that page): " + _names(list(LIST_RESULTS)) + ".",
-                "- **Write results** (methods that change data): "
-                + _names(list(WRITE_RESULTS))
-                + ".",
                 "",
                 "`records` is the main returned table and `record` its first row — for a write, the "
                 "saved record with its new code.",

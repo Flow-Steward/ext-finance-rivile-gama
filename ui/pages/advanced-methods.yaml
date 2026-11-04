@@ -14,7 +14,6 @@ components:
 
     - **Standard results:** `method`, `records`, `record`, `record_type`, `other_tables`, `count`, `data_errors`, `partial_success`, `http_status`, `duration_ms`.
     - **List results** (methods that page): `page_number`, `next_page`, `pages_fetched`, `has_more`.
-    - **Write results** (methods that change data): `external_effect_status`, `definitely_no_external_effect`.
 
     `records` is the main returned table and `record` its first row — for a write, the saved record with its new code.
 - component_id: advanced_coverage
@@ -39,7 +38,7 @@ components:
 
     - Action id: `edit_k56` · write · Rivilė method: [EDIT_K56](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k56)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### CRM operations: list (GET_K56_LIST)
 
@@ -55,7 +54,7 @@ components:
 
     - Action id: `edit_k42` · write · Rivilė method: [EDIT_K42](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k42)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Document management (DVS) operations: list (GET_K42_LIST)
 
@@ -74,7 +73,7 @@ components:
 
     - Action id: `edit_n33` · write · Rivilė method: [EDIT_N33](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n33)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Clients changed since a date (GET_CLIENTS_TIME)
 
@@ -90,7 +89,7 @@ components:
 
     - Action id: `edit_n08_full` · write · Rivilė method: [EDIT_N08_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n08_full)
     - Inputs: `error_action` (optional), `user` (optional), `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Clients: create, update or delete (EDIT_N08)
 
@@ -98,7 +97,7 @@ components:
 
     - Action id: `edit_n08` · write · Rivilė method: [EDIT_N08](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n08)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Clients: list with alternative addresses (GET_N08_LIST)
 
@@ -117,7 +116,7 @@ components:
 
     - Action id: `edit_i52` · write · Rivilė method: [EDIT_I52](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i52)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Collector operations: create with lines (EDIT_I51_FULL)
 
@@ -125,7 +124,7 @@ components:
 
     - Action id: `edit_i51_full` · write · Rivilė method: [EDIT_I51_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i51_full)
     - Inputs: `error_action` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Collector operations: create, update or delete (EDIT_I51)
 
@@ -133,7 +132,7 @@ components:
 
     - Action id: `edit_i51` · write · Rivilė method: [EDIT_I51](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i51)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Collector operations: list (GET_I51_LIST)
 
@@ -152,7 +151,7 @@ components:
 
     - Action id: `edit_n52` · write · Rivilė method: [EDIT_N52](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n52)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Contract annexes: list (GET_N52_LIST)
 
@@ -168,7 +167,7 @@ components:
 
     - Action id: `edit_n51_full` · write · Rivilė method: [EDIT_N51_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n51_full)
     - Inputs: `error_action` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Contracts: create, update or delete (EDIT_N51)
 
@@ -176,7 +175,7 @@ components:
 
     - Action id: `edit_n51` · write · Rivilė method: [EDIT_N51](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n51)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Contracts: list (GET_N51_LIST)
 
@@ -203,7 +202,7 @@ components:
 
     - Action id: `edit_i32` · write · Rivilė method: [EDIT_I32](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i32)
     - Inputs: `oper` (optional), `error_action` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Debtor/creditor operations: create with lines (EDIT_I31_FULL)
 
@@ -211,7 +210,7 @@ components:
 
     - Action id: `edit_i31_full` · write · Rivilė method: [EDIT_I31_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i31_full)
     - Inputs: `error_action` (optional), `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Debtor/creditor operations: create, update, post or delete (EDIT_I31)
 
@@ -219,7 +218,7 @@ components:
 
     - Action id: `edit_i31` · write · Rivilė method: [EDIT_I31](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i31)
     - Inputs: `oper` (optional), `error_action` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Debtor/creditor operations: list (GET_I31_LIST)
 
@@ -243,7 +242,7 @@ components:
 
     - Action id: `edit_k62` · write · Rivilė method: [EDIT_K62](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k62)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Payment operations: create with lines (EDIT_I53_FULL)
 
@@ -251,7 +250,7 @@ components:
 
     - Action id: `edit_i53_full` · write · Rivilė method: [EDIT_I53_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i53_full)
     - Inputs: `error_action` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Payment operations: create, update, post or delete (EDIT_I53)
 
@@ -259,7 +258,7 @@ components:
 
     - Action id: `edit_i53` · write · Rivilė method: [EDIT_I53](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i53)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Payment operations: list (GET_I53_LIST)
 
@@ -294,7 +293,7 @@ components:
 
     - Action id: `edit_n39` · write · Rivilė method: [EDIT_N39](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n39)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Fixed asset cards: list (GET_N39_LIST)
 
@@ -310,7 +309,7 @@ components:
 
     - Action id: `edit_n41` · write · Rivilė method: [EDIT_N41](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n41)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Fixed asset groups: list (GET_N41_LIST)
 
@@ -326,7 +325,7 @@ components:
 
     - Action id: `edit_i26` · write · Rivilė method: [EDIT_I26](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i26)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Fixed asset operations: create with lines (EDIT_I25_FULL)
 
@@ -334,7 +333,7 @@ components:
 
     - Action id: `edit_i25_full` · write · Rivilė method: [EDIT_I25_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i25_full)
     - Inputs: `error_action` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Fixed asset operations: create, update or delete (EDIT_I25)
 
@@ -342,7 +341,7 @@ components:
 
     - Action id: `edit_i25` · write · Rivilė method: [EDIT_I25](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i25)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Fixed asset operations: list (GET_I25_LIST)
 
@@ -385,7 +384,7 @@ components:
 
     - Action id: `edit_i02_full` · write · Rivilė method: [EDIT_I02_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i02_full)
     - Inputs: `error_action` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### General ledger entries: create, update, post or delete (EDIT_I02)
 
@@ -393,7 +392,7 @@ components:
 
     - Action id: `edit_i02` · write · Rivilė method: [EDIT_I02](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i02)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### General ledger entries: list (GET_I02_LIST)
 
@@ -409,7 +408,7 @@ components:
 
     - Action id: `edit_i03` · write · Rivilė method: [EDIT_I03](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i03)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### General ledger journals: create, update or delete (EDIT_I01)
 
@@ -417,7 +416,7 @@ components:
 
     - Action id: `edit_i01` · write · Rivilė method: [EDIT_I01](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i01)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 - component_id: advanced_group_8
   type: markdown
   title: Internal documents
@@ -428,7 +427,7 @@ components:
 
     - Action id: `edit_i10` · write · Rivilė method: [EDIT_I10](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i10)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Internal documents: copy and change (EDIT_I09_KOP)
 
@@ -436,7 +435,7 @@ components:
 
     - Action id: `edit_i09_kop` · write · Rivilė method: [EDIT_I09_KOP](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i09_kop)
     - Inputs: `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Internal documents: create with lines (EDIT_I09_FULL)
 
@@ -444,7 +443,7 @@ components:
 
     - Action id: `edit_i09_full` · write · Rivilė method: [EDIT_I09_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i09_full)
     - Inputs: `error_action` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Internal documents: create, update, post or delete (EDIT_I09)
 
@@ -452,7 +451,7 @@ components:
 
     - Action id: `edit_i09` · write · Rivilė method: [EDIT_I09](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i09)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Internal documents: list (GET_I09_LIST)
 
@@ -479,7 +478,7 @@ components:
 
     - Action id: `edit_i12` · write · Rivilė method: [EDIT_I12](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i12)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Inventory operations: create with lines (EDIT_I11_FULL)
 
@@ -487,7 +486,7 @@ components:
 
     - Action id: `edit_i11_full` · write · Rivilė method: [EDIT_I11_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i11_full)
     - Inputs: `error_action` (optional), `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Inventory operations: create, update, post or delete (EDIT_I11)
 
@@ -495,7 +494,7 @@ components:
 
     - Action id: `edit_i11` · write · Rivilė method: [EDIT_I11](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i11)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Inventory operations: list (GET_I11_LIST)
 
@@ -530,7 +529,7 @@ components:
 
     - Action id: `edit_k79` · write · Rivilė method: [EDIT_K79](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k79)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Gift voucher operations: create with lines (EDIT_K78_FULL)
 
@@ -538,7 +537,7 @@ components:
 
     - Action id: `edit_k78_full` · write · Rivilė method: [EDIT_K78_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k78_full)
     - Inputs: `error_action` (optional), `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Gift voucher operations: create, update, post or delete (EDIT_K78)
 
@@ -546,7 +545,7 @@ components:
 
     - Action id: `edit_k78` · write · Rivilė method: [EDIT_K78](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k78)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Gift voucher operations: list (GET_K78_LIST)
 
@@ -562,7 +561,7 @@ components:
 
     - Action id: `edit_n77` · write · Rivilė method: [EDIT_N77](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n77)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Gift vouchers: list (GET_N77_LIST)
 
@@ -578,7 +577,7 @@ components:
 
     - Action id: `edit_n64` · write · Rivilė method: [EDIT_N64](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n64)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Loyalty cards: list (GET_N64_LIST)
 
@@ -594,7 +593,7 @@ components:
 
     - Action id: `edit_i64` · write · Rivilė method: [EDIT_I64](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i64)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Loyalty points: list (GET_I64_LIST)
 
@@ -621,7 +620,7 @@ components:
 
     - Action id: `edit_i61_full` · write · Rivilė method: [EDIT_I61_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i61_full)
     - Inputs: `response_type` (optional), `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### POS operations: list (GET_I61_LIST)
 
@@ -637,7 +636,7 @@ components:
 
     - Action id: `edit_i61_perk` · write · Rivilė method: [EDIT_I61_PERK](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i61_perk)
     - Inputs: `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### POS parameters: list (GET_I63_LIST)
 
@@ -653,7 +652,7 @@ components:
 
     - Action id: `edit_i61_opt` · write · Rivilė method: [EDIT_I61_OPT](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i61_opt)
     - Inputs: `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 - component_id: advanced_group_12
   type: markdown
   title: Payroll
@@ -664,7 +663,7 @@ components:
 
     - Action id: `edit_a11` · write · Rivilė method: [EDIT_A11](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a11)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Employee accruals and deductions: list (GET_A11_LIST)
 
@@ -680,7 +679,7 @@ components:
 
     - Action id: `edit_a08` · write · Rivilė method: [EDIT_A08](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a08)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Employee departments: create, update or delete (EDIT_A07)
 
@@ -688,7 +687,7 @@ components:
 
     - Action id: `edit_a07` · write · Rivilė method: [EDIT_A07](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a07)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Employees: create with departments and banks (EDIT_A06_FULL)
 
@@ -696,7 +695,7 @@ components:
 
     - Action id: `edit_a06_full` · write · Rivilė method: [EDIT_A06_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a06_full)
     - Inputs: `error_action` (optional), `user` (optional), `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Employees: create, update or delete (EDIT_A06)
 
@@ -704,7 +703,7 @@ components:
 
     - Action id: `edit_a06` · write · Rivilė method: [EDIT_A06](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a06)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Employees: list (GET_A06_LIST)
 
@@ -720,7 +719,7 @@ components:
 
     - Action id: `edit_a24` · write · Rivilė method: [EDIT_A24](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a24)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Payroll documents: list (GET_A24_LIST)
 
@@ -736,7 +735,7 @@ components:
 
     - Action id: `edit_a26` · write · Rivilė method: [EDIT_A26](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a26)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Payroll positions: list (GET_A26_LIST)
 
@@ -760,7 +759,7 @@ components:
 
     - Action id: `edit_a02` · write · Rivilė method: [EDIT_A02](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a02)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 - component_id: advanced_group_13
   type: markdown
   title: Personnel
@@ -771,7 +770,7 @@ components:
 
     - Action id: `mgama_edit_k16_kom` · write · Rivilė method: [MGAMA_EDIT_K16_KOM](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_kom)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Business trip documents: list (MGAMA_GET_K16_KOM_LIST)
 
@@ -787,7 +786,7 @@ components:
 
     - Action id: `mgama_edit_k16_atld` · write · Rivilė method: [MGAMA_EDIT_K16_ATLD](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atld)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Dismissal documents: list (MGAMA_GET_K16_ATLD_LIST)
 
@@ -811,7 +810,7 @@ components:
 
     - Action id: `edit_k11` · write · Rivilė method: [EDIT_K11](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k11)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### HR classifiers: list (GET_K11_LIST)
 
@@ -827,7 +826,7 @@ components:
 
     - Action id: `mgama_edit_k16_priem` · write · Rivilė method: [MGAMA_EDIT_K16_PRIEM](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_priem)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Hiring documents: list (MGAMA_GET_K16_PRIEM_LIST)
 
@@ -843,7 +842,7 @@ components:
 
     - Action id: `mgama_edit_k16_kita` · write · Rivilė method: [MGAMA_EDIT_K16_KITA](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_kita)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Other personnel documents: list (MGAMA_GET_K16_KITA_LIST)
 
@@ -859,7 +858,7 @@ components:
 
     - Action id: `mgama_edit_k14` · write · Rivilė method: [MGAMA_EDIT_K14](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_edit_k14)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Personnel: list (MGAMA_GET_K14_LIST)
 
@@ -875,7 +874,7 @@ components:
 
     - Action id: `mgama_edit_k16_perk` · write · Rivilė method: [MGAMA_EDIT_K16_PERK](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_perk)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Transfer documents: list (MGAMA_GET_K16_PERK_LIST)
 
@@ -891,7 +890,7 @@ components:
 
     - Action id: `mgama_edit_k16_atost` · write · Rivilė method: [MGAMA_EDIT_K16_ATOST](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atost)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Vacation documents: list (MGAMA_GET_K16_ATOST_LIST)
 
@@ -907,7 +906,7 @@ components:
 
     - Action id: `mgama_edit_k16_atpra` · write · Rivilė method: [MGAMA_EDIT_K16_ATPRA](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atpra)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Vacation extension documents: list (MGAMA_GET_K16_ATPRA_LIST)
 
@@ -923,7 +922,7 @@ components:
 
     - Action id: `mgama_edit_k16_atats` · write · Rivilė method: [MGAMA_EDIT_K16_ATATS](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atats)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Vacation recall documents: list (MGAMA_GET_K16_ATATS_LIST)
 
@@ -939,7 +938,7 @@ components:
 
     - Action id: `mgama_edit_k16_atgra` · write · Rivilė method: [MGAMA_EDIT_K16_ATGRA](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atgra)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Vacation schedules: list (MGAMA_GET_K16_ATGRA_LIST)
 
@@ -974,7 +973,7 @@ components:
 
     - Action id: `edit_n32` · write · Rivilė method: [EDIT_N32](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n32)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Price lists: list (GET_N32_LIST)
 
@@ -998,7 +997,7 @@ components:
 
     - Action id: `edit_i33` · write · Rivilė method: [EDIT_I33](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i33)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Product prices: list (GET_I33_LIST)
 
@@ -1014,7 +1013,7 @@ components:
 
     - Action id: `edit_n13` · write · Rivilė method: [EDIT_N13](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n13)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Product promotions: list (GET_N13_LIST)
 
@@ -1033,7 +1032,7 @@ components:
 
     - Action id: `edit_i16` · write · Rivilė method: [EDIT_I16](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i16)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Production operations: copy and change (EDIT_I15_KOP)
 
@@ -1041,7 +1040,7 @@ components:
 
     - Action id: `edit_i15_kop` · write · Rivilė method: [EDIT_I15_KOP](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i15_kop)
     - Inputs: `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Production operations: create with lines (EDIT_I15_FULL)
 
@@ -1049,7 +1048,7 @@ components:
 
     - Action id: `edit_i15_full` · write · Rivilė method: [EDIT_I15_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i15_full)
     - Inputs: `error_action` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Production operations: create, update, post or delete (EDIT_I15)
 
@@ -1057,7 +1056,7 @@ components:
 
     - Action id: `edit_i15` · write · Rivilė method: [EDIT_I15](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i15)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Production operations: list (GET_I15_LIST)
 
@@ -1084,7 +1083,7 @@ components:
 
     - Action id: `edit_n66` · write · Rivilė method: [EDIT_N66](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n66)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Customs goods: list (GET_N66_LIST)
 
@@ -1100,7 +1099,7 @@ components:
 
     - Action id: `edit_n19` · write · Rivilė method: [EDIT_N19](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n19)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Groups: list (GET_N19_LIST)
 
@@ -1116,7 +1115,7 @@ components:
 
     - Action id: `edit_n67` · write · Rivilė method: [EDIT_N67](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n67)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Intrastat classifiers: list (GET_N67_LIST)
 
@@ -1132,7 +1131,7 @@ components:
 
     - Action id: `edit_k45` · write · Rivilė method: [EDIT_K45](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k45)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Packaging coefficients: create, update or delete (EDIT_N27)
 
@@ -1140,7 +1139,7 @@ components:
 
     - Action id: `edit_n27` · write · Rivilė method: [EDIT_N27](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n27)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Packaging coefficients: list (GET_N27_LIST)
 
@@ -1156,7 +1155,7 @@ components:
 
     - Action id: `edit_n40` · write · Rivilė method: [EDIT_N40](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n40)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Product alternative barcodes: list (GET_N40_LIST)
 
@@ -1172,7 +1171,7 @@ components:
 
     - Action id: `edit_n26` · write · Rivilė method: [EDIT_N26](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n26)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Product department settings: create, update or delete (EDIT_N47)
 
@@ -1180,7 +1179,7 @@ components:
 
     - Action id: `edit_n47` · write · Rivilė method: [EDIT_N47](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n47)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Product department settings: list (GET_N47_LIST)
 
@@ -1196,7 +1195,7 @@ components:
 
     - Action id: `edit_n37` · write · Rivilė method: [EDIT_N37](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n37)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Product units and barcodes: list (GET_N37_LIST)
 
@@ -1212,7 +1211,7 @@ components:
 
     - Action id: `edit_n17_full` · write · Rivilė method: [EDIT_N17_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n17_full)
     - Inputs: `error_action` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Products and services: create, update or delete (EDIT_N17)
 
@@ -1220,7 +1219,7 @@ components:
 
     - Action id: `edit_n17` · write · Rivilė method: [EDIT_N17](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n17)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Products and services: list (GET_N17_LIST)
 
@@ -1244,7 +1243,7 @@ components:
 
     - Action id: `edit_n87` · write · Rivilė method: [EDIT_N87](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n87)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Supplier product codes: list (GET_N87_LIST)
 
@@ -1260,7 +1259,7 @@ components:
 
     - Action id: `edit_n18` · write · Rivilė method: [EDIT_N18](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n18)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Units of measure: list (GET_N18_LIST)
 
@@ -1279,7 +1278,7 @@ components:
 
     - Action id: `edit_i07` · write · Rivilė method: [EDIT_I07](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i07)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Purchase/sales document payments: create, update or delete (EDIT_I13)
 
@@ -1287,7 +1286,7 @@ components:
 
     - Action id: `edit_i13` · write · Rivilė method: [EDIT_I13](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i13)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Purchase/sales document: attach, replace or remove a file (EDIT_I06_DOC)
 
@@ -1295,7 +1294,7 @@ components:
 
     - Action id: `edit_i06_doc` · write · Rivilė method: [EDIT_I06_DOC](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_doc)
     - Inputs: `oper` (optional), `kodas_po`, `doc` (optional), `ext` (optional), `nuoroda` (optional), `show_doc` (optional), `overwrite` (optional), `document_file` (optional), `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Purchase/sales document: attach, replace or remove files (multiple) (EDIT_I06_DOCS)
 
@@ -1303,7 +1302,7 @@ components:
 
     - Action id: `edit_i06_docs` · write · Rivilė method: [EDIT_I06_DOCS](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_docs)
     - Inputs: `oper` (optional), `kodas_po`, `kodas_op_dok` (optional), `tipas` (optional), `aprasymas` (optional), `doc` (optional), `ext` (optional), `nuoroda` (optional), `show_doc` (optional), `aprasymas1` (optional), `aprasymas2` (optional), `aprasymas3` (optional), `overwrite` (optional), `document_file` (optional), `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Purchase/sales document: download all attached files (GET_I06_DOCS)
 
@@ -1327,7 +1326,7 @@ components:
 
     - Action id: `edit_i06_kop` · write · Rivilė method: [EDIT_I06_KOP](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_kop)
     - Inputs: `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Purchase/sales documents: create with lines, terms and payments (EDIT_I06_FULL)
 
@@ -1335,7 +1334,7 @@ components:
 
     - Action id: `edit_i06_full` · write · Rivilė method: [EDIT_I06_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_full)
     - Inputs: `error_action` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Purchase/sales documents: create, update, post or delete (EDIT_I06)
 
@@ -1343,7 +1342,7 @@ components:
 
     - Action id: `edit_i06` · write · Rivilė method: [EDIT_I06](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Purchase/sales documents: list (GET_I06_LIST)
 
@@ -1367,7 +1366,7 @@ components:
 
     - Action id: `edit_i08` · write · Rivilė method: [EDIT_I08](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i08)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Unposted purchase/sales document debts (GET_I06_DEBT)
 
@@ -1394,7 +1393,7 @@ components:
 
     - Action id: `edit_n07` · write · Rivilė method: [EDIT_N07](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n07)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Departments: list (GET_N07_LIST)
 
@@ -1410,7 +1409,7 @@ components:
 
     - Action id: `edit_k00` · write · Rivilė method: [EDIT_K00](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k00)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Document status: change (EDIT_BUS)
 
@@ -1418,7 +1417,7 @@ components:
 
     - Action id: `edit_bus` · write · Rivilė method: [EDIT_BUS](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_bus)
     - Inputs: `module`, `kodas_op`, `busena`, `old_busena` (optional), `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Enable change tracking (required by the *_TIME methods) (INIT_TRIGGER)
 
@@ -1426,7 +1425,7 @@ components:
 
     - Action id: `init_trigger` · write · Rivilė method: [INIT_TRIGGER](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/init_trigger)
     - Inputs: `list_type` (optional), `fil` (optional), `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Extra fields: read values (GET_PAP_LIST)
 
@@ -1442,7 +1441,7 @@ components:
 
     - Action id: `edit_pap` · write · Rivilė method: [EDIT_PAP](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_pap)
     - Inputs: `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Filter table lines: create, update or delete (EDIT_L02)
 
@@ -1450,7 +1449,7 @@ components:
 
     - Action id: `edit_l02` · write · Rivilė method: [EDIT_L02](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_l02)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Filter tables: create with lines (EDIT_L01_FULL)
 
@@ -1458,7 +1457,7 @@ components:
 
     - Action id: `edit_l01_full` · write · Rivilė method: [EDIT_L01_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_l01_full)
     - Inputs: `error_action` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Filter tables: create, update or delete (EDIT_L01)
 
@@ -1466,7 +1465,7 @@ components:
 
     - Action id: `edit_l01` · write · Rivilė method: [EDIT_L01](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_l01)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Filter tables: list (GET_L01_LIST)
 
@@ -1482,7 +1481,7 @@ components:
 
     - Action id: `edit_b00` · write · Rivilė method: [EDIT_B00](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_b00)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Import/export operations: list (GET_B00_LIST)
 
@@ -1498,7 +1497,7 @@ components:
 
     - Action id: `edit_n09` · write · Rivilė method: [EDIT_N09](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n09)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Locations: list (GET_N09_LIST)
 
@@ -1514,7 +1513,7 @@ components:
 
     - Action id: `edit_n35` · write · Rivilė method: [EDIT_N35](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n35)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Logistics cards: list (GET_N35_LIST)
 
@@ -1530,7 +1529,7 @@ components:
 
     - Action id: `edit_n15` · write · Rivilė method: [EDIT_N15](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n15)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Managers: list (GET_N15_LIST)
 
@@ -1546,7 +1545,7 @@ components:
 
     - Action id: `edit_n06` · write · Rivilė method: [EDIT_N06](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n06)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Objects: list (GET_N06_LIST)
 
@@ -1562,7 +1561,7 @@ components:
 
     - Action id: `edit_n60` · write · Rivilė method: [EDIT_N60](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n60)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Persons: list (GET_N60_LIST)
 
@@ -1578,7 +1577,7 @@ components:
 
     - Action id: `edit_n25` · write · Rivilė method: [EDIT_N25](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n25)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Purchase and sales codes: list (GET_N25_LIST)
 
@@ -1602,7 +1601,7 @@ components:
 
     - Action id: `get_user_proc` · write · Rivilė method: [GET_USER_PROC](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_user_proc)
     - Inputs: `procedure_name`, `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### VAT classifiers: list (GET_N63_LIST)
 
@@ -1618,7 +1617,7 @@ components:
 
     - Action id: `edit_n72` · write · Rivilė method: [EDIT_N72](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n72)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Vehicles: list (GET_N72_LIST)
 
@@ -1637,7 +1636,7 @@ components:
 
     - Action id: `edit_i28` · write · Rivilė method: [EDIT_I28](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i28)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Repricing lines (base price): create, update or delete (EDIT_I29)
 
@@ -1645,7 +1644,7 @@ components:
 
     - Action id: `edit_i29` · write · Rivilė method: [EDIT_I29](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i29)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Repricing lines (price list): create, update or delete (EDIT_I34)
 
@@ -1653,7 +1652,7 @@ components:
 
     - Action id: `edit_i34` · write · Rivilė method: [EDIT_I34](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i34)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Repricing lines (promotion): create, update or delete (EDIT_I14)
 
@@ -1661,7 +1660,7 @@ components:
 
     - Action id: `edit_i14` · write · Rivilė method: [EDIT_I14](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i14)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Repricing lines (sales price): create, update or delete (EDIT_I21)
 
@@ -1669,7 +1668,7 @@ components:
 
     - Action id: `edit_i21` · write · Rivilė method: [EDIT_I21](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i21)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Repricing operations: create with lines (EDIT_I20_FULL)
 
@@ -1677,7 +1676,7 @@ components:
 
     - Action id: `edit_i20_full` · write · Rivilė method: [EDIT_I20_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i20_full)
     - Inputs: `error_action` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Repricing operations: create, update, post or delete (EDIT_I20)
 
@@ -1685,7 +1684,7 @@ components:
 
     - Action id: `edit_i20` · write · Rivilė method: [EDIT_I20](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i20)
     - Inputs: `oper` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Repricing operations: list (GET_I20_LIST)
 
@@ -1704,7 +1703,7 @@ components:
 
     - Action id: `edit_i46` · write · Rivilė method: [EDIT_I46](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i46)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Stocktaking item lists: create with lines (EDIT_I45_FULL)
 
@@ -1712,7 +1711,7 @@ components:
 
     - Action id: `edit_i45_full` · write · Rivilė method: [EDIT_I45_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i45_full)
     - Inputs: `error_action` (optional), `user` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Stocktaking item lists: create, update or delete (EDIT_I45)
 
@@ -1720,7 +1719,7 @@ components:
 
     - Action id: `edit_i45` · write · Rivilė method: [EDIT_I45](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i45)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Stocktaking item lists: list (GET_I45_LIST)
 
@@ -1736,7 +1735,7 @@ components:
 
     - Action id: `edit_i48` · write · Rivilė method: [EDIT_I48](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i48)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Stocktaking operations: create with lines (EDIT_I47_FULL)
 
@@ -1744,7 +1743,7 @@ components:
 
     - Action id: `edit_i47_full` · write · Rivilė method: [EDIT_I47_FULL](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i47_full)
     - Inputs: `error_action` (optional), `user` (optional), `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Stocktaking operations: create, update or delete (EDIT_I47)
 
@@ -1752,7 +1751,7 @@ components:
 
     - Action id: `edit_i47` · write · Rivilė method: [EDIT_I47](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i47)
     - Inputs: `oper` (optional), `data`, `extra_params` (optional)
-    - Results: standard results + write results
+    - Results: standard results
 
     ### Stocktaking operations: list (GET_I47_LIST)
 
@@ -1771,7 +1770,7 @@ components:
 
     - Action id: `call_method` · write · Rivilė method: any — you name it
     - Inputs: `method`, `params` (optional), `data` (optional)
-    - Results: `method`, `records`, `record`, `record_type`, `other_tables`, `count`, `data_errors`, `partial_success`, `http_status`, `duration_ms`, `external_effect_status`, `definitely_no_external_effect`
+    - Results: `method`, `records`, `record`, `record_type`, `other_tables`, `count`, `data_errors`, `partial_success`, `http_status`, `duration_ms`
 
     ### Export a Rivile list to a JSONL file
 
