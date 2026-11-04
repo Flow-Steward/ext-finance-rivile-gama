@@ -28,7 +28,7 @@ Review fixes before the first release:
   `oper` on the FULL methods that document it; `top` sets the page size.
 - Data schemas: field lists and descriptions from the guide's field tables, one record per request.
 - Trailing padding trimmed, leading spaces kept; Rivilė error text redacted of the API key.
-- Category `finance`; Rivilė icon.
+- Category `finance` (+ inventory, hr); own connector icon (sheet with a stylised R), not the Rivilė mark.
 
 Initial scope:
 
