@@ -63,8 +63,9 @@ operations:
   - blocked_address
 - operation_id: find_or_create_client
   display_name: Find or create customer / supplier
-  description: Looks the client up by company code, then VAT code, then client code (GET_N08_LIST); creates
-    it (EDIT_N08) only when none matches, so running it again is safe.
+  description: Looks the client up by company code, then VAT code, then client code (GET_N08_LIST); several
+    matches or conflicting identifiers are an error. Creates it (EDIT_N08) only when none matches, so
+    running it again is safe — but not two runs at the same time.
   operation_kind: action
   category: finance
   connection_type_ids:
@@ -83,8 +84,10 @@ operations:
     schema:
       type: string
       title: Company code
-      description: Registration code (Rivile N08_IM_KODAS). Looked up first.
-      maxLength: 150
+      description: Registration code (N08_IM_KODAS), looked up first. Several matches, or a match whose
+        VAT or client code differs from the ones given, is an error and nothing is created. Letters, digits,
+        spaces and . _ / - only.
+      maxLength: 35
   - &id003
     name: vat_code
     value_type: text
@@ -92,8 +95,9 @@ operations:
     schema:
       type: string
       title: VAT code
-      description: VAT payer code, e.g. LT214118411 (N08_PVM_KODAS). Looked up second.
-      maxLength: 150
+      description: VAT payer code, e.g. LT214118411 (N08_PVM_KODAS), looked up second. Letters, digits,
+        spaces and . _ / - only.
+      maxLength: 35
   - &id004
     name: client_code
     value_type: text
@@ -101,9 +105,9 @@ operations:
     schema:
       type: string
       title: Client code
-      description: Rivile client code (N08_KODAS_KS). Looked up last; used as the new code when creating
-        (else Rivile numbers it).
-      maxLength: 150
+      description: Rivile client code (N08_KODAS_KS, up to 12 characters), looked up last; used as the
+        new code when creating (else Rivile numbers it). Letters, digits, spaces and . _ / - only.
+      maxLength: 12
   - &id005
     name: name
     value_type: text
@@ -209,7 +213,7 @@ operations:
     value_type: integer
     schema:
       type: integer
-      description: How many clients matched (Rivile may allow duplicates).
+      description: 1 when found, 0 when created.
   - name: record
     value_type: object
     schema:
@@ -283,8 +287,10 @@ operations:
     schema:
       type: string
       title: Number
-      description: Document number (I06_DOK_NR); omit when Rivile numbers documents automatically.
-      maxLength: 150
+      description: Document number (I06_DOK_NR); omit when Rivile numbers documents automatically. With
+        a number, a document with the same number, client and type is returned instead of creating a second
+        one, so a rerun is safe.
+      maxLength: 20
   - name: date
     value_type: text
     required: false
@@ -309,8 +315,17 @@ operations:
     schema:
       type: string
       title: Currency
-      description: Currency code (I06_KODAS_VL); line prices are then sent as I07_VAL_KAINA.
+      description: Currency code (I06_KODAS_VL). Prices stay in the base-currency fields unless foreign_currency
+        is set.
       maxLength: 150
+  - name: foreign_currency
+    value_type: boolean
+    required: false
+    schema:
+      type: boolean
+      title: Foreign currency
+      description: 'The currency differs from the company''s base currency: prices are sent as I07_VAL_KAINA
+        (net) and I06_VAL_POZ=1. Cannot be combined with prices_include_vat.'
   - name: department_code
     value_type: text
     required: false
@@ -349,6 +364,7 @@ operations:
         required:
         - product_code
         - quantity
+        - unit
         - unit_price
         properties:
           product_code:
@@ -364,21 +380,23 @@ operations:
             type:
             - number
             - string
-            description: Quantity in decimals (KIEKIS_U).
+            description: Quantity in `unit`, up to 3 decimals (KIEKIS_U).
           unit:
             type: string
-            description: Unit code, e.g. VNT (I07_KODAS_US); default the product's unit.
+            description: Unit the quantity is in, e.g. VNT or KG. Sent as I07_KODAS_US, _US_P and _US_A,
+              so the quantity means this unit (as in the guide's example).
           unit_price:
             type:
             - number
             - string
-            description: Price per unit (I07_KAINA_BE, I07_KAINA_SU with prices_include_vat, I07_VAL_KAINA
-              with currency).
+            description: 'Price per unit, 4 decimals: I07_KAINA_BE (net), I07_KAINA_SU with prices_include_vat,
+              I07_VAL_KAINA with foreign_currency.'
           vat_rate:
             type:
             - number
             - string
-            description: VAT % (I07_MOKESTIS=1, I07_MOKESTIS_P). Omit to use the product/client tax table.
+            description: VAT % 0–100 (I07_MOKESTIS=1, I07_MOKESTIS_P). Omit to use the product/client
+              tax table.
           vat_code:
             type: string
             description: VAT classifier code (I07_KODAS_KL, Rivile 109+).
@@ -386,7 +404,7 @@ operations:
             type:
             - number
             - string
-            description: Discount % (I07_NUOLAIDA).
+            description: Discount % 0–100 (I07_NUOLAIDA).
           department_code:
             type: string
             description: Department / warehouse (I07_KODAS_IS); overrides the document's.
@@ -411,6 +429,11 @@ operations:
     value_type: text
     schema:
       type: string
+  - name: created
+    value_type: boolean
+    schema:
+      type: boolean
+      description: false when a document with this number already existed and was returned.
   - name: client_code
     value_type: text
     schema:
@@ -443,7 +466,7 @@ operations:
       type:
       - boolean
       - 'null'
-      description: true posted; false not posted; null outcome unknown.
+      description: true posted; false not posted; null unknown.
   - name: post_error
     value_type: text
     schema:
@@ -465,6 +488,7 @@ operations:
   result_fields:
   - result.document_code
   - result.number
+  - result.created
   - result.client_code
   - result.client_created
   - result.total_net
@@ -525,8 +549,10 @@ operations:
     schema:
       type: string
       title: Number
-      description: Document number (I06_DOK_NR); omit when Rivile numbers documents automatically.
-      maxLength: 150
+      description: Document number (I06_DOK_NR); omit when Rivile numbers documents automatically. With
+        a number, a document with the same number, client and type is returned instead of creating a second
+        one, so a rerun is safe.
+      maxLength: 20
   - name: date
     value_type: text
     required: false
@@ -551,8 +577,17 @@ operations:
     schema:
       type: string
       title: Currency
-      description: Currency code (I06_KODAS_VL); line prices are then sent as I07_VAL_KAINA.
+      description: Currency code (I06_KODAS_VL). Prices stay in the base-currency fields unless foreign_currency
+        is set.
       maxLength: 150
+  - name: foreign_currency
+    value_type: boolean
+    required: false
+    schema:
+      type: boolean
+      title: Foreign currency
+      description: 'The currency differs from the company''s base currency: prices are sent as I07_VAL_KAINA
+        (net) and I06_VAL_POZ=1. Cannot be combined with prices_include_vat.'
   - name: department_code
     value_type: text
     required: false
@@ -598,6 +633,11 @@ operations:
     value_type: text
     schema:
       type: string
+  - name: created
+    value_type: boolean
+    schema:
+      type: boolean
+      description: false when a document with this number already existed and was returned.
   - name: client_code
     value_type: text
     schema:
@@ -630,7 +670,7 @@ operations:
       type:
       - boolean
       - 'null'
-      description: true posted; false not posted; null outcome unknown.
+      description: true posted; false not posted; null unknown.
   - name: post_error
     value_type: text
     schema:
@@ -652,6 +692,7 @@ operations:
   result_fields:
   - result.document_code
   - result.number
+  - result.created
   - result.client_code
   - result.client_created
   - result.total_net
@@ -700,7 +741,7 @@ operations:
       type: string
       title: Document code
       description: Rivile operation code (I06_KODAS_PO), e.g. from Create sales invoice.
-      maxLength: 150
+      maxLength: 12
   - name: document_file
     value_type: artifact_handle
     required: true
@@ -793,7 +834,7 @@ operations:
       type: string
       title: Document code
       description: Rivile operation code (I06_KODAS_PO).
-      maxLength: 150
+      maxLength: 12
   outputs:
   - name: document_code
     value_type: text
@@ -868,14 +909,14 @@ operations:
       type: string
       title: Document code
       description: Rivile operation code (I06_KODAS_PO).
-      maxLength: 150
+      maxLength: 12
   - name: amount
     value_type: number
     required: true
     schema:
       type: number
       title: Amount
-      description: Paid amount (I13_SUMA).
+      description: Paid amount, positive, 2 decimals (I13_SUMA).
   - name: money_account_code
     value_type: text
     required: true
@@ -883,7 +924,7 @@ operations:
       type: string
       title: Money account
       description: Rivile money account code (I13_KODAS_SS), e.g. the bank account.
-      maxLength: 150
+      maxLength: 12
   - name: currency_amount
     value_type: number
     required: false
@@ -950,7 +991,8 @@ operations:
 - operation_id: find_or_create_product
   display_name: Find or create product
   description: Looks a product up by code (GET_N17_LIST) or barcode (GET_N37_LIST, then GET_N40_LIST);
-    creates it with its unit and barcode (EDIT_N17_FULL) only when none matches.
+    a barcode that belongs to another product is an error. Creates the product with its unit and barcode
+    (EDIT_N17_FULL) only when none matches.
   operation_kind: action
   category: finance
   connection_type_ids:
@@ -966,7 +1008,7 @@ operations:
       type: string
       title: Product code
       description: N17_KODAS_PS; required to create.
-      maxLength: 150
+      maxLength: 12
   - name: barcode
     value_type: text
     required: false
@@ -974,7 +1016,7 @@ operations:
       type: string
       title: Barcode
       description: Looked up in N37 and N40; added as an N40 barcode when creating.
-      maxLength: 150
+      maxLength: 25
   - name: name
     value_type: text
     required: false
@@ -1024,6 +1066,11 @@ operations:
     value_type: text
     schema:
       type: string
+  - name: notes
+    value_type: array
+    schema:
+      type: array
+      description: e.g. a given barcode not registered for the found product.
   - name: record
     value_type: object
     schema:
@@ -1042,6 +1089,7 @@ operations:
   - result.product_code
   - result.created
   - result.matched_by
+  - result.notes
   - result.record
   - result.external_effect_status
   - result.definitely_no_external_effect
@@ -1066,8 +1114,8 @@ operations:
   - timeout_unknown
 - operation_id: stock_levels
   display_name: Stock levels
-  description: Stock per product and warehouse (GET_I17_LIST grouped by I17_KODAS_IS), as plain decimal
-    quantities.
+  description: FIFO stock balance per product, unit and warehouse (GET_I17_LIST grouped by I17_KODAS_IS),
+    as decimal quantities in the base unit.
   operation_kind: source
   category: finance
   connection_type_ids:
@@ -1082,7 +1130,7 @@ operations:
       type: string
       title: Product code
       description: Only this product.
-      maxLength: 150
+      maxLength: 12
   - name: warehouse_code
     value_type: text
     required: false
@@ -1090,7 +1138,7 @@ operations:
       type: string
       title: Warehouse / department
       description: Only this department (I17_KODAS_IS).
-      maxLength: 150
+      maxLength: 12
   - &id016
     name: max_pages
     value_type: integer
@@ -1165,7 +1213,7 @@ operations:
       type: string
       title: Product code
       description: kodas_ps; give this or barcode.
-      maxLength: 150
+      maxLength: 12
   - name: barcode
     value_type: text
     required: false
@@ -1173,7 +1221,7 @@ operations:
       type: string
       title: Barcode
       description: bar_kodas.
-      maxLength: 150
+      maxLength: 25
   - name: unit
     value_type: text
     required: false
@@ -1181,7 +1229,7 @@ operations:
       type: string
       title: Unit
       description: kodas_us.
-      maxLength: 150
+      maxLength: 12
   - name: warehouse_code
     value_type: text
     required: false
@@ -1189,7 +1237,7 @@ operations:
       type: string
       title: Warehouse / department
       description: kodas_is.
-      maxLength: 150
+      maxLength: 12
   - name: client_code
     value_type: text
     required: false
@@ -1197,7 +1245,7 @@ operations:
       type: string
       title: Client code
       description: Prices for this client (kodas_ks).
-      maxLength: 150
+      maxLength: 12
   outputs:
   - *id015
   - name: count
@@ -1227,8 +1275,9 @@ operations:
   - blocked_address
 - operation_id: changes_since
   display_name: Changes since
-  description: Clients, products, prices or stock changed since a date (the *_TIME methods; run Enable
-    change tracking (INIT_TRIGGER) once first), or documents corrected since then (GET_I06_LIST by I06_R_DATE).
+  description: Clients, products, prices (all products) or stock changed since a date (the *_TIME methods;
+    run Advanced · Enable change tracking (INIT_TRIGGER) once first), or documents corrected since then
+    (GET_I06_LIST by I06_R_DATE).
   operation_kind: source
   category: finance
   connection_type_ids:
@@ -1321,7 +1370,7 @@ operations:
       type: string
       title: Client code
       description: N08_KODAS_KS.
-      maxLength: 150
+      maxLength: 12
   outputs:
   - name: client_code
     value_type: text
@@ -55858,7 +55907,7 @@ operations:
   - blocked_address
   - timeout_unknown
 - operation_id: export_list
-  display_name: Export a Rivile list to a JSONL file
+  display_name: Advanced · Export a Rivile list to a JSONL file
   description: Reads a Rivile list method page by page (100 records per page, paced to Rivile's rate limit)
     and saves every record as one JSON line in a workflow file (rivile-export.jsonl). Each line carries
     its Rivile table in _table.

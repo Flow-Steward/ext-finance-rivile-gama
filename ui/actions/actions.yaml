@@ -41,8 +41,9 @@ actions:
   - blocked_address
 - action_id: find_or_create_client
   title: Find or create customer / supplier
-  description: Looks the client up by company code, then VAT code, then client code (GET_N08_LIST); creates
-    it (EDIT_N08) only when none matches, so running it again is safe.
+  description: Looks the client up by company code, then VAT code, then client code (GET_N08_LIST); several
+    matches or conflicting identifiers are an error. Creates it (EDIT_N08) only when none matches, so
+    running it again is safe — but not two runs at the same time.
   required_scopes:
   - extension:invoke
   handler:
@@ -181,6 +182,9 @@ actions:
   - name: currency
     type: string
     required: false
+  - name: foreign_currency
+    type: boolean
+    required: false
   - name: department_code
     type: string
     required: false
@@ -199,6 +203,7 @@ actions:
   result_fields:
   - document_code
   - number
+  - created
   - client_code
   - client_created
   - total_net
@@ -292,6 +297,9 @@ actions:
   - name: currency
     type: string
     required: false
+  - name: foreign_currency
+    type: boolean
+    required: false
   - name: department_code
     type: string
     required: false
@@ -310,6 +318,7 @@ actions:
   result_fields:
   - document_code
   - number
+  - created
   - client_code
   - client_created
   - total_net
@@ -495,7 +504,8 @@ actions:
 - action_id: find_or_create_product
   title: Find or create product
   description: Looks a product up by code (GET_N17_LIST) or barcode (GET_N37_LIST, then GET_N40_LIST);
-    creates it with its unit and barcode (EDIT_N17_FULL) only when none matches.
+    a barcode that belongs to another product is an error. Creates the product with its unit and barcode
+    (EDIT_N17_FULL) only when none matches.
   required_scopes:
   - extension:invoke
   handler:
@@ -529,6 +539,7 @@ actions:
   - product_code
   - created
   - matched_by
+  - notes
   - record
   - external_effect_status
   - definitely_no_external_effect
@@ -553,8 +564,8 @@ actions:
   - timeout_unknown
 - action_id: stock_levels
   title: Stock levels
-  description: Stock per product and warehouse (GET_I17_LIST grouped by I17_KODAS_IS), as plain decimal
-    quantities.
+  description: FIFO stock balance per product, unit and warehouse (GET_I17_LIST grouped by I17_KODAS_IS),
+    as decimal quantities in the base unit.
   required_scopes:
   - extension:invoke
   handler:
@@ -649,8 +660,9 @@ actions:
   - blocked_address
 - action_id: changes_since
   title: Changes since
-  description: Clients, products, prices or stock changed since a date (the *_TIME methods; run Enable
-    change tracking (INIT_TRIGGER) once first), or documents corrected since then (GET_I06_LIST by I06_R_DATE).
+  description: Clients, products, prices (all products) or stock changed since a date (the *_TIME methods;
+    run Advanced · Enable change tracking (INIT_TRIGGER) once first), or documents corrected since then
+    (GET_I06_LIST by I06_R_DATE).
   required_scopes:
   - extension:invoke
   handler:
@@ -13418,7 +13430,7 @@ actions:
   - blocked_address
   - timeout_unknown
 - action_id: export_list
-  title: Export a Rivile list to a JSONL file
+  title: Advanced · Export a Rivile list to a JSONL file
   description: Reads a Rivile list method page by page (100 records per page, paced to Rivile's rate limit)
     and saves every record as one JSON line in a workflow file (rivile-export.jsonl). Each line carries
     its Rivile table in _table.

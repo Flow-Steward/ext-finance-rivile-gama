@@ -44,8 +44,9 @@ GENERATED_HEADER = (
     "# Do not edit by hand: tests/test_contracts.py fails when this file drifts.\n"
 )
 DOCS_BASE = "https://gidas.rivile.lt/internetiniai_moduliai/api_rest/"
-#: Raw Rivile methods sort after the friendly operations in the step picker,
-#: which lists operations flat by display name (no grouping field exists).
+#: The step picker lists an extension's operations flat, in manifest order
+#: (detail-step-options-controller.ts), with no grouping field: the raw methods
+#: come after the friendly operations and are marked by this prefix.
 ADVANCED_PREFIX = "Advanced · "
 FRIENDLY_DOWNLOAD_BINDING = "rivile_document_file"
 
@@ -844,7 +845,7 @@ def export_list_operation(paged_methods: list[str]) -> dict[str, Any]:
     ]
     return {
         "operation_id": "export_list",
-        "display_name": "Export a Rivile list to a JSONL file",
+        "display_name": f"{ADVANCED_PREFIX}Export a Rivile list to a JSONL file",
         "description": (
             "Reads a Rivile list method page by page (100 records per page, paced to Rivile's "
             "rate limit) and saves every record as one JSON line in a workflow file "

@@ -11,18 +11,21 @@ forms:
     label: Company code
     widget_type: text
     required: false
-    help_text: Registration code (Rivile N08_IM_KODAS). Looked up first.
+    help_text: Registration code (N08_IM_KODAS), looked up first. Several matches, or a match whose VAT
+      or client code differs from the ones given, is an error and nothing is created. Letters, digits,
+      spaces and . _ / - only.
   - name: vat_code
     label: VAT code
     widget_type: text
     required: false
-    help_text: VAT payer code, e.g. LT214118411 (N08_PVM_KODAS). Looked up second.
+    help_text: VAT payer code, e.g. LT214118411 (N08_PVM_KODAS), looked up second. Letters, digits, spaces
+      and . _ / - only.
   - name: client_code
     label: Client code
     widget_type: text
     required: false
-    help_text: Rivile client code (N08_KODAS_KS). Looked up last; used as the new code when creating (else
-      Rivile numbers it).
+    help_text: Rivile client code (N08_KODAS_KS, up to 12 characters), looked up last; used as the new
+      code when creating (else Rivile numbers it). Letters, digits, spaces and . _ / - only.
   - name: name
     label: Name
     widget_type: text
@@ -83,18 +86,21 @@ forms:
     label: Company code
     widget_type: text
     required: false
-    help_text: Registration code (Rivile N08_IM_KODAS). Looked up first.
+    help_text: Registration code (N08_IM_KODAS), looked up first. Several matches, or a match whose VAT
+      or client code differs from the ones given, is an error and nothing is created. Letters, digits,
+      spaces and . _ / - only.
   - name: vat_code
     label: VAT code
     widget_type: text
     required: false
-    help_text: VAT payer code, e.g. LT214118411 (N08_PVM_KODAS). Looked up second.
+    help_text: VAT payer code, e.g. LT214118411 (N08_PVM_KODAS), looked up second. Letters, digits, spaces
+      and . _ / - only.
   - name: client_code
     label: Client code
     widget_type: text
     required: false
-    help_text: Rivile client code (N08_KODAS_KS). Looked up last; used as the new code when creating (else
-      Rivile numbers it).
+    help_text: Rivile client code (N08_KODAS_KS, up to 12 characters), looked up last; used as the new
+      code when creating (else Rivile numbers it). Letters, digits, spaces and . _ / - only.
   - name: name
     label: Name
     widget_type: text
@@ -152,7 +158,9 @@ forms:
     label: Number
     widget_type: text
     required: false
-    help_text: Document number (I06_DOK_NR); omit when Rivile numbers documents automatically.
+    help_text: Document number (I06_DOK_NR); omit when Rivile numbers documents automatically. With a
+      number, a document with the same number, client and type is returned instead of creating a second
+      one, so a rerun is safe.
   - name: date
     label: Date
     widget_type: text
@@ -167,7 +175,14 @@ forms:
     label: Currency
     widget_type: text
     required: false
-    help_text: Currency code (I06_KODAS_VL); line prices are then sent as I07_VAL_KAINA.
+    help_text: Currency code (I06_KODAS_VL). Prices stay in the base-currency fields unless foreign_currency
+      is set.
+  - name: foreign_currency
+    label: Foreign currency
+    widget_type: boolean
+    required: false
+    help_text: 'The currency differs from the company''s base currency: prices are sent as I07_VAL_KAINA
+      (net) and I06_VAL_POZ=1. Cannot be combined with prices_include_vat.'
   - name: department_code
     label: Department / warehouse
     widget_type: text
@@ -201,18 +216,21 @@ forms:
     label: Company code
     widget_type: text
     required: false
-    help_text: Registration code (Rivile N08_IM_KODAS). Looked up first.
+    help_text: Registration code (N08_IM_KODAS), looked up first. Several matches, or a match whose VAT
+      or client code differs from the ones given, is an error and nothing is created. Letters, digits,
+      spaces and . _ / - only.
   - name: vat_code
     label: VAT code
     widget_type: text
     required: false
-    help_text: VAT payer code, e.g. LT214118411 (N08_PVM_KODAS). Looked up second.
+    help_text: VAT payer code, e.g. LT214118411 (N08_PVM_KODAS), looked up second. Letters, digits, spaces
+      and . _ / - only.
   - name: client_code
     label: Client code
     widget_type: text
     required: false
-    help_text: Rivile client code (N08_KODAS_KS). Looked up last; used as the new code when creating (else
-      Rivile numbers it).
+    help_text: Rivile client code (N08_KODAS_KS, up to 12 characters), looked up last; used as the new
+      code when creating (else Rivile numbers it). Letters, digits, spaces and . _ / - only.
   - name: name
     label: Name
     widget_type: text
@@ -270,7 +288,9 @@ forms:
     label: Number
     widget_type: text
     required: false
-    help_text: Document number (I06_DOK_NR); omit when Rivile numbers documents automatically.
+    help_text: Document number (I06_DOK_NR); omit when Rivile numbers documents automatically. With a
+      number, a document with the same number, client and type is returned instead of creating a second
+      one, so a rerun is safe.
   - name: date
     label: Date
     widget_type: text
@@ -285,7 +305,14 @@ forms:
     label: Currency
     widget_type: text
     required: false
-    help_text: Currency code (I06_KODAS_VL); line prices are then sent as I07_VAL_KAINA.
+    help_text: Currency code (I06_KODAS_VL). Prices stay in the base-currency fields unless foreign_currency
+      is set.
+  - name: foreign_currency
+    label: Foreign currency
+    widget_type: boolean
+    required: false
+    help_text: 'The currency differs from the company''s base currency: prices are sent as I07_VAL_KAINA
+      (net) and I06_VAL_POZ=1. Cannot be combined with prices_include_vat.'
   - name: department_code
     label: Department / warehouse
     widget_type: text
@@ -351,7 +378,7 @@ forms:
     label: Amount
     widget_type: number
     required: true
-    help_text: Paid amount (I13_SUMA).
+    help_text: Paid amount, positive, 2 decimals (I13_SUMA).
   - name: money_account_code
     label: Money account
     widget_type: text
@@ -7702,7 +7729,7 @@ forms:
     required: false
     help_text: The Rivile data object, sent unchanged.
 - operation_id: export_list
-  title: Export a Rivile list to a JSONL file
+  title: Advanced · Export a Rivile list to a JSONL file
   fields:
   - name: method
     label: List method

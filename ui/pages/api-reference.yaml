@@ -16,8 +16,8 @@ components:
     |---|---|---|
 
     | **Find or create customer / supplier** | Looks the client up by company code, then VAT code, then
-    client code (GET_N08_LIST); creates it (EDIT_N08) only when none matches, so running it again is safe.
-    | ✎ |
+    client code (GET_N08_LIST); several matches or conflicting identifiers are an error. Creates it (EDIT_N08)
+    only when none matches, so running it again is safe — but not two runs at the same time. | ✎ |
 
     | **Create sales invoice** | Creates a sales invoice (EDIT_I06_FULL, I06_OP_TIP 51) with its lines
     in one request, finding or creating the customer first when company_code or vat_code is given; optionally
@@ -37,18 +37,18 @@ components:
     I13_KODAS_SS, I13_SUMA). | ✎ |
 
     | **Find or create product** | Looks a product up by code (GET_N17_LIST) or barcode (GET_N37_LIST,
-    then GET_N40_LIST); creates it with its unit and barcode (EDIT_N17_FULL) only when none matches. |
-    ✎ |
+    then GET_N40_LIST); a barcode that belongs to another product is an error. Creates the product with
+    its unit and barcode (EDIT_N17_FULL) only when none matches. | ✎ |
 
-    | **Stock levels** | Stock per product and warehouse (GET_I17_LIST grouped by I17_KODAS_IS), as plain
-    decimal quantities. |  |
+    | **Stock levels** | FIFO stock balance per product, unit and warehouse (GET_I17_LIST grouped by I17_KODAS_IS),
+    as decimal quantities in the base unit. |  |
 
     | **Product prices** | Every price, price list, promotion and discount Rivile resolves for a product
     (GET_PS_KAIN), flattened. |  |
 
-    | **Changes since** | Clients, products, prices or stock changed since a date (the *_TIME methods;
-    run Enable change tracking (INIT_TRIGGER) once first), or documents corrected since then (GET_I06_LIST
-    by I06_R_DATE). |  |
+    | **Changes since** | Clients, products, prices (all products) or stock changed since a date (the
+    *_TIME methods; run Advanced · Enable change tracking (INIT_TRIGGER) once first), or documents corrected
+    since then (GET_I06_LIST by I06_R_DATE). |  |
 
     | **Client debt** | Debt totals of a client or supplier (GET_T03_LIST): debit, credit and balance
     (debit − credit). |  |

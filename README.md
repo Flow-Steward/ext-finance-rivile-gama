@@ -36,8 +36,13 @@ Taken from the guide's field tables and examples, not yet confirmed against a re
 
 1. `I06_OP_TIP` 51 = sales invoice (Pardavimai: Važtaraštis), 1 = purchase invoice (Pirkimai: Važtaraštis).
 2. Posting = `EDIT_I06` with `oper` P and `I06_KODAS_PO` ("perkėlimas").
-3. Line quantity in decimals via `KIEKIS_U` (as in the `EDIT_I06_FULL` example) rather than `I07_KIEKIS`/`I07_FRAKCIJA`.
-4. Net price `I07_KAINA_BE`; gross `I07_KAINA_SU` with `I06_PVM_TIP` 1; with a currency, `I07_VAL_KAINA`.
+3. Line quantity in decimals via `KIEKIS_U` with `I07_KODAS_US`, `I07_KODAS_US_P` and `I07_KODAS_US_A` all set
+   to the line's `unit` (exactly the `EDIT_I06_FULL` example), so the quantity is in that unit. The guide
+   calls `KIEKIS_U` the alternative-unit decimal quantity; `I07_KIEKIS`/`I07_FRAKCIJA` would need each
+   unit's fraction, which only Rivilė knows.
+4. Net price `I07_KAINA_BE`; gross `I07_KAINA_SU` with `I06_PVM_TIP` 1. A `currency` alone (e.g. the base
+   currency) keeps these fields; only `foreign_currency: true` sends `I07_VAL_KAINA` (net) and
+   `I06_VAL_POZ` 1, and it cannot be combined with gross prices.
 5. VAT: `vat_rate` → `I07_MOKESTIS` 1 + `I07_MOKESTIS_P`; `vat_code` → `I07_KODAS_KL` (Rivilė 109+); neither → Rivilė's
    default from the product/client tax table (`I06_KODAS_XS` "fills from the client card").
 6. Due date → one `I08` term: 100 % after N days from the document date.
@@ -48,9 +53,22 @@ Taken from the guide's field tables and examples, not yet confirmed against a re
 9. New product barcode as an `N40` alternative barcode (the `EDIT_N17_FULL` example), not `N37_BAR_KODAS`.
 10. Payments via `EDIT_I13` on the document; `I13_KODAS_SS` is the company's money account code.
 11. Stock quantity = `des_likutis_us` when Rivilė sends it, else `I17_KIEKIS / I17_FRAKCIJA`.
-12. `lastDate` accepts `YYYY-MM-DD HH:MM[:SS]` as well as the documented `YYYY-MM-DD`; documents changed since a
-    date are read by `i06_r_date >= …` (there is no `*_TIME` method for documents).
-13. Debt `balance` = `T03_SUMA_DB − T03_SUMA_CR`; which side means "the client owes us" is not stated.
+12. `lastDate` is sent in the guide's forms `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM:SS`; prices use `list` A (every
+    product, not only barcoded ones). Documents changed since a date are read by `i06_r_date >= …` (there is no
+    `*_TIME` method for documents).
+13. Debt `balance` = `t03_suma_db − t03_suma_cr` (Rivilė answers T03 in lower case; every field is read
+    case-insensitively); which side means "the client owes us" is not stated. T03 codes can be padded, so
+    the filter trims them.
+14. An invoice with a `number` is looked up by number + client + `I06_OP_TIP` before it is created
+    (`I06_PERKELTA` 2 = posted) — the guard that makes a rerun after an unknown outcome safe.
+
+### Parallel runs
+
+Find-or-create steps look up before they create, so a rerun after the first run finished is safe. Two runs
+of the same step **at the same time** can both miss the lookup and both create (Rivilė numbers new clients
+itself and allows duplicate company codes unless `RGI_N08_UNIK` forbids them). Don't run them in parallel
+for the same client or product. Lookups refuse several matches and conflicting identifiers rather than guess,
+and accept only codes made of letters, digits, spaces and `. _ / -`.
 
 ## Requirements on the Rivilė side
 

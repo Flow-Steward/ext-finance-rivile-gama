@@ -380,6 +380,11 @@ def _base_result(method: str, reply: Reply | None) -> dict[str, Any]:
 
 
 def _neutral_result(operation_id: str) -> dict[str, Any]:
+    if operation_id in catalog.FRIENDLY_WRITE_IDS:
+        friendly_result = friendly.neutral_result(operation_id)
+        friendly_result["external_effect_status"] = "failed"
+        friendly_result["definitely_no_external_effect"] = True
+        return friendly_result
     method_row = catalog.METHODS_BY_OPERATION.get(operation_id)
     result = _base_result(method_row.method if method_row else "", None)
     if method_row is not None and method_row.paged:
@@ -746,7 +751,7 @@ def _run_friendly(context: _Context, operation_id: str) -> dict[str, Any]:
 
 
 def _attach_file_to_document(context: _Context, inputs: Mapping[str, Any]) -> dict[str, Any]:
-    code = friendly._text(inputs, "document_code", required=True, limit=12)
+    code = friendly._code(inputs, "document_code", required=True, limit=12)
     params: dict[str, Any] = {
         "oper": "I",
         "kodas_po": code,
@@ -768,7 +773,7 @@ def _attach_file_to_document(context: _Context, inputs: Mapping[str, Any]) -> di
 
 
 def _download_document_file(context: _Context, inputs: Mapping[str, Any]) -> dict[str, Any]:
-    code = friendly._text(inputs, "document_code", required=True, limit=12)
+    code = friendly._code(inputs, "document_code", required=True, limit=12)
     reply = context.transport.call("GET_I06_DOC", {"kodas_po": code}, None, mutating=False)
     base = _base_result("GET_I06_DOC", reply)
     _save_download(context, base, binding_key=catalog.FRIENDLY_DOWNLOAD_BINDING)

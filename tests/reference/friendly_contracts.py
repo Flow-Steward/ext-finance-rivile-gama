@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 CONNECTION = {"name": "connection_ref", "value_type": "connection_ref", "required": True}
-OBJ: dict[str, Any] = {"type": "object", "additionalProperties": True}
+CODE_HELP = " Letters, digits, spaces and . _ / - only."
 
 
 def text(
@@ -45,17 +45,25 @@ def out(name: str, value_type: str, schema_type: Any, description: str = "") -> 
 
 CLIENT_LOOKUP = [
     text(
-        "company_code", "Company code", "Registration code (Rivile N08_IM_KODAS). Looked up first."
+        "company_code",
+        "Company code",
+        "Registration code (N08_IM_KODAS), looked up first. Several matches, or a match whose "
+        "VAT or client code differs from the ones given, is an error and nothing is created."
+        + CODE_HELP,
+        maxLength=35,
     ),
     text(
         "vat_code",
         "VAT code",
-        "VAT payer code, e.g. LT214118411 (N08_PVM_KODAS). Looked up second.",
+        "VAT payer code, e.g. LT214118411 (N08_PVM_KODAS), looked up second." + CODE_HELP,
+        maxLength=35,
     ),
     text(
         "client_code",
         "Client code",
-        "Rivile client code (N08_KODAS_KS). Looked up last; used as the new code when creating (else Rivile numbers it).",
+        "Rivile client code (N08_KODAS_KS, up to 12 characters), looked up last; used as the "
+        "new code when creating (else Rivile numbers it)." + CODE_HELP,
+        maxLength=12,
     ),
 ]
 CLIENT_NEW = [
@@ -82,7 +90,8 @@ CLIENT_NEW = [
     text(
         "account_relation_code",
         "Account relation code",
-        "N08_KODAS_DS, required by Rivile for buyers and suppliers. Default PT001 (the guide's example) — use your company's code.",
+        "N08_KODAS_DS, required by Rivile for buyers and suppliers. Default PT001 (the guide's "
+        "example) — use your company's code.",
     ),
     text(
         "tax_table_code",
@@ -96,12 +105,7 @@ CLIENT_OUT = [
     out(
         "matched_by", "text", "string", "company_code, vat_code or client_code; empty when created."
     ),
-    out(
-        "match_count",
-        "integer",
-        "integer",
-        "How many clients matched (Rivile may allow duplicates).",
-    ),
+    out("match_count", "integer", "integer", "1 when found, 0 when created."),
     out("record", "object", ["object", "null"], "The Rivile N08 record."),
 ]
 LINE_SCHEMA = {
@@ -113,7 +117,7 @@ LINE_SCHEMA = {
     "items": {
         "type": "object",
         "additionalProperties": False,
-        "required": ["product_code", "quantity", "unit_price"],
+        "required": ["product_code", "quantity", "unit", "unit_price"],
         "properties": {
             "product_code": {
                 "type": "string",
@@ -126,25 +130,31 @@ LINE_SCHEMA = {
             },
             "quantity": {
                 "type": ["number", "string"],
-                "description": "Quantity in decimals (KIEKIS_U).",
+                "description": "Quantity in `unit`, up to 3 decimals (KIEKIS_U).",
             },
             "unit": {
                 "type": "string",
-                "description": "Unit code, e.g. VNT (I07_KODAS_US); default the product's unit.",
+                "description": "Unit the quantity is in, e.g. VNT or KG. Sent as I07_KODAS_US, "
+                "_US_P and _US_A, so the quantity means this unit (as in the guide's example).",
             },
             "unit_price": {
                 "type": ["number", "string"],
-                "description": "Price per unit (I07_KAINA_BE, I07_KAINA_SU with prices_include_vat, I07_VAL_KAINA with currency).",
+                "description": "Price per unit, 4 decimals: I07_KAINA_BE (net), I07_KAINA_SU with "
+                "prices_include_vat, I07_VAL_KAINA with foreign_currency.",
             },
             "vat_rate": {
                 "type": ["number", "string"],
-                "description": "VAT % (I07_MOKESTIS=1, I07_MOKESTIS_P). Omit to use the product/client tax table.",
+                "description": "VAT % 0–100 (I07_MOKESTIS=1, I07_MOKESTIS_P). Omit to use the "
+                "product/client tax table.",
             },
             "vat_code": {
                 "type": "string",
                 "description": "VAT classifier code (I07_KODAS_KL, Rivile 109+).",
             },
-            "discount": {"type": ["number", "string"], "description": "Discount % (I07_NUOLAIDA)."},
+            "discount": {
+                "type": ["number", "string"],
+                "description": "Discount % 0–100 (I07_NUOLAIDA).",
+            },
             "department_code": {
                 "type": "string",
                 "description": "Department / warehouse (I07_KODAS_IS); overrides the document's.",
@@ -165,7 +175,10 @@ def invoice(kind: str) -> dict[str, Any]:
         text(
             "number",
             "Number",
-            "Document number (I06_DOK_NR); omit when Rivile numbers documents automatically.",
+            "Document number (I06_DOK_NR); omit when Rivile numbers documents automatically. "
+            "With a number, a document with the same number, client and type is returned "
+            "instead of creating a second one, so a rerun is safe.",
+            maxLength=20,
         ),
         text(
             "date",
@@ -182,7 +195,14 @@ def invoice(kind: str) -> dict[str, Any]:
         text(
             "currency",
             "Currency",
-            "Currency code (I06_KODAS_VL); line prices are then sent as I07_VAL_KAINA.",
+            "Currency code (I06_KODAS_VL). Prices stay in the base-currency fields unless "
+            "foreign_currency is set.",
+        ),
+        flag(
+            "foreign_currency",
+            "Foreign currency",
+            "The currency differs from the company's base currency: prices are sent as "
+            "I07_VAL_KAINA (net) and I06_VAL_POZ=1. Cannot be combined with prices_include_vat.",
         ),
         text("department_code", "Department / warehouse", "Default I07_KODAS_IS for every line."),
         flag(
@@ -195,35 +215,39 @@ def invoice(kind: str) -> dict[str, Any]:
         flag(
             "post",
             "Post the document",
-            "After creating it, post it (EDIT_I06 oper P). A failed posting leaves the document unposted and is reported in post_error.",
+            "After creating it, post it (EDIT_I06 oper P). A failed posting leaves the document "
+            "unposted and is reported in post_error.",
         ),
     ]
     outputs = [
         out("document_code", "text", "string", "Rivile operation code (I06_KODAS_PO)."),
         out("number", "text", "string"),
+        out(
+            "created",
+            "boolean",
+            "boolean",
+            "false when a document with this number already existed and was returned.",
+        ),
         out("client_code", "text", "string"),
         out("client_created", "boolean", "boolean"),
         out("total_net", "number", ["number", "null"]),
         out("total_vat", "number", ["number", "null"]),
         out("total", "number", ["number", "null"]),
         out(
-            "posted",
-            "boolean",
-            ["boolean", "null"],
-            "true posted; false not posted; null outcome unknown.",
+            "posted", "boolean", ["boolean", "null"], "true posted; false not posted; null unknown."
         ),
         out("post_error", "text", "string"),
         out("record", "object", ["object", "null"]),
     ]
     title = "Create sales invoice" if sale else "Create purchase invoice"
+    party = "customer" if sale else "supplier"
     return {
         "operation_id": f"create_{kind}_invoice",
         "display_name": title,
         "description": (
-            f"Creates a {'sales' if sale else 'purchase'} invoice (EDIT_I06_FULL, I06_OP_TIP {op_type}) "
-            "with its lines in one request, finding or creating the "
-            f"{'customer' if sale else 'supplier'} first when company_code or vat_code is given; "
-            "optionally posts it. A failed line rolls the whole document back."
+            f"Creates a {kind} invoice (EDIT_I06_FULL, I06_OP_TIP {op_type}) with its lines in "
+            f"one request, finding or creating the {party} first when company_code or vat_code "
+            "is given; optionally posts it. A failed line rolls the whole document back."
         ),
         "kind": "action",
         "inputs": inputs,
@@ -250,7 +274,12 @@ def operations() -> list[dict[str, Any]]:
         {
             "operation_id": "find_or_create_client",
             "display_name": "Find or create customer / supplier",
-            "description": "Looks the client up by company code, then VAT code, then client code (GET_N08_LIST); creates it (EDIT_N08) only when none matches, so running it again is safe.",
+            "description": (
+                "Looks the client up by company code, then VAT code, then client code "
+                "(GET_N08_LIST); several matches or conflicting identifiers are an error. Creates "
+                "it (EDIT_N08) only when none matches, so running it again is safe — but not two "
+                "runs at the same time."
+            ),
             "kind": "action",
             "inputs": [CONNECTION, *CLIENT_LOOKUP, *CLIENT_NEW],
             "outputs": CLIENT_OUT,
@@ -260,7 +289,10 @@ def operations() -> list[dict[str, Any]]:
         {
             "operation_id": "attach_file_to_document",
             "display_name": "Attach file to document",
-            "description": "Attaches a workflow file (e.g. the invoice PDF) to a purchase or sales document (EDIT_I06_DOC). Rivile is not asked to echo the file back.",
+            "description": (
+                "Attaches a workflow file (e.g. the invoice PDF) to a purchase or sales document "
+                "(EDIT_I06_DOC). Rivile is not asked to echo the file back."
+            ),
             "kind": "action",
             "inputs": [
                 CONNECTION,
@@ -269,6 +301,7 @@ def operations() -> list[dict[str, Any]]:
                     "Document code",
                     "Rivile operation code (I06_KODAS_PO), e.g. from Create sales invoice.",
                     required=True,
+                    maxLength=12,
                 ),
                 {
                     "name": "document_file",
@@ -289,7 +322,8 @@ def operations() -> list[dict[str, Any]]:
                 flag(
                     "replace_existing",
                     "Replace existing",
-                    "Overwrite a file already attached (overwrite=1). Default false: Rivile refuses if one exists.",
+                    "Overwrite a file already attached (overwrite=1). Default false: Rivile "
+                    "refuses if one exists.",
                 ),
             ],
             "outputs": [
@@ -301,7 +335,10 @@ def operations() -> list[dict[str, Any]]:
         {
             "operation_id": "download_document_file",
             "display_name": "Download document file",
-            "description": "Downloads the file attached to a purchase or sales document (GET_I06_DOC) as a workflow file.",
+            "description": (
+                "Downloads the file attached to a purchase or sales document (GET_I06_DOC) as a "
+                "workflow file."
+            ),
             "kind": "source",
             "inputs": [
                 CONNECTION,
@@ -310,6 +347,7 @@ def operations() -> list[dict[str, Any]]:
                     "Document code",
                     "Rivile operation code (I06_KODAS_PO).",
                     required=True,
+                    maxLength=12,
                 ),
             ],
             "outputs": [
@@ -326,7 +364,10 @@ def operations() -> list[dict[str, Any]]:
         {
             "operation_id": "register_payment",
             "display_name": "Register payment",
-            "description": "Records a payment against a purchase or sales document (EDIT_I13: I13_KODAS_PO, I13_KODAS_SS, I13_SUMA).",
+            "description": (
+                "Records a payment against a purchase or sales document (EDIT_I13: "
+                "I13_KODAS_PO, I13_KODAS_SS, I13_SUMA)."
+            ),
             "kind": "action",
             "inputs": [
                 CONNECTION,
@@ -335,13 +376,20 @@ def operations() -> list[dict[str, Any]]:
                     "Document code",
                     "Rivile operation code (I06_KODAS_PO).",
                     required=True,
+                    maxLength=12,
                 ),
-                number("amount", "Amount", "Paid amount (I13_SUMA).", required=True),
+                number(
+                    "amount",
+                    "Amount",
+                    "Paid amount, positive, 2 decimals (I13_SUMA).",
+                    required=True,
+                ),
                 text(
                     "money_account_code",
                     "Money account",
                     "Rivile money account code (I13_KODAS_SS), e.g. the bank account.",
                     required=True,
+                    maxLength=12,
                 ),
                 number(
                     "currency_amount", "Amount in currency", "I13_SUMA_VAL for currency documents."
@@ -357,15 +405,25 @@ def operations() -> list[dict[str, Any]]:
         {
             "operation_id": "find_or_create_product",
             "display_name": "Find or create product",
-            "description": "Looks a product up by code (GET_N17_LIST) or barcode (GET_N37_LIST, then GET_N40_LIST); creates it with its unit and barcode (EDIT_N17_FULL) only when none matches.",
+            "description": (
+                "Looks a product up by code (GET_N17_LIST) or barcode (GET_N37_LIST, then "
+                "GET_N40_LIST); a barcode that belongs to another product is an error. Creates "
+                "the product with its unit and barcode (EDIT_N17_FULL) only when none matches."
+            ),
             "kind": "action",
             "inputs": [
                 CONNECTION,
-                text("product_code", "Product code", "N17_KODAS_PS; required to create."),
+                text(
+                    "product_code",
+                    "Product code",
+                    "N17_KODAS_PS; required to create.",
+                    maxLength=12,
+                ),
                 text(
                     "barcode",
                     "Barcode",
                     "Looked up in N37 and N40; added as an N40 barcode when creating.",
+                    maxLength=25,
                 ),
                 text("name", "Name", "N17_PAV, required to create."),
                 text(
@@ -380,28 +438,39 @@ def operations() -> list[dict[str, Any]]:
                 text(
                     "account_relation_code",
                     "Account relation code",
-                    "N17_KODAS_DS, required by Rivile. Default PR001 (the guide's example) — use your company's code.",
+                    "N17_KODAS_DS, required by Rivile. Default PR001 (the guide's example) — use "
+                    "your company's code.",
                 ),
             ],
             "outputs": [
                 out("product_code", "text", "string"),
                 out("created", "boolean", "boolean"),
                 out("matched_by", "text", "string"),
+                out(
+                    "notes",
+                    "array",
+                    "array",
+                    "e.g. a given barcode not registered for the found product.",
+                ),
                 out("record", "object", ["object", "null"]),
             ],
         },
         {
             "operation_id": "stock_levels",
             "display_name": "Stock levels",
-            "description": "Stock per product and warehouse (GET_I17_LIST grouped by I17_KODAS_IS), as plain decimal quantities.",
+            "description": (
+                "FIFO stock balance per product, unit and warehouse (GET_I17_LIST grouped by "
+                "I17_KODAS_IS), as decimal quantities in the base unit."
+            ),
             "kind": "source",
             "inputs": [
                 CONNECTION,
-                text("product_code", "Product code", "Only this product."),
+                text("product_code", "Product code", "Only this product.", maxLength=12),
                 text(
                     "warehouse_code",
                     "Warehouse / department",
                     "Only this department (I17_KODAS_IS).",
+                    maxLength=12,
                 ),
                 paging,
             ],
@@ -410,22 +479,33 @@ def operations() -> list[dict[str, Any]]:
         {
             "operation_id": "product_prices",
             "display_name": "Product prices",
-            "description": "Every price, price list, promotion and discount Rivile resolves for a product (GET_PS_KAIN), flattened.",
+            "description": (
+                "Every price, price list, promotion and discount Rivile resolves for a product "
+                "(GET_PS_KAIN), flattened."
+            ),
             "kind": "source",
             "inputs": [
                 CONNECTION,
-                text("product_code", "Product code", "kodas_ps; give this or barcode."),
-                text("barcode", "Barcode", "bar_kodas."),
-                text("unit", "Unit", "kodas_us."),
-                text("warehouse_code", "Warehouse / department", "kodas_is."),
-                text("client_code", "Client code", "Prices for this client (kodas_ks)."),
+                text(
+                    "product_code", "Product code", "kodas_ps; give this or barcode.", maxLength=12
+                ),
+                text("barcode", "Barcode", "bar_kodas.", maxLength=25),
+                text("unit", "Unit", "kodas_us.", maxLength=12),
+                text("warehouse_code", "Warehouse / department", "kodas_is.", maxLength=12),
+                text(
+                    "client_code", "Client code", "Prices for this client (kodas_ks).", maxLength=12
+                ),
             ],
             "outputs": [item_list, out("count", "integer", "integer")],
         },
         {
             "operation_id": "changes_since",
             "display_name": "Changes since",
-            "description": "Clients, products, prices or stock changed since a date (the *_TIME methods; run Enable change tracking (INIT_TRIGGER) once first), or documents corrected since then (GET_I06_LIST by I06_R_DATE).",
+            "description": (
+                "Clients, products, prices (all products) or stock changed since a date (the "
+                "*_TIME methods; run Advanced · Enable change tracking (INIT_TRIGGER) once first), "
+                "or documents corrected since then (GET_I06_LIST by I06_R_DATE)."
+            ),
             "kind": "source",
             "inputs": [
                 CONNECTION,
@@ -450,11 +530,14 @@ def operations() -> list[dict[str, Any]]:
         {
             "operation_id": "client_debt",
             "display_name": "Client debt",
-            "description": "Debt totals of a client or supplier (GET_T03_LIST): debit, credit and balance (debit − credit).",
+            "description": (
+                "Debt totals of a client or supplier (GET_T03_LIST): debit, credit and balance "
+                "(debit − credit)."
+            ),
             "kind": "source",
             "inputs": [
                 CONNECTION,
-                text("client_code", "Client code", "N08_KODAS_KS.", required=True),
+                text("client_code", "Client code", "N08_KODAS_KS.", required=True, maxLength=12),
             ],
             "outputs": [
                 out("client_code", "text", "string"),

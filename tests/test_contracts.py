@@ -18,6 +18,24 @@ from runtime import catalog
 from runtime.methods import METHODS
 from runtime.operations import _method_request, handle_runtime
 
+#: Minimal valid inputs of each friendly write, for the test-mode output check.
+FRIENDLY_SAMPLE: dict[str, dict[str, Any]] = {
+    "find_or_create_client": {"company_code": "121411842"},
+    "create_sales_invoice": {
+        "client_code": "1",
+        "department_code": "01",
+        "lines": [{"product_code": "A", "quantity": 1, "unit": "VNT", "unit_price": 1}],
+    },
+    "create_purchase_invoice": {
+        "client_code": "1",
+        "department_code": "01",
+        "lines": [{"product_code": "A", "quantity": 1, "unit": "VNT", "unit_price": 1}],
+    },
+    "attach_file_to_document": {"document_code": "1", "document_file": "artifact://x"},
+    "register_payment": {"document_code": "1", "money_account_code": "2703", "amount": 1},
+    "find_or_create_product": {"product_code": "A"},
+}
+
 SPEC = json.loads((BUNDLE_ROOT / "tests/reference/rivile_api_v2_spec.json").read_text("utf-8"))
 
 
@@ -126,8 +144,15 @@ def test_neutral_test_mode_result_has_every_declared_output() -> None:
     operations = {
         op["operation_id"]: op for op in _load("contracts/operation_manifest.yaml")["operations"]
     }
-    raw_writes = catalog.WRITE_OPERATION_IDS - {"call_method"} - catalog.FRIENDLY_WRITE_IDS
-    for operation_id in sorted(raw_writes):
+    for operation_id in sorted(catalog.WRITE_OPERATION_IDS - {"call_method"}):
+        if operation_id in catalog.FRIENDLY_WRITE_IDS:
+            response = handle_runtime(
+                payload(operation_id, FRIENDLY_SAMPLE[operation_id], test_mode=True)
+            )
+            assert response["ok"] is True, (operation_id, response)
+            declared = {o["name"] for o in operations[operation_id]["outputs"]}
+            assert set(response["result"]) == declared, operation_id
+            continue
         method = catalog.METHODS_BY_OPERATION[operation_id]
         data: dict[str, Any] | None = {method.data_roots[0]: {}} if method.data_roots else None
         inputs: dict[str, Any] = {"data": data} if data else {}

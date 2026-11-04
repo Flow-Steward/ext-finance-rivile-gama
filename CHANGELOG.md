@@ -14,6 +14,15 @@ First release, not yet verified against a live Rivilė GAMA key (1.0.0 follows t
 - Composite writes report exactly what was created when a later call fails, and are not retried.
 - Own connector icon; listing categories finance, inventory, hr.
 
+- Review round 3: Rivilė fields read case-insensitively (client debt was always 0 because T03 answers
+  in lower case); explicit `foreign_currency` (a base-currency code keeps net/gross price fields);
+  several matches or conflicting identifiers refused before any write; `KIEKIS_U` sent with all three
+  unit codes; codes allowlisted before they enter a filter; invoices with a number looked up first
+  (`created` output); running out of time after a write reported as such; a created client without
+  an echoed code read back; no posting without a document code; test-mode results carry every
+  declared output; Decimal money and quantities with Rivilė precision and bounds; stock with
+  `alt_unit`; prices changes for every product; documented datetime form; `Advanced ·` export.
+
 ### Complete Rivilė GAMA API v2 coverage and hardening
 
 Review fixes before the first release:

@@ -30,6 +30,7 @@ LINES = [
         "unit_price": "250",
         "discount": 5,
         "line_type": "service",
+        "unit": "VNT",
     },
 ]
 
@@ -99,10 +100,40 @@ def test_missing_client_is_created_with_documented_fields(make_factory) -> None:
     assert response["result"]["client_code"] == "121411842"
 
 
-def test_lookup_values_are_quoted_for_tsql(make_factory) -> None:
+def test_lookup_values_outside_the_code_alphabet_are_refused(make_factory) -> None:
+    for value in ("O'Neil", "LT\u02bc1", "LT\uff071", "Ąžuolas"):
+        opener = FakeOpener()
+        response = run(
+            make_factory, opener, payload("find_or_create_client", {"company_code": value})
+        )
+        assert response["error_code"] == "invalid_payload", value
+        assert opener.requests == []
+
+
+def test_several_matches_are_refused_without_writing(make_factory) -> None:
+    two = ret_dok(
+        N08_RIVILE, N08_RIVILE.replace("121411842</N08_KODAS_KS>", "999</N08_KODAS_KS>", 1)
+    )
+    opener = FakeOpener((200, two))
+    response = run(
+        make_factory,
+        opener,
+        payload("find_or_create_client", {"company_code": "121411842", "name": "X"}),
+    )
+    assert response["error_code"] == "invalid_payload" and "give client_code" in response["error"]
+    assert [b["method"] for b in bodies(opener)] == ["GET_N08_LIST"]
+
+
+def test_conflicting_identifiers_are_refused_without_writing(make_factory) -> None:
     opener = FakeOpener((200, ret_dok(N08_RIVILE)))
-    run(make_factory, opener, payload("find_or_create_client", {"company_code": "O'Neil"}))
-    assert bodies(opener)[0]["params"]["fil"] == "n08_im_kodas='O''Neil'"
+    response = run(
+        make_factory,
+        opener,
+        payload("find_or_create_client", {"company_code": "121411842", "vat_code": "LT999999999"}),
+    )
+    assert response["error_code"] == "invalid_payload"
+    assert "LT214118411" in response["error"]
+    assert len(opener.requests) == 1
 
 
 # --------------------------------------------------------------------------- invoices
@@ -110,7 +141,10 @@ def test_lookup_values_are_quoted_for_tsql(make_factory) -> None:
 
 def test_sales_invoice_maps_header_lines_terms_and_posts(make_factory) -> None:
     opener = FakeOpener(
-        (200, ret_dok(N08_RIVILE)), (200, ret_dok(I06_CREATED)), (200, ret_dok(I06_CREATED))
+        (200, ret_dok(N08_RIVILE)),
+        (200, ret_dok()),
+        (200, ret_dok(I06_CREATED)),
+        (200, ret_dok(I06_CREATED)),
     )
     response = run(
         make_factory,
@@ -129,7 +163,16 @@ def test_sales_invoice_maps_header_lines_terms_and_posts(make_factory) -> None:
         ),
     )
     sent = bodies(opener)
-    assert [b["method"] for b in sent] == ["GET_N08_LIST", "EDIT_I06_FULL", "EDIT_I06"]
+    assert [b["method"] for b in sent] == [
+        "GET_N08_LIST",
+        "GET_I06_LIST",
+        "EDIT_I06_FULL",
+        "EDIT_I06",
+    ]
+    assert sent[1]["params"]["fil"] == (
+        "i06_dok_nr='DOK-007' and i06_kodas_ks='121411842' and i06_op_tip=51"
+    )
+    sent = [sent[0], *sent[2:]]
     invoice = sent[1]
     assert invoice["params"] == {"errorAction": "ROLLBACK"}
     header = invoice["data"]["I06"]
@@ -141,9 +184,11 @@ def test_sales_invoice_maps_header_lines_terms_and_posts(make_factory) -> None:
             "I07_TIPAS": 1,
             "I07_KODAS": "004",
             "I07_KODAS_IS": "01",
+            "I07_KODAS_US": "VNT",
+            "I07_KODAS_US_P": "VNT",
+            "I07_KODAS_US_A": "VNT",
             "KIEKIS_U": 10,
             "I07_KAINA_BE": 1000,
-            "I07_KODAS_US": "VNT",
             "I07_MOKESTIS": 1,
             "I07_MOKESTIS_P": 21,
         },
@@ -151,8 +196,11 @@ def test_sales_invoice_maps_header_lines_terms_and_posts(make_factory) -> None:
             "I07_TIPAS": 2,
             "I07_KODAS": "005",
             "I07_KODAS_IS": "01",
-            "KIEKIS_U": 10.0,
-            "I07_KAINA_BE": 250.0,
+            "I07_KODAS_US": "VNT",
+            "I07_KODAS_US_P": "VNT",
+            "I07_KODAS_US_A": "VNT",
+            "KIEKIS_U": 10,
+            "I07_KAINA_BE": 250,
             "I07_NUOLAIDA": 5,
         },
     ]
@@ -165,6 +213,115 @@ def test_sales_invoice_maps_header_lines_terms_and_posts(make_factory) -> None:
     assert result["document_code"] == "010R00000050"
     assert (result["total_net"], result["total_vat"], result["total"]) == (2250.0, 472.5, 2722.5)
     assert result["posted"] is True and result["client_created"] is False
+    assert result["created"] is True
+    assert response["external_effect_status"] == "succeeded"
+
+
+def test_rerun_with_a_number_returns_the_existing_invoice(make_factory) -> None:
+    existing = I06_CREATED.replace("</I06>", "<I06_PERKELTA>2</I06_PERKELTA></I06>")
+    opener = FakeOpener((200, ret_dok(existing)))
+    response = run(
+        make_factory,
+        opener,
+        payload(
+            "create_sales_invoice",
+            {
+                "client_code": "121411842",
+                "number": "DOK-007",
+                "department_code": "01",
+                "lines": LINES,
+            },
+        ),
+    )
+    result = response["result"]
+    assert [b["method"] for b in bodies(opener)] == ["GET_I06_LIST"]
+    assert result["created"] is False and result["document_code"] == "010R00000050"
+    assert result["posted"] is True
+
+
+def test_posting_timeout_is_reported_as_unknown(make_factory) -> None:
+    opener = FakeOpener((200, ret_dok(I06_CREATED)), TimeoutError())
+    response = run(
+        make_factory,
+        opener,
+        payload(
+            "create_sales_invoice",
+            {"client_code": "1", "department_code": "01", "lines": LINES[:1], "post": True},
+        ),
+    )
+    assert response["ok"] is True
+    assert response["result"]["posted"] is None and response["result"]["post_error"]
+
+
+def test_no_document_code_means_no_posting(make_factory) -> None:
+    opener = FakeOpener((200, ret_dok("<I06><I06_DOK_NR>X</I06_DOK_NR></I06>")))
+    response = run(
+        make_factory,
+        opener,
+        payload(
+            "create_sales_invoice",
+            {"client_code": "1", "department_code": "01", "lines": LINES[:1], "post": True},
+        ),
+    )
+    assert len(opener.requests) == 1
+    assert response["result"]["posted"] is False
+
+
+def test_running_out_of_time_after_creating_the_client_reports_it(make_factory) -> None:
+    from runtime.transport import DeadlineReached
+
+    class Flaky(FakeOpener):
+        def __call__(self, request, *, timeout_seconds, purpose):
+            if json.loads(request.data)["method"] == "EDIT_I06_FULL":
+                raise AssertionError("must not be sent")
+            return super().__call__(request, timeout_seconds=timeout_seconds, purpose=purpose)
+
+    opener = Flaky((200, ret_dok()), (200, ret_dok(N08_RIVILE)))
+
+    def factory(connection):
+        transport = make_factory(opener)(connection)
+        original = transport.call
+
+        def call(method, params, data, *, mutating):
+            if method == "EDIT_I06_FULL":
+                raise DeadlineReached
+            return original(method, params, data, mutating=mutating)
+
+        transport.call = call
+        return transport
+
+    response = handle_runtime(
+        payload(
+            "create_sales_invoice",
+            {
+                "company_code": "121411842",
+                "name": "UAB X",
+                "department_code": "01",
+                "lines": LINES[:1],
+            },
+        ),
+        transport_factory=factory,
+    )
+    assert response["ok"] is False
+    assert "client 121411842 created" in response["error"]
+    assert response["definitely_no_external_effect"] is False
+    assert response["external_effect_status"] == "timeout_unknown"
+
+
+def test_client_created_without_an_echoed_code_is_read_back(make_factory) -> None:
+    opener = FakeOpener(
+        (200, ret_dok()),
+        (200, ret_dok("<N08><N08_PAV>X</N08_PAV></N08>")),
+        (200, ret_dok(N08_RIVILE)),
+    )
+    response = run(
+        make_factory,
+        opener,
+        payload("find_or_create_client", {"company_code": "121411842", "name": "X"}),
+    )
+    assert (
+        response["result"]["created"] is True and response["result"]["client_code"] == "121411842"
+    )
     assert response["external_effect_status"] == "succeeded"
 
 
@@ -208,7 +365,43 @@ def test_currency_and_gross_prices(make_factory) -> None:
         ),
     )
     header = bodies(opener)[0]["data"]["I06"]
-    assert header["I06_KODAS_VL"] == "USD" and header["I07"][0]["I07_VAL_KAINA"] == 1000
+    # A currency code alone (e.g. the base currency) keeps the base price fields.
+    assert header["I06_KODAS_VL"] == "USD" and header["I07"][0]["I07_KAINA_BE"] == 1000
+    assert "I06_VAL_POZ" not in header and "I07_VAL_KAINA" not in header["I07"][0]
+    opener = FakeOpener((200, ret_dok(I06_CREATED)))
+    run(
+        make_factory,
+        opener,
+        payload(
+            "create_sales_invoice",
+            {
+                "client_code": "1",
+                "currency": "USD",
+                "foreign_currency": True,
+                "department_code": "01",
+                "lines": LINES[:1],
+            },
+        ),
+    )
+    header = bodies(opener)[0]["data"]["I06"]
+    assert header["I06_VAL_POZ"] == 1 and header["I07"][0]["I07_VAL_KAINA"] == 1000
+    assert "I07_KAINA_BE" not in header["I07"][0]
+    refused = run(
+        make_factory,
+        FakeOpener(),
+        payload(
+            "create_sales_invoice",
+            {
+                "client_code": "1",
+                "currency": "USD",
+                "foreign_currency": True,
+                "prices_include_vat": True,
+                "department_code": "01",
+                "lines": LINES[:1],
+            },
+        ),
+    )
+    assert refused["error_code"] == "invalid_payload"
     opener = FakeOpener((200, ret_dok(I06_CREATED)))
     run(
         make_factory,
@@ -397,6 +590,7 @@ def test_product_found_by_alternative_barcode(make_factory) -> None:
         "product_code": "PASLX",
         "created": False,
         "matched_by": "barcode",
+        "notes": [],
         "record": {"N40_KODAS_PS": "PASLX"},
         "external_effect_status": "succeeded",
         "definitely_no_external_effect": False,
@@ -440,6 +634,70 @@ def test_missing_product_is_created_with_unit_and_barcode(make_factory) -> None:
         },
     }
     assert response["result"]["created"] is True
+
+
+def test_product_found_by_code_but_barcode_of_another_product(make_factory) -> None:
+    opener = FakeOpener(
+        (200, ret_dok("<N17><N17_KODAS_PS>A1</N17_KODAS_PS></N17>")),
+        (200, ret_dok("<N37><N37_KODAS_PS>B2</N37_KODAS_PS></N37>")),
+    )
+    response = run(
+        make_factory,
+        opener,
+        payload("find_or_create_product", {"product_code": "A1", "barcode": "4770000000001"}),
+    )
+    assert (
+        response["error_code"] == "invalid_payload" and "belongs to product B2" in response["error"]
+    )
+
+
+def test_product_found_by_code_with_an_unregistered_barcode_notes_it(make_factory) -> None:
+    opener = FakeOpener(
+        (200, ret_dok("<N17><N17_KODAS_PS>A1</N17_KODAS_PS></N17>")),
+        (200, ret_dok()),
+        (200, ret_dok()),
+    )
+    response = run(
+        make_factory,
+        opener,
+        payload("find_or_create_product", {"product_code": "A1", "barcode": "4770000000001"}),
+    )
+    assert response["result"]["created"] is False
+    assert "not registered" in response["result"]["notes"][0]
+
+
+def test_amounts_are_rounded_and_bounded(make_factory) -> None:
+    opener = FakeOpener(
+        (200, ret_dok("<I13><I13_EIL_NR>1</I13_EIL_NR><I13_SUMA_VAL>.00</I13_SUMA_VAL></I13>"))
+    )
+    run(
+        make_factory,
+        opener,
+        payload(
+            "register_payment",
+            {"document_code": "1", "money_account_code": "2703", "amount": "19.625"},
+        ),
+    )
+    assert bodies(opener)[0]["data"]["I13"]["I13_SUMA"] == 19.63
+    for amount in (-5, 0, "abc"):
+        bad = run(
+            make_factory,
+            FakeOpener(),
+            payload(
+                "register_payment",
+                {"document_code": "1", "money_account_code": "2703", "amount": amount},
+            ),
+        )
+        assert bad["error_code"] == "invalid_payload", amount
+    line = {"product_code": "A", "quantity": 1, "unit": "VNT", "unit_price": 1, "discount": 150}
+    bad = run(
+        make_factory,
+        FakeOpener(),
+        payload(
+            "create_sales_invoice", {"client_code": "1", "department_code": "01", "lines": [line]}
+        ),
+    )
+    assert bad["error_code"] == "invalid_payload"
 
 
 # --------------------------------------------------------------------------- reads
@@ -495,7 +753,7 @@ def test_changes_since_uses_the_time_methods_or_r_date(make_factory) -> None:
     )
     assert bodies(opener)[0] == {
         "method": "GET_CLIENTS_TIME",
-        "params": {"lastDate": "2022-01-31", "pagenumber": 1},
+        "params": {"list": "H", "lastDate": "2022-01-31", "pagenumber": 1},
     }
     assert response["result"]["count"] == 1
     opener = FakeOpener((200, ret_dok()))
@@ -504,7 +762,19 @@ def test_changes_since_uses_the_time_methods_or_r_date(make_factory) -> None:
         opener,
         payload("changes_since", {"entity": "documents", "since": "2022-01-31T08:00"}),
     )
-    assert bodies(opener)[0]["params"]["fil"] == "i06_r_date>='2022-01-31 08:00'"
+    assert bodies(opener)[0]["params"]["fil"] == "i06_r_date>='2022-01-31 08:00:00'"
+    opener = FakeOpener((200, ret_dok()))
+    run(
+        make_factory,
+        opener,
+        payload("changes_since", {"entity": "prices", "since": "2022-02-15T16:29"}),
+    )
+    # The guide's datetime form, and list A: prices of every product, not only barcoded ones.
+    assert bodies(opener)[0]["params"] == {
+        "list": "A",
+        "lastDate": "2022-02-15T16:29:00",
+        "pagenumber": 1,
+    }
     bad = run(
         make_factory,
         FakeOpener(),
@@ -515,16 +785,23 @@ def test_changes_since_uses_the_time_methods_or_r_date(make_factory) -> None:
 
 def test_client_debt_totals(make_factory) -> None:
     xml = ret_dok(
-        "<T03><T03_KODAS_KS>121411842</T03_KODAS_KS><T03_SUMA_DB>1512.50</T03_SUMA_DB><T03_SUMA_CR>500.00</T03_SUMA_CR></T03>"
+        # The guide's own response: lower-case tags, padded code.
+        "<T03><Row_number>1</Row_number><t03_kodas_ks> 110065392 </t03_kodas_ks>"
+        "<t03_dok_nr>LIKUTIS </t03_dok_nr><t03_kodas_vl>LIT </t03_kodas_vl>"
+        "<t03_suma_db_vl>0.00</t03_suma_db_vl><t03_suma_cr_vl>7200.00</t03_suma_cr_vl>"
+        "<t03_suma_db>.50</t03_suma_db><t03_suma_cr>7200.00</t03_suma_cr></T03>"
     )
     opener = FakeOpener((200, xml))
-    response = run(make_factory, opener, payload("client_debt", {"client_code": "121411842"}))
-    assert bodies(opener)[0]["params"] == {"list": "H", "fil": "t03_kodas_ks='121411842'"}
+    response = run(make_factory, opener, payload("client_debt", {"client_code": "110065392"}))
+    assert bodies(opener)[0]["params"] == {
+        "list": "H",
+        "fil": "ltrim(rtrim(t03_kodas_ks))='110065392'",
+    }
     assert (
         response["result"]["debit"],
         response["result"]["credit"],
         response["result"]["balance"],
-    ) == (1512.5, 500.0, 1012.5)
+    ) == (0.5, 7200.0, -7199.5)
 
 
 # --------------------------------------------------------------------------- contracts

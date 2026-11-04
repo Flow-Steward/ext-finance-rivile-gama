@@ -6,10 +6,17 @@ setup (account relation and tax table codes, money accounts) are explicit
 inputs with the guide's example value as default; README lists them as
 unverified without a live key.
 
-Composite writes report exactly what they did. When a later call fails after an
-earlier write succeeded, the step fails with "may have an effect", is not
-retried automatically, and its message lists what was already created. The
-find-or-create operations look up first, so running them again is safe.
+Composite writes report exactly what they did. When a later call fails, or the
+step runs out of time, after an earlier write succeeded, the step fails with
+"may have an effect", is not retried automatically, and its message lists what
+was already created.
+
+Reruns: the find-or-create operations look up before they create, and an
+invoice with a ``number`` is looked up by number, client and type first, so
+running a step again *after* the first run has finished is safe. Two runs at
+the same moment are not: both can miss the lookup and both create (Rivile
+numbers new clients itself and allows duplicate company codes unless
+RGI_N08_UNIK forbids them). Do not run the same find-or-create in parallel.
 """
 
 from __future__ import annotations
@@ -17,9 +24,10 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Mapping
 from datetime import date, datetime
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any
 
-from . import budget, catalog, errors
+from . import budget, errors
 from .errors import ExtensionError
 from .transport import DeadlineReached, Reply
 
@@ -36,15 +44,27 @@ DEFAULT_CLIENT_ACCOUNT_RELATION = "PT001"
 DEFAULT_PRODUCT_ACCOUNT_RELATION = "PR001"
 MAX_LINES = 500
 MAX_TEXT = 150
-CHANGE_SOURCES = {
-    "clients": ("GET_CLIENTS_TIME", "lastDate"),
-    "products": ("GET_PROD_BY_BARCODE_TIME", "lastDate"),
-    "prices": ("GET_PRICES_TIME", "lastDate"),
-    "stock": ("GET_I17_LIST_TIME", "lastDate"),
-    "documents": ("GET_I06_LIST", ""),
+#: Rivile precisions (field tables): prices N(12,4), decimal quantity N(12,3),
+#: percentages N(6,2), money N(12,2).
+PRICE = Decimal("0.0001")
+QUANTITY = Decimal("0.001")
+PERCENT = Decimal("0.01")
+MONEY = Decimal("0.01")
+CHANGE_SOURCES: dict[str, tuple[str, dict[str, str]]] = {
+    # GET_CLIENTS_TIME / GET_PROD_BY_BARCODE_TIME: list H = only what changed.
+    "clients": ("GET_CLIENTS_TIME", {"list": "H"}),
+    "products": ("GET_PROD_BY_BARCODE_TIME", {"list": "H"}),
+    # GET_PRICES_TIME: list H = only products with barcodes, A = every product.
+    "prices": ("GET_PRICES_TIME", {"list": "A"}),
+    "stock": ("GET_I17_LIST_TIME", {}),
+    "documents": ("GET_I06_LIST", {"list": "H"}),
 }
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _DATETIME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$")
+#: Codes that go into a T-SQL ``fil`` condition. ASCII only: a look-alike quote
+#: (U+02BC, U+FF07) could be "best-fit" converted into ' by a legacy code page.
+_CODE_RE = re.compile(r"^[A-Za-z0-9 ._/-]+$")
+_NUMBER_RE = re.compile(r"^-?[0-9]{0,15}([.,][0-9]{1,6})?$")
 
 
 # ---------------------------------------------------------------------------
@@ -76,17 +96,47 @@ def _text(
     return text
 
 
-def _number(value: Any, name: str, *, minimum: float | None = None) -> float | int:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        if isinstance(value, str) and re.fullmatch(
-            r"-?[0-9]{1,15}([.,][0-9]{1,6})?", value.strip()
-        ):
-            value = float(value.strip().replace(",", "."))
-        else:
-            raise _invalid(f"{name} must be a number")
-    if minimum is not None and value < minimum:
+def _code(inputs: Mapping[str, Any], name: str, *, limit: int, required: bool = False) -> str:
+    """A Rivile code: letters, digits, space and . _ / - only."""
+    text = _text(inputs, name, required=required, limit=limit)
+    if text and not _CODE_RE.fullmatch(text):
+        raise _invalid(f"{name} may contain only letters, digits, spaces and . _ / -")
+    return text
+
+
+def _decimal_input(
+    value: Any,
+    name: str,
+    step: Decimal,
+    *,
+    minimum: Decimal | None = None,
+    maximum: Decimal | None = None,
+) -> Decimal:
+    if isinstance(value, bool):
+        raise _invalid(f"{name} must be a number")
+    if isinstance(value, (int, float)):
+        text = repr(value) if isinstance(value, float) else str(value)
+    elif isinstance(value, str) and value.strip() and _NUMBER_RE.fullmatch(value.strip()):
+        text = value.strip().replace(",", ".")
+    else:
+        raise _invalid(f"{name} must be a number")
+    try:
+        number = Decimal(text)
+    except InvalidOperation as exc:
+        raise _invalid(f"{name} must be a number") from exc
+    if not number.is_finite():
+        raise _invalid(f"{name} must be a number")
+    number = number.quantize(step, rounding=ROUND_HALF_UP)
+    if minimum is not None and number < minimum:
         raise _invalid(f"{name} must be at least {minimum}")
-    return value
+    if maximum is not None and number > maximum:
+        raise _invalid(f"{name} must be at most {maximum}")
+    return number
+
+
+def _wire(number: Decimal) -> int | float:
+    """A JSON number with exactly the rounded value."""
+    return int(number) if number == number.to_integral_value() else float(number)
 
 
 def _date(value: Any, name: str, *, required: bool = False) -> str:
@@ -113,9 +163,9 @@ def _bool(inputs: Mapping[str, Any], name: str, default: bool) -> bool:
 
 
 def sql_literal(value: str) -> str:
-    """A T-SQL string literal for a Rivile ``fil`` condition."""
-    if any(ord(ch) < 32 for ch in value) or len(value) > MAX_TEXT:
-        raise _invalid("A lookup value contains characters that cannot be searched")
+    """A T-SQL string literal for a Rivile ``fil`` condition (allowlisted codes only)."""
+    if not _CODE_RE.fullmatch(value) or len(value) > MAX_TEXT:
+        raise _invalid("A lookup value may contain only letters, digits, spaces and . _ / -")
     return "'" + value.replace("'", "''") + "'"
 
 
@@ -123,6 +173,50 @@ def _allowed(inputs: Mapping[str, Any], names: set[str]) -> None:
     unknown = set(inputs) - names - {"connection_ref"}
     if unknown:
         raise _invalid(f"Unknown input: {', '.join(sorted(unknown))}")
+
+
+def field(record: Mapping[str, Any] | None, name: str) -> Any:
+    """A field of a Rivile record, matched case-insensitively.
+
+    Rivile mixes cases in its answers (``<t03_suma_db>``, ``<des_likutis_us>``,
+    ``<kodas_ps>`` next to ``<N08_KODAS_KS>``), so names are never compared as is.
+    """
+    if not isinstance(record, Mapping):
+        return None
+    if name in record:
+        return record[name]
+    lowered = name.lower()
+    for key, value in record.items():
+        if isinstance(key, str) and key.lower() == lowered:
+            return value
+    return None
+
+
+def _value(record: Mapping[str, Any] | None, *names: str) -> str:
+    for name in names:
+        value = field(record, name)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def _decimal(record: Mapping[str, Any] | None, name: str) -> Decimal | None:
+    raw = field(record, name)
+    if not isinstance(raw, str):
+        return None
+    text = raw.strip()
+    if not re.fullmatch(r"-?([0-9]+(\.[0-9]*)?|\.[0-9]+)", text):
+        return None
+    return Decimal(text)
+
+
+def _out(number: Decimal | None, step: Decimal = MONEY) -> float | None:
+    return None if number is None else float(number.quantize(step, rounding=ROUND_HALF_UP))
+
+
+def _first(reply: Reply) -> dict[str, Any] | None:
+    records = reply.parsed.records
+    return records[0] if records else None
 
 
 class Progress:
@@ -155,39 +249,18 @@ class Progress:
             data_errors=exc.data_errors,
         )
 
-
-def _first(reply: Reply) -> dict[str, Any] | None:
-    records = reply.parsed.records
-    return records[0] if records else None
-
-
-def _value(record: Mapping[str, Any] | None, *names: str) -> str:
-    if not isinstance(record, Mapping):
-        return ""
-    for name in names:
-        value = record.get(name)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-    return ""
-
-
-def _decimal(record: Mapping[str, Any], name: str) -> float | None:
-    raw = record.get(name)
-    if not isinstance(raw, str) or not re.fullmatch(r"-?[0-9]+(\.[0-9]+)?", raw.strip()):
-        return None
-    return float(raw.strip())
-
-
-def _quantity(
-    record: Mapping[str, Any], fractional: str, fraction: str, decimal_tag: str
-) -> float | None:
-    """Rivile keeps quantities as integer parts of a unit fraction (I07_FRAKCIJA)."""
-    direct = _decimal(record, decimal_tag)
-    if direct is not None:
-        return direct
-    amount = _decimal(record, fractional)
-    parts = _decimal(record, fraction) or 1.0
-    return None if amount is None else amount / parts
+    def guard(self, step: str, run: Callable[[], Any]) -> Any:
+        """Run one part of a composite step; a failure after a write reports the write."""
+        try:
+            return run()
+        except ExtensionError as exc:
+            raise self.fail(exc, step) from exc
+        except DeadlineReached as exc:
+            if not self.done:
+                raise
+            raise self.fail(
+                ExtensionError(errors.TIMEOUT_UNKNOWN, "the step ran out of time"), step
+            ) from exc
 
 
 # ---------------------------------------------------------------------------
@@ -208,28 +281,62 @@ CLIENT_INPUTS = {
     "account_relation_code",
     "tax_table_code",
 }
+#: Lookup order and the Rivile field each identifier is matched against.
+#: N08_IM_KODAS and N08_PVM_KODAS are C(35), N08_KODAS_KS is C(12).
+_CLIENT_KEYS = (
+    ("company_code", "N08_IM_KODAS", 35),
+    ("vat_code", "N08_PVM_KODAS", 35),
+    ("client_code", "N08_KODAS_KS", 12),
+)
+
+
+def _identifiers(inputs: Mapping[str, Any]) -> list[tuple[str, str, str]]:
+    found = []
+    for name, column, limit in _CLIENT_KEYS:
+        value = _code(inputs, name, limit=limit)
+        if value:
+            found.append((name, column, value))
+    return found
+
+
+def _same(left: str, right: str) -> bool:
+    return left.replace(" ", "").upper() == right.replace(" ", "").upper()
 
 
 def _find_client(
     call: Callable[..., Reply], inputs: Mapping[str, Any]
-) -> tuple[dict[str, Any] | None, str, int]:
-    for name, column in (
-        ("company_code", "n08_im_kodas"),
-        ("vat_code", "n08_pvm_kodas"),
-        ("client_code", "n08_kodas_ks"),
-    ):
-        value = _text(inputs, name, limit=35)
-        if not value:
-            continue
+) -> tuple[dict[str, Any] | None, str]:
+    """The one client the given identifiers point to, or none; never a guess.
+
+    The first identifier with any match decides. More than one match, or a
+    match whose other identifiers contradict the ones given, is refused before
+    anything is written.
+    """
+    given = _identifiers(inputs)
+    for name, column, value in given:
         reply = call(
             "GET_N08_LIST",
-            {"list": "H", "fil": f"{column}={sql_literal(value)}"},
+            {"list": "H", "fil": f"{column.lower()}={sql_literal(value)}"},
             None,
             mutating=False,
         )
-        if reply.parsed.records:
-            return reply.parsed.records[0], name, len(reply.parsed.records)
-    return None, "", 0
+        records = reply.parsed.records
+        if not records:
+            continue
+        if len(records) > 1:
+            codes = ", ".join(_value(r, "N08_KODAS_KS") for r in records[:5])
+            raise _invalid(
+                f"{len(records)} Rivile clients have this {name} ({codes}); give client_code"
+            )
+        record = records[0]
+        for other, other_column, other_value in given:
+            actual = _value(record, other_column)
+            if other != name and actual and not _same(actual, other_value):
+                raise _invalid(
+                    f"The client found by {name} has {other} {actual}, not {other_value}"
+                )
+        return record, name
+    return None, ""
 
 
 def _client_payload(inputs: Mapping[str, Any], *, require_name: bool = True) -> dict[str, Any]:
@@ -237,22 +344,23 @@ def _client_payload(inputs: Mapping[str, Any], *, require_name: bool = True) -> 
     if client_type not in CLIENT_TYPES:
         raise _invalid("client_type must be customer, supplier or both")
     name = _text(inputs, "name", required=require_name)
-    tax_table = _text(inputs, "tax_table_code", limit=12) or DEFAULT_TAX_TABLE
+    tax_table = _code(inputs, "tax_table_code", limit=12) or DEFAULT_TAX_TABLE
     record: dict[str, Any] = {
         "N08_PAV": name,
         "N08_RUSIS": CLIENT_TYPES[client_type],
         "N08_TIPAS": 1 if _bool(inputs, "legal_entity", True) else 2,
-        "N08_KODAS_DS": _text(inputs, "account_relation_code", limit=12)
+        "N08_KODAS_DS": _code(inputs, "account_relation_code", limit=12)
         or DEFAULT_CLIENT_ACCOUNT_RELATION,
     }
     if client_type in {"customer", "both"}:
         record["N08_KODAS_XS_P"] = tax_table
     if client_type in {"supplier", "both"}:
         record["N08_KODAS_XS_T"] = tax_table
-    for name_, field in (
-        ("client_code", "N08_KODAS_KS"),
-        ("company_code", "N08_IM_KODAS"),
-        ("vat_code", "N08_PVM_KODAS"),
+    for name_, column, limit in _CLIENT_KEYS:
+        value = _code(inputs, name_, limit=limit)
+        if value:
+            record[column] = value
+    for name_, column in (
         ("address", "N08_ADR"),
         ("location_code", "N08_KODAS_VS"),
         ("email", "N08_E_MAIL"),
@@ -260,22 +368,22 @@ def _client_payload(inputs: Mapping[str, Any], *, require_name: bool = True) -> 
     ):
         value = _text(inputs, name_)
         if value:
-            record[field] = value
+            record[column] = value
     return record
 
 
 def find_or_create_client(
     call: Callable[..., Reply], inputs: Mapping[str, Any], progress: Progress
 ) -> dict[str, Any]:
-    if not any(_text(inputs, n, limit=35) for n in ("company_code", "vat_code", "client_code")):
+    if not _identifiers(inputs):
         raise _invalid("Give company_code, vat_code or client_code to look the client up")
-    found, matched_by, matches = _find_client(call, inputs)
+    found, matched_by = _find_client(call, inputs)
     if found is not None:
         return {
             "client_code": _value(found, "N08_KODAS_KS"),
             "created": False,
             "matched_by": matched_by,
-            "match_count": matches,
+            "match_count": 1,
             "record": found,
         }
     payload = _client_payload(inputs)
@@ -283,6 +391,13 @@ def find_or_create_client(
     record = _first(reply) or {}
     code = _value(record, "N08_KODAS_KS") or str(payload.get("N08_KODAS_KS", ""))
     progress.add(f"client {code or payload['N08_PAV']} created (EDIT_N08)")
+    if not code:
+        # Rivile numbered the client itself and did not echo the code: read it back.
+        again, _matched = progress.guard(
+            "Reading the new client's code", lambda: _find_client(call, inputs)
+        )
+        code = _value(again, "N08_KODAS_KS")
+        record = again or record
     return {
         "client_code": code,
         "created": True,
@@ -301,6 +416,7 @@ INVOICE_INPUTS = CLIENT_INPUTS | {
     "date",
     "due_date",
     "currency",
+    "foreign_currency",
     "department_code",
     "prices_include_vat",
     "notes",
@@ -319,6 +435,7 @@ LINE_FIELDS = {
     "department_code",
     "name",
 }
+HUNDRED = Decimal(100)
 
 
 def _invoice_lines(inputs: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -327,9 +444,9 @@ def _invoice_lines(inputs: Mapping[str, Any]) -> list[dict[str, Any]]:
         raise _invalid("lines must be a non-empty list")
     if len(raw) > MAX_LINES:
         raise _invalid(f"At most {MAX_LINES} lines per document")
-    header_department = _text(inputs, "department_code", limit=12)
+    header_department = _code(inputs, "department_code", limit=12)
     with_vat = _bool(inputs, "prices_include_vat", False)
-    in_currency = bool(_text(inputs, "currency", limit=12))
+    foreign = _foreign_currency(inputs)
     lines = []
     for index, item in enumerate(raw):
         where = f"lines[{index}]"
@@ -341,29 +458,56 @@ def _invoice_lines(inputs: Mapping[str, Any]) -> list[dict[str, Any]]:
         line_type = (_text(item, "line_type") or "product").lower()
         if line_type not in LINE_TYPES:
             raise _invalid(f"{where}.line_type must be product or service")
-        department = _text(item, "department_code", limit=12) or header_department
+        department = _code(item, "department_code", limit=12) or header_department
         if not department:
             raise _invalid(f"{where}: department_code is required (Rivile I07_KODAS_IS)")
+        unit = _code(item, "unit", limit=12)
+        if not unit:
+            raise _invalid(f"{where}.unit is required (the unit the quantity is in, e.g. VNT)")
+        quantity = _decimal_input(
+            item.get("quantity"), f"{where}.quantity", QUANTITY, minimum=Decimal(0)
+        )
+        price = _decimal_input(
+            item.get("unit_price"), f"{where}.unit_price", PRICE, minimum=Decimal(0)
+        )
+        # KIEKIS_U is a decimal quantity in the line's sale/receipt unit
+        # (I07_KODAS_US_P / _US_A). Setting all three unit codes to the same unit,
+        # as the EDIT_I06_FULL example does, makes the quantity mean that unit.
         line: dict[str, Any] = {
             "I07_TIPAS": LINE_TYPES[line_type],
-            "I07_KODAS": _text(item, "product_code", required=True, limit=12),
+            "I07_KODAS": _code(item, "product_code", required=True, limit=12),
             "I07_KODAS_IS": department,
-            "KIEKIS_U": _number(item.get("quantity"), f"{where}.quantity", minimum=0),
+            "I07_KODAS_US": unit,
+            "I07_KODAS_US_P": unit,
+            "I07_KODAS_US_A": unit,
+            "KIEKIS_U": _wire(quantity),
         }
-        price = _number(item.get("unit_price"), f"{where}.unit_price", minimum=0)
-        if in_currency:
-            line["I07_VAL_KAINA"] = price
+        if foreign:
+            line["I07_VAL_KAINA"] = _wire(price)
         else:
-            line["I07_KAINA_SU" if with_vat else "I07_KAINA_BE"] = price
-        unit = _text(item, "unit", limit=12)
-        if unit:
-            line["I07_KODAS_US"] = unit
+            line["I07_KAINA_SU" if with_vat else "I07_KAINA_BE"] = _wire(price)
         if item.get("discount") is not None:
-            line["I07_NUOLAIDA"] = _number(item.get("discount"), f"{where}.discount", minimum=0)
+            line["I07_NUOLAIDA"] = _wire(
+                _decimal_input(
+                    item.get("discount"),
+                    f"{where}.discount",
+                    PERCENT,
+                    minimum=Decimal(0),
+                    maximum=HUNDRED,
+                )
+            )
         if item.get("vat_rate") is not None:
             line["I07_MOKESTIS"] = 1
-            line["I07_MOKESTIS_P"] = _number(item.get("vat_rate"), f"{where}.vat_rate", minimum=0)
-        vat_code = _text(item, "vat_code", limit=12)
+            line["I07_MOKESTIS_P"] = _wire(
+                _decimal_input(
+                    item.get("vat_rate"),
+                    f"{where}.vat_rate",
+                    PERCENT,
+                    minimum=Decimal(0),
+                    maximum=HUNDRED,
+                )
+            )
+        vat_code = _code(item, "vat_code", limit=12)
         if vat_code:
             line["I07_KODAS_KL"] = vat_code
         name = _text(item, "name", limit=40)
@@ -371,6 +515,23 @@ def _invoice_lines(inputs: Mapping[str, Any]) -> list[dict[str, Any]]:
             line["I07_PAV"] = name
         lines.append(line)
     return lines
+
+
+def _foreign_currency(inputs: Mapping[str, Any]) -> bool:
+    """Whether the document is in a currency other than the company's base one.
+
+    Only then are prices sent in currency (I07_VAL_KAINA, "Tik valiutinio
+    dokumento atveju") and I06_VAL_POZ set. Rivile's currency price has no
+    "with VAT" twin, so foreign_currency and prices_include_vat are exclusive.
+    """
+    foreign = _bool(inputs, "foreign_currency", False)
+    if foreign and not _code(inputs, "currency", limit=12):
+        raise _invalid("foreign_currency needs currency (the document's currency code)")
+    if foreign and _bool(inputs, "prices_include_vat", False):
+        raise _invalid(
+            "Foreign-currency prices are net; prices_include_vat cannot be used with them"
+        )
+    return foreign
 
 
 def _invoice_header(inputs: Mapping[str, Any], op_type: int, client_code: str) -> dict[str, Any]:
@@ -381,13 +542,15 @@ def _invoice_header(inputs: Mapping[str, Any], op_type: int, client_code: str) -
         "I06_OP_DATA": doc_date,
         "I06_DOK_DATA": doc_date,
     }
-    number = _text(inputs, "number", limit=20)
+    number = _code(inputs, "number", limit=20)
     if number:
         header["I06_DOK_NR"] = number
-    currency = _text(inputs, "currency", limit=12)
+    currency = _code(inputs, "currency", limit=12)
     if currency:
         header["I06_KODAS_VL"] = currency
-    if _bool(inputs, "prices_include_vat", False):
+    if _foreign_currency(inputs):
+        header["I06_VAL_POZ"] = 1
+    elif _bool(inputs, "prices_include_vat", False):
         header["I06_PVM_TIP"] = 1
     notes = _text(inputs, "notes", limit=40)
     if notes:
@@ -402,53 +565,115 @@ def _invoice_header(inputs: Mapping[str, Any], op_type: int, client_code: str) -
     return header
 
 
+def _existing_invoice(
+    call: Callable[..., Reply], number: str, client_code: str, op_type: int
+) -> dict[str, Any] | None:
+    fil = (
+        f"i06_dok_nr={sql_literal(number)} and i06_kodas_ks={sql_literal(client_code)} "
+        f"and i06_op_tip={op_type}"
+    )
+    reply = call("GET_I06_LIST", {"list": "H", "fil": fil}, None, mutating=False)
+    return reply.parsed.records[0] if reply.parsed.records else None
+
+
+def _invoice_result(
+    record: Mapping[str, Any],
+    header: Mapping[str, Any],
+    client_code: str,
+    *,
+    created: bool,
+    client_created: bool,
+    posted: bool | None,
+    post_error: str,
+) -> dict[str, Any]:
+    net = _decimal(record, "I06_SUMA")
+    vat = _decimal(record, "I06_SUMA_PVM")
+    return {
+        "document_code": _value(record, "I06_KODAS_PO"),
+        "number": _value(record, "I06_DOK_NR") or str(header.get("I06_DOK_NR", "")),
+        "created": created,
+        "client_code": client_code,
+        "client_created": client_created,
+        "total_net": _out(net),
+        "total_vat": _out(vat),
+        "total": None if net is None or vat is None else _out(net + vat),
+        "posted": posted,
+        "post_error": post_error,
+        "record": dict(record),
+    }
+
+
 def create_invoice(
     call: Callable[..., Reply], inputs: Mapping[str, Any], progress: Progress, *, op_type: int
 ) -> dict[str, Any]:
     lines = _invoice_lines(inputs)
-    client_code = _text(inputs, "client_code", limit=12)
+    client_code = _code(inputs, "client_code", limit=12)
     client_created = False
-    has_lookup = any(_text(inputs, n, limit=35) for n in ("company_code", "vat_code"))
+    has_lookup = bool(
+        _code(inputs, "company_code", limit=35) or _code(inputs, "vat_code", limit=35)
+    )
     if has_lookup or (client_code and _text(inputs, "name")):
         defaults = {"client_type": "customer" if op_type == SALES_OP_TYPE else "supplier"}
         client = find_or_create_client(call, {**defaults, **inputs}, progress)
         client_code, client_created = client["client_code"], client["created"]
     if not client_code:
+        if progress.done:
+            raise progress.fail(
+                ExtensionError(errors.UPSTREAM_FAILURE, "Rivile did not return the client's code"),
+                "Creating the invoice",
+            )
         raise _invalid("Give client_code, or company_code / vat_code to find or create the client")
     header = _invoice_header(inputs, op_type, client_code)
+    number = str(header.get("I06_DOK_NR", ""))
+    if number:
+        # A rerun after an unknown outcome must not create the document twice.
+        existing = progress.guard(
+            "Looking for an existing invoice",
+            lambda: _existing_invoice(call, number, client_code, op_type),
+        )
+        if existing is not None:
+            already_posted = _value(existing, "I06_PERKELTA") == "2"
+            return _invoice_result(
+                existing,
+                header,
+                client_code,
+                created=False,
+                client_created=client_created,
+                posted=already_posted,
+                post_error="",
+            )
     header["I07"] = lines
-    try:
-        reply = call("EDIT_I06_FULL", {"errorAction": "ROLLBACK"}, {"I06": header}, mutating=True)
-    except ExtensionError as exc:
-        raise progress.fail(exc, "Creating the invoice") from exc
+    reply = progress.guard(
+        "Creating the invoice",
+        lambda: call("EDIT_I06_FULL", {"errorAction": "ROLLBACK"}, {"I06": header}, mutating=True),
+    )
     record = _first(reply) or {}
     code = _value(record, "I06_KODAS_PO")
-    progress.add(f"document {code or header.get('I06_DOK_NR', '')} created (EDIT_I06_FULL)")
+    progress.add(f"document {code or number or '(no code returned)'} created (EDIT_I06_FULL)")
     posted: bool | None = None
     post_error = ""
     if _bool(inputs, "post", False):
-        try:
-            call("EDIT_I06", {"oper": "P"}, {"I06": {"I06_KODAS_PO": code}}, mutating=True)
-            posted = True
-        except ExtensionError as exc:
-            # The invoice exists; posting it can be done again by hand or by a
-            # later step. Unknown outcomes stay unknown.
-            posted = None if exc.code in errors.AMBIGUOUS_ERROR_CODES else False
-            post_error = exc.message
-    net = _decimal(record, "I06_SUMA")
-    vat = _decimal(record, "I06_SUMA_PVM")
-    return {
-        "document_code": code,
-        "number": _value(record, "I06_DOK_NR") or header.get("I06_DOK_NR", ""),
-        "client_code": client_code,
-        "client_created": client_created,
-        "total_net": net,
-        "total_vat": vat,
-        "total": None if net is None or vat is None else round(net + vat, 2),
-        "posted": posted,
-        "post_error": post_error,
-        "record": record,
-    }
+        if not code:
+            posted, post_error = False, "Rivile did not return the document code; not posted"
+        else:
+            try:
+                call("EDIT_I06", {"oper": "P"}, {"I06": {"I06_KODAS_PO": code}}, mutating=True)
+                posted = True
+            except ExtensionError as exc:
+                # The invoice exists; posting can be done again. Unknown stays unknown.
+                posted = None if exc.code in errors.AMBIGUOUS_ERROR_CODES else False
+                post_error = exc.message
+            except DeadlineReached:
+                posted, post_error = False, "The step ran out of time before posting"
+    return _invoice_result(
+        record,
+        header,
+        client_code,
+        created=True,
+        client_created=client_created,
+        posted=posted,
+        post_error=post_error,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -460,12 +685,16 @@ def _payment(inputs: Mapping[str, Any]) -> dict[str, Any]:
         inputs, {"document_code", "amount", "money_account_code", "currency_amount", "description"}
     )
     payment: dict[str, Any] = {
-        "I13_KODAS_PO": _text(inputs, "document_code", required=True, limit=12),
-        "I13_KODAS_SS": _text(inputs, "money_account_code", required=True, limit=12),
-        "I13_SUMA": _number(inputs.get("amount"), "amount"),
+        "I13_KODAS_PO": _code(inputs, "document_code", required=True, limit=12),
+        "I13_KODAS_SS": _code(inputs, "money_account_code", required=True, limit=12),
+        "I13_SUMA": _wire(_decimal_input(inputs.get("amount"), "amount", MONEY, minimum=MONEY)),
     }
     if inputs.get("currency_amount") is not None:
-        payment["I13_SUMA_VAL"] = _number(inputs.get("currency_amount"), "currency_amount")
+        payment["I13_SUMA_VAL"] = _wire(
+            _decimal_input(
+                inputs.get("currency_amount"), "currency_amount", MONEY, minimum=Decimal(0)
+            )
+        )
     description = _text(inputs, "description", limit=40)
     if description:
         payment["I13_PAV"] = description
@@ -493,34 +722,59 @@ PRODUCT_INPUTS = {
 }
 
 
+def _product_by_barcode(
+    call: Callable[..., Reply], barcode: str
+) -> tuple[dict[str, Any] | None, str]:
+    for method, column, key in (
+        ("GET_N37_LIST", "n37_bar_kodas", "N37_KODAS_PS"),
+        ("GET_N40_LIST", "n40_bar_kodas", "N40_KODAS_PS"),
+    ):
+        reply = call(method, {"fil": f"{column}={sql_literal(barcode)}"}, None, mutating=False)
+        if reply.parsed.records:
+            record = reply.parsed.records[0]
+            return record, _value(record, key)
+    return None, ""
+
+
 def find_or_create_product(
     call: Callable[..., Reply], inputs: Mapping[str, Any], progress: Progress
 ) -> dict[str, Any]:
     _allowed(inputs, PRODUCT_INPUTS)
-    code = _text(inputs, "product_code", limit=12)
-    barcode = _text(inputs, "barcode", limit=25)
+    code = _code(inputs, "product_code", limit=12)
+    barcode = _code(inputs, "barcode", limit=25)
     if not code and not barcode:
         raise _invalid("Give product_code or barcode")
-    lookups = []
+    notes: list[str] = []
     if code:
-        lookups.append(
-            ("GET_N17_LIST", f"n17_kodas_ps={sql_literal(code)}", "product_code", "N17_KODAS_PS")
+        reply = call(
+            "GET_N17_LIST", {"fil": f"n17_kodas_ps={sql_literal(code)}"}, None, mutating=False
         )
-    if barcode:
-        lookups.append(
-            ("GET_N37_LIST", f"n37_bar_kodas={sql_literal(barcode)}", "barcode", "N37_KODAS_PS")
-        )
-        lookups.append(
-            ("GET_N40_LIST", f"n40_bar_kodas={sql_literal(barcode)}", "barcode", "N40_KODAS_PS")
-        )
-    for method, fil, matched_by, key in lookups:
-        reply = call(method, {"fil": fil}, None, mutating=False)
         if reply.parsed.records:
-            record = reply.parsed.records[0]
+            if barcode:
+                by_barcode, owner = _product_by_barcode(call, barcode)
+                if by_barcode is not None and owner and not _same(owner, code):
+                    raise _invalid(f"Barcode {barcode} belongs to product {owner}, not {code}")
+                if by_barcode is None:
+                    notes.append(
+                        f"Barcode {barcode} is not registered for {code}; nothing was changed"
+                    )
             return {
-                "product_code": _value(record, key),
+                "product_code": code,
                 "created": False,
-                "matched_by": matched_by,
+                "matched_by": "product_code",
+                "notes": notes,
+                "record": reply.parsed.records[0],
+            }
+    if barcode:
+        record, owner = _product_by_barcode(call, barcode)
+        if record is not None:
+            if code and owner and not _same(owner, code):
+                raise _invalid(f"Barcode {barcode} belongs to product {owner}, not {code}")
+            return {
+                "product_code": owner,
+                "created": False,
+                "matched_by": "barcode",
+                "notes": notes,
                 "record": record,
             }
     if not code:
@@ -528,20 +782,26 @@ def find_or_create_product(
     product_type = (_text(inputs, "product_type") or "product").lower()
     if product_type not in LINE_TYPES:
         raise _invalid("product_type must be product or service")
-    unit = _text(inputs, "unit", required=True, limit=12)
+    unit = _code(inputs, "unit", required=True, limit=12)
     product: dict[str, Any] = {
         "N17_KODAS_PS": code,
         "N17_TIPAS": LINE_TYPES[product_type],
         "N17_PAV": _text(inputs, "name", required=True, limit=120),
         "N17_KODAS_US": unit,
-        "N17_KODAS_DS": _text(inputs, "account_relation_code", limit=12)
+        "N17_KODAS_DS": _code(inputs, "account_relation_code", limit=12)
         or DEFAULT_PRODUCT_ACCOUNT_RELATION,
     }
     if barcode:
         product["N40"] = {"N40_KODAS_US": unit, "N40_BAR_KODAS": barcode}
     reply = call("EDIT_N17_FULL", {"errorAction": "ROLLBACK"}, {"N17": product}, mutating=True)
     progress.add(f"product {code} created (EDIT_N17_FULL)")
-    return {"product_code": code, "created": True, "matched_by": "", "record": _first(reply) or {}}
+    return {
+        "product_code": code,
+        "created": True,
+        "matched_by": "",
+        "notes": notes,
+        "record": _first(reply) or {},
+    }
 
 
 def _pages(
@@ -582,11 +842,23 @@ def _pages(
     return rows, has_more, page if has_more else None
 
 
+def _quantity(
+    record: Mapping[str, Any], fractional: str, fraction: str, decimal_tag: str = ""
+) -> float | None:
+    """Rivile keeps quantities as integer parts of a unit fraction (I17_FRAKCIJA)."""
+    direct = _decimal(record, decimal_tag) if decimal_tag else None
+    if direct is not None:
+        return _out(direct, QUANTITY)
+    amount = _decimal(record, fractional)
+    parts = _decimal(record, fraction) or Decimal(1)
+    return None if amount is None else _out(amount / parts, QUANTITY)
+
+
 def stock_levels(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict[str, Any]:
     _allowed(inputs, {"product_code", "warehouse_code", "max_pages"})
     conditions = []
-    product = _text(inputs, "product_code", limit=12)
-    warehouse = _text(inputs, "warehouse_code", limit=12)
+    product = _code(inputs, "product_code", limit=12)
+    warehouse = _code(inputs, "warehouse_code", limit=12)
     if product:
         conditions.append(f"i17_kodas_ps={sql_literal(product)}")
     if warehouse:
@@ -601,9 +873,12 @@ def stock_levels(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict[
         {
             "product_code": _value(r, "I17_KODAS_PS"),
             "unit": _value(r, "I17_KODAS_US"),
+            "alt_unit": _value(r, "I17_KODAS_US_A"),
             "warehouse_code": _value(r, "I17_KODAS_IS"),
+            # FIFO balance (I17_KIEKIS) in the base unit; Rivile's own decimal
+            # figure when it sends one.
             "quantity": _quantity(r, "I17_KIEKIS", "I17_FRAKCIJA", "des_likutis_us"),
-            "reserved": _quantity(r, "I17_REZERVAS", "I17_FRAKCIJA", "des_rezervas_us"),
+            "reserved": _quantity(r, "I17_REZERVAS", "I17_FRAKCIJA"),
         }
         for r in rows
     ]
@@ -620,7 +895,7 @@ def product_prices(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dic
         ("warehouse_code", "kodas_is", 12),
         ("client_code", "kodas_ks", 12),
     ):
-        value = _text(inputs, name, limit=limit)
+        value = _code(inputs, name, limit=limit)
         if value:
             params[wire] = value
     if "kodas_ps" not in params and "bar_kodas" not in params:
@@ -632,7 +907,7 @@ def product_prices(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dic
             "unit": _value(r, "kodas_us"),
             "warehouse_code": _value(r, "kodas_is"),
             "barcode": _value(r, "bar_kodas"),
-            "price": _decimal(r, "kaina"),
+            "price": _out(_decimal(r, "kaina"), PRICE),
             "price_type": _value(r, "kain_tipas"),
             "priority": _value(r, "prioritetas"),
         }
@@ -643,25 +918,33 @@ def product_prices(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dic
     return result
 
 
+def _since(inputs: Mapping[str, Any]) -> tuple[str, str]:
+    """(the documented lastDate form, a T-SQL datetime literal body)."""
+    raw = _text(inputs, "since", required=True, limit=25)
+    if not (_DATE_RE.fullmatch(raw) or _DATETIME_RE.fullmatch(raw)):
+        raise _invalid("since must be YYYY-MM-DD or YYYY-MM-DDTHH:MM[:SS]")
+    try:
+        moment = datetime.fromisoformat(raw)
+    except ValueError as exc:
+        raise _invalid("since is not a valid date") from exc
+    if _DATE_RE.fullmatch(raw):
+        return raw, raw
+    # The guide's form: 2022-02-15T16:29:00.
+    return moment.strftime("%Y-%m-%dT%H:%M:%S"), moment.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def changes_since(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict[str, Any]:
     _allowed(inputs, {"entity", "since", "max_pages"})
     entity = _text(inputs, "entity", required=True).lower()
     if entity not in CHANGE_SOURCES:
         raise _invalid(f"entity must be one of {', '.join(CHANGE_SOURCES)}")
-    since_raw = _text(inputs, "since", required=True, limit=25)
-    if not (_DATE_RE.fullmatch(since_raw) or _DATETIME_RE.fullmatch(since_raw)):
-        raise _invalid("since must be YYYY-MM-DD or YYYY-MM-DDTHH:MM[:SS]")
-    try:
-        datetime.fromisoformat(since_raw)
-    except ValueError as exc:
-        raise _invalid("since is not a valid date") from exc
-    since = since_raw.replace("T", " ")
-    method, date_param = CHANGE_SOURCES[entity]
-    params: dict[str, Any] = (
-        {date_param: since}
-        if date_param
-        else {"list": "H", "fil": f"i06_r_date>={sql_literal(since)}"}
-    )
+    last_date, sql_moment = _since(inputs)
+    method, fixed = CHANGE_SOURCES[entity]
+    params: dict[str, Any] = dict(fixed)
+    if entity == "documents":
+        params["fil"] = f"i06_r_date>='{sql_moment}'"
+    else:
+        params["lastDate"] = last_date
     rows, has_more, next_page = _pages(
         call, method, params, page_param="pagenumber", max_pages=_max_pages(inputs)
     )
@@ -677,22 +960,20 @@ def changes_since(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict
 
 def client_debt(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict[str, Any]:
     _allowed(inputs, {"client_code"})
-    client = _text(inputs, "client_code", required=True, limit=12)
-    reply = call(
-        "GET_T03_LIST",
-        {"list": "H", "fil": f"t03_kodas_ks={sql_literal(client)}"},
-        None,
-        mutating=False,
-    )
-    debit = credit = 0.0
+    client = _code(inputs, "client_code", required=True, limit=12)
+    # T03 codes can come padded (the guide's own example is ' 110065392 '),
+    # so the comparison trims both sides.
+    fil = f"ltrim(rtrim(t03_kodas_ks))={sql_literal(client)}"
+    reply = call("GET_T03_LIST", {"list": "H", "fil": fil}, None, mutating=False)
+    debit = credit = Decimal(0)
     for row in reply.parsed.records:
-        debit += _decimal(row, "T03_SUMA_DB") or 0.0
-        credit += _decimal(row, "T03_SUMA_CR") or 0.0
+        debit += _decimal(row, "T03_SUMA_DB") or Decimal(0)
+        credit += _decimal(row, "T03_SUMA_CR") or Decimal(0)
     return {
         "client_code": client,
-        "debit": round(debit, 2),
-        "credit": round(credit, 2),
-        "balance": round(debit - credit, 2),
+        "debit": _out(debit),
+        "credit": _out(credit),
+        "balance": _out(debit - credit),
         "rows": reply.parsed.records,
     }
 
@@ -702,30 +983,70 @@ def validate(operation_id: str, inputs: Mapping[str, Any]) -> None:
     inputs = {k: v for k, v in inputs.items() if k != "connection_ref"}
     if operation_id == "find_or_create_client":
         _allowed(inputs, CLIENT_INPUTS)
-        if not any(_text(inputs, n, limit=35) for n in ("company_code", "vat_code", "client_code")):
+        if not _identifiers(inputs):
             raise _invalid("Give company_code, vat_code or client_code to look the client up")
         _client_payload(inputs, require_name=False)  # name is needed only to create
     elif operation_id in {"create_sales_invoice", "create_purchase_invoice"}:
         _allowed(inputs, INVOICE_INPUTS)
         _invoice_lines(inputs)
         _invoice_header(inputs, SALES_OP_TYPE, "X")
-        if not any(_text(inputs, n, limit=35) for n in ("client_code", "company_code", "vat_code")):
+        if not _identifiers(inputs):
             raise _invalid(
                 "Give client_code, or company_code / vat_code to find or create the client"
             )
     elif operation_id == "attach_file_to_document":
         _allowed(inputs, {"document_code", "document_file", "file_extension", "replace_existing"})
-        _text(inputs, "document_code", required=True, limit=12)
+        _code(inputs, "document_code", required=True, limit=12)
         _text(inputs, "document_file", required=True, limit=512)
     elif operation_id == "download_document_file":
         _allowed(inputs, {"document_code"})
-        _text(inputs, "document_code", required=True, limit=12)
+        _code(inputs, "document_code", required=True, limit=12)
     elif operation_id == "register_payment":
         _payment(inputs)
     elif operation_id == "find_or_create_product":
         _allowed(inputs, PRODUCT_INPUTS)
-        if not _text(inputs, "product_code", limit=12) and not _text(inputs, "barcode", limit=25):
+        if not _code(inputs, "product_code", limit=12) and not _code(inputs, "barcode", limit=25):
             raise _invalid("Give product_code or barcode")
+
+
+#: Every declared output of each friendly write, as a test run returns it:
+#: nothing was sent, so nothing was found or created.
+NEUTRAL_OUTPUTS: dict[str, dict[str, Any]] = {
+    "find_or_create_client": {
+        "client_code": "",
+        "created": False,
+        "matched_by": "",
+        "match_count": 0,
+        "record": None,
+    },
+    "create_sales_invoice": {
+        "document_code": "",
+        "number": "",
+        "created": False,
+        "client_code": "",
+        "client_created": False,
+        "total_net": None,
+        "total_vat": None,
+        "total": None,
+        "posted": False,
+        "post_error": "",
+        "record": None,
+    },
+    "attach_file_to_document": {"document_code": "", "file_extension": "", "record": None},
+    "register_payment": {"document_code": "", "line_number": "", "record": None},
+    "find_or_create_product": {
+        "product_code": "",
+        "created": False,
+        "matched_by": "",
+        "notes": [],
+        "record": None,
+    },
+}
+NEUTRAL_OUTPUTS["create_purchase_invoice"] = dict(NEUTRAL_OUTPUTS["create_sales_invoice"])
+
+
+def neutral_result(operation_id: str) -> dict[str, Any]:
+    return dict(NEUTRAL_OUTPUTS[operation_id])
 
 
 def _max_pages(inputs: Mapping[str, Any]) -> int:
@@ -740,13 +1061,15 @@ __all__ = [
     "CLIENT_INPUTS",
     "CLIENT_TYPES",
     "INVOICE_INPUTS",
+    "NEUTRAL_OUTPUTS",
     "Progress",
-    "catalog",
     "changes_since",
     "client_debt",
     "create_invoice",
+    "field",
     "find_or_create_client",
     "find_or_create_product",
+    "neutral_result",
     "product_prices",
     "register_payment",
     "sql_literal",
