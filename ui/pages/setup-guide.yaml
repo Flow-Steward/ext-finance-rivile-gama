@@ -1,122 +1,32 @@
 page_id: setup-guide
 title: Setup Guide
-description: What Rivilė needs before the first request, and how the workflow steps behave.
+description: How to get a Rivilė GAMA API key and connect it — about a minute to read.
 components:
-  - component_id: setup_requirements
+  - component_id: setup_rivile
     type: markdown
-    title: 1. Order the service and install the gateway
+    title: For the person who sets up Rivilė
     body: |
-      **For the person who orders the Rivilė service and installs the gateway** — usually the company's Rivilė administrator or Rivilė partner.
+      Usually the company's Rivilė administrator or Rivilė partner.
 
-      Rivilė GAMA API v2 is a paid Rivilė service. It needs Rivilė GAMA 119 or later (Sybase SQL 11.0+ or SQL Server 2008 R2+) and a valid version access agreement (versijų prieigos sutartis). Every request travels `Flow Steward → api.manorivile.lt → Manorivile-Gateway → your database`.
+      1. **Order the REST API service** from Rivilė or your Rivilė partner. Rivilė asks for: the licence owner's company name, company code and e-mail; the Rivilė GAMA company id (for example `01`); the base currency (for example `EUR`); the database name (for example `NAU_IMONE`); MSSQL or SYBASE; and the Rivilė GAMA WEB address. Rivilė GAMA must be version 119 or later.
+      2. **Rivilė sends two different credentials.** Keep them apart:
+         - `broker.username` and `broker.password` — only for the gateway's `global.properties` file. Never enter them in Flow Steward.
+         - the **API key** `username.secret` — only for Flow Steward.
+      3. **Install Manorivile-Gateway** on a Windows computer next to the Rivilė GAMA database:
+         1. Allow outbound access to `gateway.manorivile.lt`, port 5671. The database's SQL port must be static.
+         2. Download the gateway from Rivilė's gateway page and unpack it to `C:/Manorivile-Gateway`.
+         3. Enter the `broker.*` values in `global.properties`, and create `<database name>.properties` with the database connection.
+         4. Run `install.bat` as administrator and wait about five minutes.
+      4. **Rivilė GAMA rights:** the API works as the user named in the API key. The `RGI_*` parameters (Servisas → Administravimas → Parametrai) allow editing others' documents, payroll and personnel access and more.
 
-      **1. Order the REST API service** from Rivilė or your Rivilė representative. For the first connection Rivilė asks for:
-
-      - the name, company code and e-mail of the company that owns the Rivilė GAMA licence;
-      - the Rivilė GAMA company id (for example `01`);
-      - the company's base currency code (for example `EUR`);
-      - the Rivilė GAMA database name (for example `NAU_IMONE`);
-      - the database server: MSSQL or SYBASE;
-      - the Rivilė GAMA WEB address (for example `55245597`).
-
-      **2. Rivilė sends back two different sets of credentials.** Keep them apart:
-
-      | Credential | Where it goes |
-      |---|---|
-      | `broker.username` and `broker.password` | Only into the gateway's `global.properties` file on your server. **Never into Flow Steward.** |
-      | The API key, `username.secret` | Only into the Flow Steward connection (section 2). The username is the Rivilė GAMA user the API works as, so that user's rights apply. |
-
-      **3. Install Manorivile-Gateway** on a Windows computer or server that can reach the Rivilė GAMA database, and keep it running:
-
-      1. The machine needs outbound internet access to `gateway.manorivile.lt`, port 5671, and access to the database server's SQL port. The SQL port must be static.
-      2. Download the latest gateway (32-bit or 64-bit, matching Windows) from the link on Rivilė's gateway page, and unpack it to `C:/Manorivile-Gateway`.
-      3. In `global.properties`, enter the `broker.username` and `broker.password` from Rivilė. `response.returnStrings` affects only JSON answers; this extension asks Rivilė for XML and reads every value as text, so leave it as it is.
-      4. For each database, create `<database name>.properties` (the file name must equal the database name; `gama_example.properties` is the template) with the MS SQL or Sybase connection settings.
-      5. Run `install.bat` as administrator. It creates and starts the Windows service **ManoRivile-Gateway**. After a fresh install, allow about five minutes for it to synchronise.
-
-      **4. Rivilė GAMA parameters** (Servisas → Administravimas → Parametrai) control what the API may do: `RGI_ALL_EDIT` (edit operations created by other users), `RGI_N08_UNIK` (duplicate company codes), `RGI_KRED_LIM` (credit limit control), `RGI_A02_FIL` / `RGI_A06_FIL` / `RGI_K14_FIL` (payroll and personnel access — without them those methods see no data), `RGI_RAK` (record locking), `RGI_SUDENG` (debt settlement), `RGI_USR_EDIT` (passing a user code).
-
-      **If Test connection fails:**
-
-      - **Authentication failed (401)** — the API key is wrong, expired, or the service is not active. Check the key with Rivilė.
-      - **Gateway unavailable (502/503)** — the key is fine, but the gateway is not running or cannot reach the database. Check that the ManoRivile-Gateway service is started and read `log/manorivile-gateway.log` on the gateway machine.
-      - `ACCESS_REFUSED` in the gateway log — the `broker.*` values in `global.properties` are wrong, or no database is registered for the service.
-      - `Cannot open database` or `Connection refused` in the log — fix the `<database name>.properties` settings or the SQL user's rights (the user needs db_owner).
-
-      Gateway installation, updates and the full error list: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/manorivile-gateway
-
-      Rivilė guide: https://gidas.rivile.lt/internetiniai_moduliai/api_rest
-  - component_id: setup_connect
+      [Rivilė gateway guide and error list](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/manorivile-gateway) · [Rivilė API guide](https://gidas.rivile.lt/internetiniai_moduliai/api_rest)
+  - component_id: setup_flow_steward
     type: markdown
-    title: 2. Connect in Flow Steward
+    title: For the person who connects in Flow Steward
     body: |
-      **For the person who connects in Flow Steward.** You need only the API key (`username.secret`) — not the gateway's broker username or password.
+      You need only the API key, `username.secret`.
 
-      1. Open the project, then **Connection**, and add a connection.
-      2. Give it a **Label** that says which company and integration it is, for example `Shop 1 — UAB X`.
-      3. Paste the API key and save. It is stored encrypted and never shown again.
-      4. Press **Test connection**.
-
-      **Several keys and companies.** A connection belongs to one Flow Steward project. A project may hold several Rivilė connections — for example two companies or databases, or two websites each with its own key — and every workflow step chooses the connection it runs against. A connection in one project is not visible in another; each project adds its own. Use one key per integration: Rivilė queues all requests of one key, so integrations sharing a key slow each other down.
-  - component_id: setup_start_here
-    type: markdown
-    title: 3. Start here — everyday steps
-    body: |
-      These steps take plain inputs and make the Rivilė calls for you:
-
-      - **Find or create customer / supplier** — by company code, VAT code or client code; creates the client only if none matches, so it is safe to run again.
-      - **Create sales invoice** / **Create purchase invoice** — header and lines in one request, the client found or created first, optional posting. A failed line rolls the whole document back.
-      - **Attach file to document** / **Download document file** — move the invoice PDF between the workflow and Rivilė.
-      - **Register payment** — a payment against a document.
-      - **Find or create product** — by code or barcode; creates it with its unit and barcode.
-      - **Stock levels**, **Product prices**, **Client debt** — plain lists and totals.
-      - **Changes since** — clients, products, prices, stock or documents changed since a date (run **Advanced · Enable change tracking (INIT_TRIGGER)** once first).
-
-      Codes that every company sets up differently — the account relation code for new clients (`PT001`) and products (`PR001`), the tax table (`PVM`), money accounts for payments — are inputs. The defaults are the Rivilė guide's examples: replace them with your own.
-
-      If a step that writes several things fails half-way (for example the client was created but the invoice was refused), the step fails, says exactly what was already created, and is not retried automatically.
-  - component_id: setup_steps
-    type: markdown
-    title: 4. Every Rivilė method
-    body: |
-      Every Rivilė method is also its own operation, listed after the everyday steps as **Advanced · …** with the Rivilė method code in brackets, for example **Advanced · Clients: create, update or delete (EDIT_N08)**. The full list is on **API Reference**.
-
-      **Inputs.** Rivilė params are separate typed inputs (`oper`, `fil`, `list`, `error_action`, `page_number`…). The `data` input is Rivilė's data block with Rivilė's own field names, exactly as in the Rivilė guide:
-
-      ```json
-      {"N08": {"N08_KODAS_KS": "121411842", "N08_PAV": "UAB \"Rivilė\"", "N08_RUSIS": "3",
-               "N08_IM_KODAS": "121411842", "N08_PVM_KODAS": "LT214118411"}}
-      ```
-
-      Methods that create a document with lines (`*_FULL`) take the lines inside the header, for example `{"I06": {…, "I07": [{…}, {…}]}}`. Extra fields `PAP_1`, `PAP_2`… and dimensions `I49_DIM01`… pass through unchanged. `extra_params` passes any param this release does not list.
-
-      **Outputs.** Every operation returns `records` (the main returned table), `record` (the first one — for writes, the saved record with its new code), `other_tables` (any further top-level tables, by tag), `count`, `data_errors` (Rivilė's `tag`, `code`, `message` per refused field), `partial_success` and `http_status`. Values are text exactly as Rivilė sent them; numbers keep Rivilė's decimals. With **Trim values** on, only trailing padding is removed — leading spaces in Rivilė codes are significant and are kept.
-
-      **Lists.** Rivilė returns 100 records per page. Set `page_number`, or turn on `fetch_all_pages` (up to `max_pages`, default 10). One step output has a size limit, so a multi-page read stops at the last page that fits and reports `has_more` and `next_page` — continue from there, or use **Export a Rivile list to a JSONL file** for whole tables. A long export stops before the step time limit, saves what it read and returns `complete: false` with `resume_page` for the next run (`start_page`). Rivilė recommends filtering by the last key you received rather than paging deep, and the `*_TIME` methods (after **Enable change tracking (INIT_TRIGGER)**) for syncing only changes.
-
-      **Files.** **Purchase/sales document: attach… (EDIT_I06_DOC / EDIT_I06_DOCS)** take a workflow file in `document_file` — for example the invoice PDF from an earlier step — and Base64-encode it for Rivilė; `ext` comes from the file name or content, otherwise set it. Rivilė is asked not to echo the file back (`show_doc` 0). **…download the attached file (GET_I06_DOC)** saves the attachment as a workflow file (`document_file` output, stored as `rivile-document.bin`); `original_filename` and `original_content_type` give its name and type in Rivilė.
-
-      **Anything else.** **Call any Rivile method** sends any method name with raw params and data, for methods Rivilė adds later.
-  - component_id: setup_safety
-    type: markdown
-    title: 5. Writes, retries and errors
-    body: |
-      - **Every write is recorded.** All `EDIT_*` operations, `INIT_TRIGGER`, **Run a user stored procedure (GET_USER_PROC)** and **Call any Rivile method** go through the external-effect ledger: a retried step does not send the same write twice.
-      - **Test runs never write.** Flow Steward suppresses writes in a test run before they reach the extension; reads still run.
-      - **HTTP 400** — Rivilė refused the data; nothing was saved. The step fails with Rivilė's message and every `dataError` (field, code, text) in its errors.
-      - **HTTP 207** — part succeeded (`*_FULL` methods with `error_action` EXIT or CONTINUE). The step succeeds with `partial_success: true`; read `data_errors` to see which lines were refused.
-      - **Gateway unavailable (502/503) on a read** — the gateway is down. The read is retried.
-      - **Timeout or 500/502/503/504 on a write** — Rivilė may or may not have saved it (the gateway can fail after committing). The step fails with `timeout_unknown` and is not retried automatically: check the document in Rivilė first.
-      - **Record locked (423)** — another Rivilė user is editing the record (`RGI_RAK`); nothing was changed. The request is repeated after 1, 2, 4 and 8 seconds, then the step fails as retryable.
-      - **Rate limit (429)** — Rivilė allows 10 requests per second per key (30 at peak). The extension paces with Rivilė's `X-RateLimit-*` headers and, on 429, stops and backs off 1, 2, 4, 8 seconds as Rivilė requires. Pacing is per step: steps running in parallel on the same key share Rivilė's budget, so prefer a separate key per integration.
-  - component_id: setup_database_engine
-    type: markdown
-    title: 6. MS SQL and Sybase treat empty values differently
-    body: |
-      | Value sent | MS SQL server | Sybase server |
-      |---|---|---|
-      | Field omitted | Rivilė applies its default | Rivilė applies its default |
-      | Empty `""` | Empty value; no default applied | Same as omitted: default applied |
-      | One space `" "` | Empty in text (CHAR) fields | The way to send "empty" and avoid the default |
-
-      Example: creating a sale without an address code. On MS SQL, omit `I06_KODAS_AK` to have the address assigned, or send `""` to leave it empty. On Sybase, send `" "` to leave it empty.
+      1. Open **Connection** and add a connection. Name it after the company, for example `UAB X`.
+      2. Paste the API key and save.
+      3. Press **Test connection**.
+      4. In a workflow, add a Rivilė step and pick this connection. Start with the everyday steps on **Rivilė API — operations**.

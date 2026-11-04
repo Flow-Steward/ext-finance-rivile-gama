@@ -1,11 +1,11 @@
 page_id: connection
 title: Connection
-description: Add and test the Rivilė GAMA API keys this project uses.
+description: Add and test the Rivilė GAMA API key.
 components:
   - component_id: rivile_connections
     type: connection_form
     title: Rivilė GAMA API keys
-    description: Save one connection per API key, then test it. The key is stored encrypted and never shown again.
+    description: Add one connection per API key, then test it. The key is stored encrypted and never shown again.
     data:
       connection_kind: extension
       connection_type: rivile_gama
@@ -19,11 +19,11 @@ components:
       - path: label
         widget: text
         label: Label
-        placeholder: Shop 1 — UAB X
+        placeholder: UAB X
       - path: api_key
         widget: secret
         label: API key
-        help: The key from Rivilė, in the form username.secret. Stored by Flow Steward as an encrypted project secret.
+        help: The key from Rivilė, in the form username.secret.
         required: true
       - path: trim_values
         widget: boolean
@@ -32,23 +32,15 @@ components:
     ui_schema:
       actions:
         test_label: Test connection
-  - component_id: connection_projects
+  - component_id: connection_api_key
     type: markdown
-    title: Several keys, companies and projects
+    title: How to get the API key
     body: |
-      - **Connections belong to a project.** Each connection is saved in the Flow Steward project you are in.
-      - **A project may hold several Rivilė connections** — for example two companies or databases, or two websites each with its own key. Every workflow step chooses which connection it runs against.
-      - **Projects do not share connections.** A connection in project A is not visible in project B; project B adds its own, with its own key.
-      - **One key per integration.** Rivilė queues every request of one key, so integrations sharing a key slow each other down. Ask Rivilė for a separate key for each integration.
-      - **Name it clearly.** Use a Label that says which company and integration it is, for example `Shop 1 — UAB X`.
-      - **Only the API key goes here** (`username.secret`). The gateway's `broker.username` and `broker.password` stay in `global.properties` on the gateway server.
-  - component_id: connection_notes
-    type: markdown
-    title: What the test checks
-    body: |
-      **Test connection** sends one read-only request, `GET_N45_LIST` (currencies), with the saved key.
+      1. Order the REST API service from Rivilė or your Rivilė partner (see **Setup Guide**).
+      2. Rivilė sends the API key, in the form `username.secret`.
+      3. Paste it above and press **Test connection**.
 
-      - **Authentication failed** — the key is wrong, expired or the API service is not active. Check the key with Rivilė.
-      - **Gateway unavailable** — the key is fine, but Manorivile-Gateway is not running or cannot reach the Rivilė GAMA database. Start the gateway on the computer or server next to the database.
-      - **Success** — the key works and the company database answers. The `api_user` result is the Rivilė GAMA user the key logs in as.
+      **If the test fails:**
 
+      - **Authentication failed (401)** — the key is wrong, expired, or the service is not active. Check it with Rivilė.
+      - **Gateway unavailable (502/503)** — the key is fine, but Manorivile-Gateway is not running on the computer next to the database. Start it.

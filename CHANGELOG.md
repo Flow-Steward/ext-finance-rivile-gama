@@ -13,10 +13,10 @@ First release, not yet verified against a live Rivilė GAMA key (1.0.0 follows t
   operations flat, by name; it has no grouping field).
 - Composite writes report exactly what was created when a later call fails, and are not retried.
 - Own connector icon; listing categories finance, inventory, hr.
-- Setup guide: what to send Rivilė when ordering the service, the two credential sets (gateway
-  broker login vs. the API key), gateway installation and troubleshooting. Connection page: several
-  connections per project, one key per integration. API Reference: a Coverage section. New
-  Changelog page.
+- Pages: a one-minute Setup Guide (one block for whoever sets up Rivilė and the gateway, one for
+  whoever connects in Flow Steward); Connection with "How to get the API key"; "Rivilė API —
+  operations" (each everyday step: Rivilė methods, inputs, results, and how steps behave);
+  "Rivilė API — advanced methods" (every method by area, with coverage); Changelog. No tables.
 
 - Review round 3: Rivilė fields read case-insensitively (client debt was always 0 because T03 answers
   in lower case); explicit `foreign_currency` (a base-currency code keeps net/gross price fields);

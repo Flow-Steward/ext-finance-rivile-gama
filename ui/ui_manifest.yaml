@@ -2,5 +2,6 @@ version: "1"
 pages:
   - ref: pages/setup-guide.yaml
   - ref: pages/connection.yaml
-  - ref: pages/api-reference.yaml
+  - ref: pages/operations.yaml
+  - ref: pages/advanced-methods.yaml
   - ref: pages/changelog.yaml

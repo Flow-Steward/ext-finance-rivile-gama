@@ -12,8 +12,8 @@ Output (all generated, never edited by hand):
 * ``contracts/step_ui_manifest.yaml``   — the builder form of every operation
 * ``contracts/artifact_policies.yaml``  — file inputs/outputs (document attach/download, export)
 * ``ui/actions/actions.yaml``           — the same-id workflow-visible actions
-* ``ui/pages/api-reference.yaml``       — every operation, grouped, with the coverage statement
-* ``ui/pages/changelog.yaml``           — ``CHANGELOG.md`` as a page
+* ``ui/pages/operations.yaml``, ``advanced-methods.yaml``, ``changelog.yaml`` — via
+  ``build_ui_pages.py``
 * ``extension.yaml`` ``external_effects`` block (spliced between markers)
 
 Run from the bundle root:  python3 tests/reference/build_contracts.py
@@ -34,6 +34,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 
+import build_ui_pages  # noqa: E402
 import friendly_contracts  # noqa: E402
 from titles import DEFAULT_GROUP, GROUPS, TITLES  # noqa: E402
 
@@ -1117,128 +1118,6 @@ def runtime_registry(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def reference_page(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """The API Reference page: every operation, grouped as in the Rivile guide."""
-    groups: dict[str, list[dict[str, Any]]] = {}
-    for row in rows:
-        groups.setdefault(row["group"], []).append(row)
-    start = ["| Operation | What it does | |", "|---|---|---|"]
-    for spec in friendly_contracts.operations():
-        mark = "✎" if spec["kind"] == "action" else ""
-        start.append(f"| **{spec['display_name']}** | {spec['description']} | {mark} |")
-    components: list[dict[str, Any]] = [
-        {
-            "component_id": "reference_start_here",
-            "type": "markdown",
-            "title": "Start here",
-            "body": (
-                "Everyday tasks in plain terms — each step makes the Rivile calls it needs. "
-                "The raw Rivile methods follow below and appear in the step picker as "
-                "**Advanced · …**.\n\n" + "\n".join(start) + "\n"
-            ),
-        },
-        {
-            "component_id": "reference_intro",
-            "type": "markdown",
-            "title": "Every Rivile GAMA API v2 method",
-            "body": (
-                f"This release covers all {len(rows)} methods of the Rivile GAMA API v2 guide "
-                f"({sum(1 for r in rows if not r['write'])} read, "
-                f"{sum(1 for r in rows if r['write'])} write), plus **Test the connection**, "
-                "**Call any Rivile method** and **Export a Rivile list to a JSONL file**. "
-                "Writes are marked ✎. Each method links to its page in the Rivile guide."
-            ),
-        },
-    ]
-    components.append(
-        {
-            "component_id": "reference_coverage",
-            "type": "markdown",
-            "title": "Coverage",
-            "body": coverage_body(rows),
-        }
-    )
-    for index, group in enumerate(sorted(groups)):
-        lines = ["| Operation | Rivile method | |", "|---|---|---|"]
-        for row in sorted(groups[group], key=lambda r: (r["title"], r["method"])):
-            mark = "✎" if row["write"] else ""
-            lines.append(
-                f"| {row['title']} | [{row['method']}]({DOCS_BASE}{row['page']}) | {mark} |"
-            )
-        components.append(
-            {
-                "component_id": f"reference_group_{index + 1}",
-                "type": "markdown",
-                "title": group,
-                "body": "\n".join(lines) + "\n",
-            }
-        )
-    return {
-        "page_id": "api-reference",
-        "title": "API Reference",
-        "description": "Every Rivile GAMA method this extension exposes, grouped by area.",
-        "components": components,
-    }
-
-
-def coverage_body(rows: list[dict[str, Any]]) -> str:
-    """What of the Rivile GAMA API v2 guide this release covers, and what it does not."""
-    params = sum(len(row["params"]) for row in rows)
-    return (
-        "\n".join(
-            [
-                f"**Covered.** All {len(rows)} methods documented in the Rivile GAMA API v2 guide, "
-                "each as its own operation. Every documented param — "
-                f"{params} across all methods — is a typed input with the guide's description, "
-                "allowed values and required flags; the `data` input takes the guide's field names "
-                "for every documented table, and extra fields (`PAP_*`, `I49_DIM*`) pass through.",
-                "",
-                "**Newer than this release.** `extra_params` passes a param the guide added later; "
-                "**Call any Rivile method** sends any method name with raw params and data (always "
-                "treated as a write).",
-                "",
-                "**Deliberately not offered:**",
-                "",
-                "- **JSON responses.** Every answer is requested as XML, Rivile's default. Values stay "
-                "text exactly as Rivile stores them, so codes such as `301` and `301.` stay distinct "
-                "and the gateway's `response.returnStrings` setting does not matter.",
-                "- **Automatic paging by last key.** Rivile recommends filtering by the last key "
-                "received instead of paging deep; set that filter yourself in `fil`. The extension "
-                "pages by `page_number` (100 records per page) and reports `next_page`.",
-                "- **Rate coordination across steps.** Pacing with Rivile's `X-RateLimit-*` headers "
-                "and the 429 backoff work within one step. Steps running in parallel on the same key "
-                "share Rivile's budget; use a separate key per integration.",
-                "- **The gateway's own settings and `/client/ping`.** Installing, configuring and "
-                "updating Manorivile-Gateway happens on your server; **Test the connection** checks the "
-                "key and the gateway with one read (`GET_N45_LIST`).",
-                "- **File content in write answers.** `show_doc` defaults to 0 for the document "
-                "attach methods; download a file with **Download document file** or `GET_I06_DOC`.",
-            ]
-        )
-        + "\n"
-    )
-
-
-def changelog_page() -> dict[str, Any]:
-    """The Changelog page renders CHANGELOG.md, so the two cannot disagree."""
-    lines = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8").strip().splitlines()
-    if lines and lines[0].startswith("# "):
-        lines = lines[1:]
-    return {
-        "page_id": "changelog",
-        "title": "Changelog",
-        "description": "What changed in each release of this extension.",
-        "components": [
-            {
-                "component_id": "changelog_entries",
-                "type": "markdown",
-                "title": "Release history",
-                "body": "\n".join(lines).strip() + "\n",
-            }
-        ],
-    }
-
-
 def dump(path: Path, payload: Any) -> None:
     text = yaml.safe_dump(payload, sort_keys=False, allow_unicode=True, width=100)
     path.write_text(GENERATED_HEADER + text, encoding="utf-8")
@@ -1275,8 +1154,9 @@ def outputs() -> dict[str, Any]:
         "artifact_policies": artifact_policies(),
         "effects": external_effects(ops),
         "registry": runtime_registry(rows),
-        "reference_page": reference_page(rows),
-        "changelog_page": changelog_page(),
+        "operations_page": build_ui_pages.operations_page(ops, rows),
+        "advanced_page": build_ui_pages.advanced_page(ops, rows),
+        "changelog_page": build_ui_pages.changelog_page(),
     }
 
 
@@ -1289,8 +1169,12 @@ def main() -> None:
         {"artifact_policies": built["artifact_policies"]},
     )
     dump(ROOT / "ui" / "actions" / "actions.yaml", {"actions": built["actions"]})
-    dump(ROOT / "ui" / "pages" / "api-reference.yaml", built["reference_page"])
-    dump(ROOT / "ui" / "pages" / "changelog.yaml", built["changelog_page"])
+    for name, key in (
+        ("operations.yaml", "operations_page"),
+        ("advanced-methods.yaml", "advanced_page"),
+        ("changelog.yaml", "changelog_page"),
+    ):
+        build_ui_pages.dump_page(ROOT / "ui" / "pages" / name, GENERATED_HEADER, built[key])
     (ROOT / "runtime" / "methods.py").write_text(built["registry"], encoding="utf-8")
     splice_effects(built["effects"])
     print(

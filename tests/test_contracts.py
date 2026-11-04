@@ -58,7 +58,8 @@ def test_actions_step_ui_policies_and_reference_are_generated(built) -> None:
     assert _load("contracts/artifact_policies.yaml") == {
         "artifact_policies": built["artifact_policies"]
     }
-    assert _load("ui/pages/api-reference.yaml") == built["reference_page"]
+    assert _load("ui/pages/operations.yaml") == built["operations_page"]
+    assert _load("ui/pages/advanced-methods.yaml") == built["advanced_page"]
     assert _load("ui/pages/changelog.yaml") == built["changelog_page"]
     committed = (BUNDLE_ROOT / "runtime/methods.py").read_text("utf-8")
     # Compared as syntax trees: the formatter may re-wrap the generated source.
@@ -213,11 +214,25 @@ def test_every_shipped_page_is_in_the_ui_manifest() -> None:
     assert refs == shipped
 
 
-def test_reference_page_states_coverage(built) -> None:
-    coverage = next(
-        c
-        for c in built["reference_page"]["components"]
-        if c["component_id"] == "reference_coverage"
-    )
-    assert f"All {len(built['rows'])} methods" in coverage["body"]
-    assert "Deliberately not offered" in coverage["body"]
+def test_advanced_page_lists_every_method_and_coverage(built) -> None:
+    bodies = "\n".join(c["body"] for c in built["advanced_page"]["components"])
+    for row in built["rows"]:
+        assert f"`{row['operation_id']}`" in bodies, row["method"]
+    assert f"all {len(built['rows'])} methods" in bodies
+
+
+def test_operations_page_details_every_everyday_operation(built) -> None:
+    body = built["operations_page"]["components"][0]["body"]
+    for op in built["operations"]:
+        if not op["display_name"].startswith("Advanced") and op["operation_id"] not in (
+            "call_method",
+            "export_list",
+        ):
+            assert f"### {op['display_name']}" in body
+
+
+def test_no_page_uses_a_markdown_table() -> None:
+    for path in (BUNDLE_ROOT / "ui" / "pages").glob("*.yaml"):
+        for component in yaml.safe_load(path.read_text("utf-8"))["components"]:
+            for line in str(component.get("body", "")).splitlines():
+                assert not line.lstrip().startswith("|"), f"{path.name}: {line}"
