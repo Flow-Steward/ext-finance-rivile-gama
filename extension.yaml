@@ -36,6 +36,12 @@ required_scopes:
 - extension:invoke
 - artifact:read
 - artifact:write
+machine_auth:
+  service_account_key: svc_ext_rivile_gama
+  required_scopes:
+  - extension:invoke
+  - artifact:read
+  - artifact:write
 account_scope:
   scope_type: project
   description: Each Rivilė GAMA API key is a project connection. A project may hold several, for example
