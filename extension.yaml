@@ -1,29 +1,48 @@
 manifest_version: 2
-lifecycle: {data_schema_version: 1, data_migrations: []}
+lifecycle:
+  data_schema_version: 1
+  data_migrations: []
 extension_id: flowsteward.rivile-gama
 kind: tool_provider
 version: 1.0.0
 release_stage: active
 billing_mode: free
 display_name: Rivilė GAMA
-description: Rivilė GAMA REST API v2 for workflows. Every documented method — clients, products, purchase and sales documents, payments, inventory, general ledger, payroll, personnel, POS and more — is a typed workflow operation, with document file attach/download, paged reads and JSONL export.
+description: Rivilė GAMA REST API v2 for workflows. Every documented method — clients, products, purchase
+  and sales documents, payments, inventory, general ledger, payroll, personnel, POS and more — is a typed
+  workflow operation, with document file attach/download, paged reads and JSONL export.
 vendor:
   name: Flow Steward
   support_url: https://github.com/Flow-Steward/ext-accounting-rivile-gama/issues
   website_url: https://github.com/Flow-Steward/ext-accounting-rivile-gama
 listing:
   category: accounting
-  tags: [rivile, rivile-gama, accounting, erp, lithuania, invoices, vat, inventory, payroll]
-  summary: Read and write everything Rivilė GAMA API v2 exposes — 209 methods as workflow steps, from clients and goods to invoices with VAT, payments and stock.
-features: [tool, action]
-required_scopes: [extension:invoke, artifact:read, artifact:write]
+  tags:
+  - rivile
+  - rivile-gama
+  - accounting
+  - erp
+  - lithuania
+  - invoices
+  - vat
+  - inventory
+  - payroll
+  summary: Read and write everything Rivilė GAMA API v2 exposes — 209 methods as workflow steps, from
+    clients and goods to invoices with VAT, payments and stock.
+features:
+- tool
+- action
+required_scopes:
+- extension:invoke
+- artifact:read
+- artifact:write
 account_scope:
   scope_type: project
-  description: Each Rivilė GAMA API key is a project connection. A project may hold several, for example one per company database or integration.
+  description: Each Rivilė GAMA API key is a project connection. A project may hold several, for example
+    one per company database or integration.
 egress:
   hosts:
   - api.manorivile.lt
-# BEGIN GENERATED external_effects
 external_effects:
 - operation_id: edit_a02
   effect_kind: rivile_edit_a02
@@ -620,7 +639,6 @@ external_effects:
   channel: rivile_gama_api_v2
   idempotency: required
   test_mode_behavior: suppress
-# END GENERATED external_effects
 runtime:
   contract_version: extension_host_v2
   extension_contract_v2:
@@ -628,8 +646,21 @@ runtime:
     operation_manifest: contracts/operation_manifest.yaml
     step_ui_manifest: contracts/step_ui_manifest.yaml
     artifact_policies: contracts/artifact_policies.yaml
-entrypoint: {mode: subprocess, command: [python3, main.py], timeout_seconds: 600}
-health: {command: [python3, health.py], timeout_seconds: 5}
+entrypoint:
+  mode: subprocess
+  command:
+  - python3
+  - main.py
+  timeout_seconds: 600
+health:
+  command:
+  - python3
+  - health.py
+  timeout_seconds: 5
 ui_manifest: ui/ui_manifest.yaml
 action_manifest: ui/actions/actions.yaml
-python_requirements: []
+python_requirements:
+- name: defusedxml
+  version: 0.7.1
+  hashes:
+  - sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61

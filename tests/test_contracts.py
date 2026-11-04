@@ -126,7 +126,7 @@ def test_neutral_test_mode_result_has_every_declared_output() -> None:
     }
     for operation_id in sorted(catalog.WRITE_OPERATION_IDS - {"call_method"}):
         method = catalog.METHODS_BY_OPERATION[operation_id]
-        data = {method.data_roots[0]: {}} if method.data_roots else None
+        data: dict[str, Any] | None = {method.data_roots[0]: {}} if method.data_roots else None
         inputs: dict[str, Any] = {"data": data} if data else {}
         if method.method in catalog.UPLOAD_METHODS:
             inputs["doc"] = "AA=="

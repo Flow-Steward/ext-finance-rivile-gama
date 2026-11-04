@@ -687,7 +687,7 @@ def export_list_operation(paged_methods: list[str]) -> dict[str, Any]:
             },
         },
     ]
-    outputs = [
+    outputs: list[dict[str, Any]] = [
         {"name": "artifact_handle", "value_type": "artifact_handle"},
         {"name": "filename", "value_type": "text", "schema": {"type": "string"}},
         {"name": "content_type", "value_type": "text", "schema": {"type": "string"}},
@@ -949,12 +949,23 @@ def dump(path: Path, payload: Any) -> None:
 
 
 def splice_effects(effects: list[dict[str, Any]]) -> None:
+    """Replace ``external_effects`` in extension.yaml, keeping every other key and its order.
+
+    The manifest is also rewritten by ``extensions lock-deps``, so it is edited as
+    data rather than by text markers.
+    """
     manifest = ROOT / "extension.yaml"
-    text = manifest.read_text(encoding="utf-8")
-    begin, end = "# BEGIN GENERATED external_effects\n", "# END GENERATED external_effects\n"
-    block = yaml.safe_dump({"external_effects": effects}, sort_keys=False, width=200)
-    start, stop = text.index(begin) + len(begin), text.index(end)
-    manifest.write_text(text[:start] + block + text[stop:], encoding="utf-8")
+    data = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+    rebuilt: dict[str, Any] = {}
+    for key, value in data.items():
+        if key == "runtime" and "external_effects" not in rebuilt:
+            rebuilt["external_effects"] = effects
+        if key != "external_effects":
+            rebuilt[key] = value
+    rebuilt.setdefault("external_effects", effects)
+    manifest.write_text(
+        yaml.safe_dump(rebuilt, sort_keys=False, allow_unicode=True, width=100), encoding="utf-8"
+    )
 
 
 def outputs() -> dict[str, Any]:

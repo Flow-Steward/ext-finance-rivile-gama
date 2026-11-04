@@ -132,7 +132,7 @@ def error_response(
     bounded = safe_text(message, _MAX_MESSAGE)
     entries: list[dict[str, object]] = [{"code": safe_code, "message": bounded}]
     for item in (data_errors or [])[:50]:
-        detail = {"code": safe_code, "message": format_data_error(item)}
+        detail: dict[str, object] = {"code": safe_code, "message": format_data_error(item)}
         for key in ("tag", "code"):
             if item.get(key):
                 detail[f"rivile_{key}"] = safe_text(item[key], 64)
