@@ -489,7 +489,7 @@ def test_upload_reads_workflow_file_and_asks_rivile_not_to_echo_it(make_factory)
     xml = ret_dok(f"<I06><KODAS_PO>010R00000170</KODAS_PO><DOC>{echoed}</DOC></I06>")
     opener = FakeOpener((200, xml))
 
-    def reader(_payload, *, artifact_id):
+    def reader(_payload, *, artifact_id, **_kw):
         assert artifact_id == "artifact://inv"
         return pdf
 
@@ -512,7 +512,7 @@ def test_upload_of_unknown_type_needs_ext(make_factory) -> None:
         make_factory,
         FakeOpener(),
         payload("edit_i06_doc", {"kodas_po": "1", "document_file": "artifact://x"}),
-        artifact_reader=lambda _p, *, artifact_id: b"\x00\x01unknown",
+        artifact_reader=lambda _p, *, artifact_id, **_kw: b"\x00\x01unknown",
     )
     assert response["error_code"] == "invalid_payload"
     assert "ext" in response["error"]
@@ -784,3 +784,76 @@ def test_recovering_errors_from_a_hostile_body_is_linear() -> None:
     parsed = xml_response.recover_errors(hostile)
     assert time.monotonic() - started < 2.0
     assert parsed.data_errors == []
+
+
+def test_any_unlisted_status_on_a_write_is_an_unknown_outcome(make_factory) -> None:
+    for status in (501, 520, 524, 404, 409):
+        response = run(
+            make_factory,
+            FakeOpener((status, "")),
+            payload("edit_n08", {"oper": "I", "data": {"N08": {"N08_PAV": "X"}}}),
+        )
+        assert response["error_code"] == "timeout_unknown", status
+        assert response["external_effect_status"] == "timeout_unknown"
+        assert response["definitely_no_external_effect"] is False
+        assert response["retryable"] is False
+
+
+def test_a_redirect_is_refused_and_unknown_on_a_write(make_factory) -> None:
+    response = run(
+        make_factory,
+        FakeOpener((307, "", {"Location": "https://elsewhere.example/"})),
+        payload("edit_n08", {"oper": "I", "data": {"N08": {"N08_PAV": "X"}}}),
+    )
+    assert response["error_code"] == "redirect_rejected"
+    assert response["definitely_no_external_effect"] is False
+    response = run(
+        make_factory,
+        FakeOpener((302, "", {"Location": "https://elsewhere.example/"})),
+        payload("get_n08_list", {}),
+    )
+    assert response["error_code"] == "redirect_rejected"
+    assert response["definitely_no_external_effect"] is True
+
+
+def test_show_doc_as_text_keeps_the_files(make_factory) -> None:
+    doc = base64.b64encode(b"%PDF").decode()
+    opener = FakeOpener((200, ret_dok(f"<I06><KODAS_PO>1</KODAS_PO><DOC>{doc}</DOC></I06>")))
+    response = run(
+        make_factory, opener, payload("get_i06_docs", {"kodas_po": "1", "show_doc": "1"})
+    )
+    assert response["result"]["records"][0]["DOC"] == doc
+
+
+def test_download_reads_file_fields_case_insensitively(make_factory) -> None:
+    doc = base64.b64encode(b"%PDF-1.4").decode()
+    xml = ret_dok(f"<I06><kodas_po>010R1</kodas_po><doc>{doc}</doc><ext>.pdf</ext></I06>")
+    writer = GrantWriter("get_i06_doc")
+    response = run(
+        make_factory,
+        FakeOpener((200, xml)),
+        payload("get_i06_doc", {"kodas_po": "010R1"}),
+        artifact_writer=writer,
+    )
+    assert response["result"]["original_filename"] == "010R1.pdf"
+    assert response["result"]["records"][0]["doc"] is None
+
+
+def test_an_oversized_upload_is_refused_before_it_is_read(make_factory, monkeypatch) -> None:
+    from runtime import operations
+
+    monkeypatch.setattr(
+        operations, "find_artifact_descriptor", lambda *_a, **_k: {"size_bytes": 16 * 1024 * 1024}
+    )
+
+    def reader(*_a, **_k):
+        raise AssertionError("must not be read")
+
+    response = run(
+        make_factory,
+        FakeOpener(),
+        payload("edit_i06_doc", {"kodas_po": "1", "document_file": "artifact://big"}),
+        artifact_reader=reader,
+    )
+    assert response["error_code"] == "invalid_payload"
+    assert "15 MB" in response["error"]

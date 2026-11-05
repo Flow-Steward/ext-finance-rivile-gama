@@ -449,7 +449,8 @@ actions:
 - action_id: register_payment
   title: Register payment
   description: 'Records a payment against a purchase or sales document (EDIT_I13: I13_KODAS_PO, I13_KODAS_SS,
-    I13_SUMA).'
+    I13_SUMA). First reads the document''s payments (GET_I06_LIST list=A); a payment with the same money
+    account and amount is returned with created=false instead of being added again.'
   required_scopes:
   - extension:invoke
   handler:
@@ -479,6 +480,7 @@ actions:
   result_fields:
   - document_code
   - line_number
+  - created
   - record
   - external_effect_status
   - definitely_no_external_effect
@@ -582,6 +584,9 @@ actions:
   - name: warehouse_code
     type: string
     required: false
+  - name: page
+    type: integer
+    required: false
   - name: max_pages
     type: integer
     required: false
@@ -679,6 +684,9 @@ actions:
   - name: since
     type: string
     required: true
+  - name: page
+    type: integer
+    required: false
   - name: max_pages
     type: integer
     required: false

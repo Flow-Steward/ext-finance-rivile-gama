@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.1.2
+
+### Fixed
+
+- A write answered with any status Rivile does not document as "nothing done" (only 400, 401,
+  403, 423 and 429 are) — for example 501, 520 or 524 — is now `timeout_unknown` and not
+  retried, instead of "failed, no effect". Redirects are refused, and unknown for writes.
+- Register payment first reads the document's payments (GET_I06_LIST list=A) and returns an
+  identical payment (same money account and amount) with `created: false` instead of adding it
+  twice.
+- Create invoice: an unposted invoice found by number on a rerun is posted when `post` is set,
+  and `posted` reports its real state.
+- `currency` is only accepted together with `foreign_currency`; alone it made Rivile treat
+  base-currency prices as currency prices.
+- Stock levels and Changes since take a start `page` and continue from `next_page`.
+- `show_doc` given as text, and file fields in any letter case, are handled; a declared input
+  file over 15 MB is refused before it is read, within the step's time limit.
+- File downloads are limited to 40 MB, which fits Rivile's Base64 answer; the error says so.
+- Input checks shared by every operation (`max_pages: "5"` is accepted everywhere).
+- Support and website links point at Flow-Steward/ext-finance-rivile-gama.
+
 ## 0.1.1
 
 ### Fixed

@@ -195,8 +195,8 @@ def invoice(kind: str) -> dict[str, Any]:
         text(
             "currency",
             "Currency",
-            "Currency code (I06_KODAS_VL). Prices stay in the base-currency fields unless "
-            "foreign_currency is set.",
+            "Currency code of a foreign-currency document (I06_KODAS_VL); only together with "
+            "foreign_currency. Leave empty for the company's base currency.",
         ),
         flag(
             "foreign_currency",
@@ -215,8 +215,8 @@ def invoice(kind: str) -> dict[str, Any]:
         flag(
             "post",
             "Post the document",
-            "After creating it, post it (EDIT_I06 oper P). A failed posting leaves the document "
-            "unposted and is reported in post_error.",
+            "Post the document (EDIT_I06 oper P) — the new one, or an unposted one found by "
+            "number on a rerun. A failed posting leaves it unposted and is reported in post_error.",
         ),
     ]
     outputs = [
@@ -266,6 +266,18 @@ def operations() -> list[dict[str, Any]]:
             "maximum": 100,
             "title": "Max pages",
             "description": "Pages of 100 to read; default 10.",
+        },
+    }
+    start_page = {
+        "name": "page",
+        "value_type": "integer",
+        "required": False,
+        "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000,
+            "title": "Start page",
+            "description": "The page to start from (from 1); pass next_page to continue.",
         },
     }
     more = [out("has_more", "boolean", "boolean"), out("next_page", "integer", ["integer", "null"])]
@@ -366,7 +378,9 @@ def operations() -> list[dict[str, Any]]:
             "display_name": "Register payment",
             "description": (
                 "Records a payment against a purchase or sales document (EDIT_I13: "
-                "I13_KODAS_PO, I13_KODAS_SS, I13_SUMA)."
+                "I13_KODAS_PO, I13_KODAS_SS, I13_SUMA). First reads the document's payments "
+                "(GET_I06_LIST list=A); a payment with the same money account and amount is "
+                "returned with created=false instead of being added again."
             ),
             "kind": "action",
             "inputs": [
@@ -399,6 +413,12 @@ def operations() -> list[dict[str, Any]]:
             "outputs": [
                 out("document_code", "text", "string"),
                 out("line_number", "text", "string"),
+                out(
+                    "created",
+                    "boolean",
+                    "boolean",
+                    "False when the same payment was already on the document.",
+                ),
                 out("record", "object", ["object", "null"]),
             ],
         },
@@ -472,6 +492,7 @@ def operations() -> list[dict[str, Any]]:
                     "Only this department (I17_KODAS_IS).",
                     maxLength=12,
                 ),
+                start_page,
                 paging,
             ],
             "outputs": [item_list, out("count", "integer", "integer"), *more],
@@ -517,6 +538,7 @@ def operations() -> list[dict[str, Any]]:
                     enum=["clients", "products", "prices", "stock", "documents"],
                 ),
                 text("since", "Since", "YYYY-MM-DD or YYYY-MM-DDTHH:MM[:SS].", required=True),
+                start_page,
                 paging,
             ],
             "outputs": [

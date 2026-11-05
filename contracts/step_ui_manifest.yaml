@@ -175,8 +175,8 @@ forms:
     label: Currency
     widget_type: text
     required: false
-    help_text: Currency code (I06_KODAS_VL). Prices stay in the base-currency fields unless foreign_currency
-      is set.
+    help_text: Currency code of a foreign-currency document (I06_KODAS_VL); only together with foreign_currency.
+      Leave empty for the company's base currency.
   - name: foreign_currency
     label: Foreign currency
     widget_type: boolean
@@ -207,8 +207,8 @@ forms:
     label: Post the document
     widget_type: boolean
     required: false
-    help_text: After creating it, post it (EDIT_I06 oper P). A failed posting leaves the document unposted
-      and is reported in post_error.
+    help_text: Post the document (EDIT_I06 oper P) — the new one, or an unposted one found by number on
+      a rerun. A failed posting leaves it unposted and is reported in post_error.
 - operation_id: create_purchase_invoice
   title: Create purchase invoice
   fields:
@@ -305,8 +305,8 @@ forms:
     label: Currency
     widget_type: text
     required: false
-    help_text: Currency code (I06_KODAS_VL). Prices stay in the base-currency fields unless foreign_currency
-      is set.
+    help_text: Currency code of a foreign-currency document (I06_KODAS_VL); only together with foreign_currency.
+      Leave empty for the company's base currency.
   - name: foreign_currency
     label: Foreign currency
     widget_type: boolean
@@ -337,8 +337,8 @@ forms:
     label: Post the document
     widget_type: boolean
     required: false
-    help_text: After creating it, post it (EDIT_I06 oper P). A failed posting leaves the document unposted
-      and is reported in post_error.
+    help_text: Post the document (EDIT_I06 oper P) — the new one, or an unposted one found by number on
+      a rerun. A failed posting leaves it unposted and is reported in post_error.
 - operation_id: attach_file_to_document
   title: Attach file to document
   fields:
@@ -451,6 +451,11 @@ forms:
     widget_type: text
     required: false
     help_text: Only this department (I17_KODAS_IS).
+  - name: page
+    label: Start page
+    widget_type: number
+    required: false
+    help_text: The page to start from (from 1); pass next_page to continue.
   - name: max_pages
     label: Max pages
     widget_type: number
@@ -508,6 +513,11 @@ forms:
     widget_type: text
     required: true
     help_text: YYYY-MM-DD or YYYY-MM-DDTHH:MM[:SS].
+  - name: page
+    label: Start page
+    widget_type: number
+    required: false
+    help_text: The page to start from (from 1); pass next_page to continue.
   - name: max_pages
     label: Max pages
     widget_type: number

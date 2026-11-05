@@ -350,8 +350,9 @@ def test_purchase_invoice_uses_purchase_type_and_creates_a_supplier(make_factory
 
 
 def test_currency_and_gross_prices(make_factory) -> None:
-    opener = FakeOpener((200, ret_dok(I06_CREATED)))
-    run(
+    # A currency code without foreign_currency is ambiguous: refused, nothing sent.
+    opener = FakeOpener()
+    refused = run(
         make_factory,
         opener,
         payload(
@@ -364,10 +365,9 @@ def test_currency_and_gross_prices(make_factory) -> None:
             },
         ),
     )
-    header = bodies(opener)[0]["data"]["I06"]
-    # A currency code alone (e.g. the base currency) keeps the base price fields.
-    assert header["I06_KODAS_VL"] == "USD" and header["I07"][0]["I07_KAINA_BE"] == 1000
-    assert "I06_VAL_POZ" not in header and "I07_VAL_KAINA" not in header["I07"][0]
+    assert refused["error_code"] == "invalid_payload"
+    assert "foreign_currency" in refused["error"]
+    assert opener.requests == []
     opener = FakeOpener((200, ret_dok(I06_CREATED)))
     run(
         make_factory,
@@ -519,7 +519,7 @@ def test_attach_file_to_document(make_factory) -> None:
             "attach_file_to_document",
             {"document_code": "010R00000170", "document_file": "artifact://pdf"},
         ),
-        artifact_reader=lambda _p, *, artifact_id: pdf,
+        artifact_reader=lambda _p, *, artifact_id, **_kw: pdf,
     )
     params = bodies(opener)[0]["params"]
     assert bodies(opener)[0]["method"] == "EDIT_I06_DOC"
@@ -551,13 +551,15 @@ def test_download_document_file_under_its_grant(make_factory) -> None:
 
 
 def test_register_payment_as_documented(make_factory) -> None:
+    other = "<I13><I13_KODAS_SS>2703</I13_KODAS_SS><I13_SUMA>5.00</I13_SUMA></I13>"
     opener = FakeOpener(
+        (200, ret_dok(f"<I06><I06_KODAS_PO>010R00001041</I06_KODAS_PO>{other}</I06>")),
         (
             200,
             ret_dok(
                 "<I13><I13_KODAS_PO>010R00001041</I13_KODAS_PO><I13_EIL_NR>1</I13_EIL_NR></I13>"
             ),
-        )
+        ),
     )
     response = run(
         make_factory,
@@ -568,6 +570,10 @@ def test_register_payment_as_documented(make_factory) -> None:
         ),
     )
     assert bodies(opener)[0] == {
+        "method": "GET_I06_LIST",
+        "params": {"list": "A", "fil": "i06_kodas_po='010R00001041'"},
+    }
+    assert bodies(opener)[1] == {
         "method": "EDIT_I13",
         "params": {"oper": "I"},
         "data": {
@@ -575,7 +581,80 @@ def test_register_payment_as_documented(make_factory) -> None:
         },
     }
     assert response["result"]["line_number"] == "1"
+    assert response["result"]["created"] is True
     assert response["external_effect_status"] == "succeeded"
+
+
+def test_register_payment_rerun_finds_the_same_payment(make_factory) -> None:
+    same = (
+        "<i13><i13_kodas_ss>2703 </i13_kodas_ss><i13_suma>19.62</i13_suma>"
+        "<i13_eil_nr>2</i13_eil_nr></i13>"
+    )
+    opener = FakeOpener(
+        (200, ret_dok(f"<I06><I06_KODAS_PO>010R00001041</I06_KODAS_PO>{same}</I06>"))
+    )
+    response = run(
+        make_factory,
+        opener,
+        payload(
+            "register_payment",
+            {"document_code": "010R00001041", "money_account_code": "2703", "amount": "19.62"},
+        ),
+    )
+    assert [b["method"] for b in bodies(opener)] == ["GET_I06_LIST"]
+    assert response["result"]["created"] is False
+    assert response["result"]["line_number"] == "2"
+
+
+def test_rerun_after_a_failed_post_posts_the_existing_invoice(make_factory) -> None:
+    unposted = I06_CREATED.replace("</I06>", "<i06_perkelta>1</i06_perkelta></I06>")
+    opener = FakeOpener((200, ret_dok(unposted)), (200, ret_dok(I06_CREATED)))
+    response = run(
+        make_factory,
+        opener,
+        payload(
+            "create_sales_invoice",
+            {
+                "client_code": "121411842",
+                "number": "DOK-007",
+                "department_code": "01",
+                "lines": LINES,
+                "post": True,
+            },
+        ),
+    )
+    result = response["result"]
+    assert [b["method"] for b in bodies(opener)] == ["GET_I06_LIST", "EDIT_I06"]
+    assert bodies(opener)[1]["params"] == {"oper": "P"}
+    assert result["created"] is False and result["posted"] is True
+
+
+def test_existing_unposted_invoice_without_post_reports_it(make_factory) -> None:
+    unposted = I06_CREATED.replace("</I06>", "<I06_PERKELTA>1</I06_PERKELTA></I06>")
+    opener = FakeOpener((200, ret_dok(unposted)))
+    response = run(
+        make_factory,
+        opener,
+        payload(
+            "create_sales_invoice",
+            {"client_code": "1", "number": "DOK-007", "department_code": "01", "lines": LINES},
+        ),
+    )
+    assert response["result"]["posted"] is False
+    assert len(opener.requests) == 1
+
+
+def test_stock_and_changes_continue_from_a_page(make_factory) -> None:
+    opener = FakeOpener((200, ret_dok()))
+    run(make_factory, opener, payload("stock_levels", {"page": 4, "max_pages": "2"}))
+    assert bodies(opener)[0]["params"]["pagenumber"] == 4
+    opener = FakeOpener((200, ret_dok()))
+    run(
+        make_factory,
+        opener,
+        payload("changes_since", {"entity": "clients", "since": "2026-01-01", "page": 3}),
+    )
+    assert bodies(opener)[0]["params"]["pagenumber"] == 3
 
 
 def test_product_found_by_alternative_barcode(make_factory) -> None:
@@ -668,7 +747,8 @@ def test_product_found_by_code_with_an_unregistered_barcode_notes_it(make_factor
 
 def test_amounts_are_rounded_and_bounded(make_factory) -> None:
     opener = FakeOpener(
-        (200, ret_dok("<I13><I13_EIL_NR>1</I13_EIL_NR><I13_SUMA_VAL>.00</I13_SUMA_VAL></I13>"))
+        (200, ret_dok()),
+        (200, ret_dok("<I13><I13_EIL_NR>1</I13_EIL_NR><I13_SUMA_VAL>.00</I13_SUMA_VAL></I13>")),
     )
     run(
         make_factory,
@@ -678,7 +758,7 @@ def test_amounts_are_rounded_and_bounded(make_factory) -> None:
             {"document_code": "1", "money_account_code": "2703", "amount": "19.625"},
         ),
     )
-    assert bodies(opener)[0]["data"]["I13"]["I13_SUMA"] == 19.63
+    assert bodies(opener)[1]["data"]["I13"]["I13_SUMA"] == 19.63
     for amount in (-5, 0, "abc"):
         bad = run(
             make_factory,

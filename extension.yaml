@@ -4,7 +4,7 @@ lifecycle:
   data_migrations: []
 extension_id: flowsteward.rivile-gama
 kind: tool_provider
-version: 0.1.1
+version: 0.1.2
 release_stage: active
 billing_mode: free
 display_name: Rivile GAMA
@@ -14,8 +14,8 @@ description: Rivile GAMA REST API v2 for workflows. Everyday steps — create sa
   payments, inventory, general ledger, payroll, personnel, POS and more) as a typed workflow operation.
 vendor:
   name: Flow Steward
-  support_url: https://github.com/Flow-Steward/ext-finance-rivile/issues
-  website_url: https://github.com/Flow-Steward/ext-finance-rivile
+  support_url: https://github.com/Flow-Steward/ext-finance-rivile-gama/issues
+  website_url: https://github.com/Flow-Steward/ext-finance-rivile-gama
 listing:
   category: finance
   tags:

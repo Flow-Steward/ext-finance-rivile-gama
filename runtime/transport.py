@@ -52,6 +52,8 @@ _USER_AGENT = "FlowSteward-RivileGama/0.1"
 #: as the whole errorMessage of a refused request. Only that position counts: a
 #: dataError's echoed data is the caller's own text.
 _LOCKED_MESSAGE_RE = re.compile(r"^\s*423\s*:")
+#: Methods whose answer carries a whole file as Base64.
+_FILE_METHODS = frozenset({"GET_I06_DOC", "GET_I06_DOCS"})
 #: Shortest window still worth starting a request in.
 MIN_CALL_WINDOW_SECONDS = 15.0
 
@@ -123,6 +125,8 @@ class RivileTransport:
         #: Monotonic time after which no request may start (set by the operation).
         self.deadline: float | None = None
         self._call_timeout = timeout_seconds
+        #: Message for an oversized read; set per call (file downloads differ).
+        self._size_hint = ""
 
     def remaining(self) -> float:
         return float("inf") if self.deadline is None else self.deadline - self.clock()
@@ -135,6 +139,11 @@ class RivileTransport:
         *,
         mutating: bool,
     ) -> Reply:
+        self._size_hint = (
+            "The attached file is larger than this extension downloads (40 MB)"
+            if method in _FILE_METHODS
+            else ""
+        )
         body: dict[str, Any] = {"method": method}
         if params:
             body["params"] = dict(params)
@@ -225,7 +234,9 @@ class RivileTransport:
             ) as response:
                 status = int(getattr(response, "status", 0) or getattr(response, "code", 0) or 0)
                 headers = getattr(response, "headers", None)
-                raw = read_bounded(response, MAX_RESPONSE_BYTES, mutating=mutating)
+                raw = read_bounded(
+                    response, MAX_RESPONSE_BYTES, mutating=mutating, hint=self._size_hint
+                )
         except HTTPError as exc:
             raise _http_error(exc, self._connection, mutating=mutating) from exc
         except PinnedPeerError as exc:
@@ -257,21 +268,16 @@ class RivileTransport:
                 "The connection to Rivile failed",
                 **_transport_failure_facts(mutating=mutating),
             ) from exc
-        if 300 <= status < 400:
-            raise ExtensionError(
-                errors.REDIRECT_REJECTED,
-                "Rivile redirected the request and it was not followed",
-                definitely_no_external_effect=not mutating,
-                external_effect_status="failed" if not mutating else "timeout_unknown",
-            )
-        if status >= 400:
+        if status >= 300:
+            # The SDK refuses redirects by raising HTTPError, so a 3xx normally
+            # arrives in _http_error; this covers an opener that returns it.
             raise _status_error(
                 status, raw[:MAX_ERROR_BODY_BYTES], headers, self._connection, mutating=mutating
             )
         return status, raw, headers
 
 
-def read_bounded(response: Any, limit: int, *, mutating: bool = False) -> bytes:
+def read_bounded(response: Any, limit: int, *, mutating: bool = False, hint: str = "") -> bytes:
     """Read at most ``limit`` bytes; an oversized answer to a write is an unknown outcome."""
     buffer = bytearray()
     while True:
@@ -286,7 +292,7 @@ def read_bounded(response: Any, limit: int, *, mutating: bool = False) -> bytes:
                     "Rivile's answer to the write was too large to read; check in Rivile "
                     "whether it was applied"
                     if mutating
-                    else "The Rivile response exceeds its safe limit; narrow it with fil"
+                    else hint or "The Rivile response exceeds its safe limit; narrow it with fil"
                 ),
             )
     return bytes(buffer)
@@ -403,17 +409,28 @@ def _status_error(
             retryable=True,
             no_effect=True,
         )
+    if 300 <= status < 400:
+        # Redirects are never followed. A write may still have been applied by
+        # whatever answered with the redirect.
+        return failure(
+            errors.REDIRECT_REJECTED,
+            f"Rivile redirected the request (HTTP {status}) and it was not followed",
+            retryable=False,
+            no_effect=not mutating,
+        )
+    if mutating:
+        # Only 400 (refused data), 401/403 (key), 423 (record locked) and 429
+        # (rate limit) are documented as "nothing was done". Any other answer to a
+        # write — 5xx, 501, 520, 524 or anything unexpected — may follow an applied
+        # write, so it must not be retried blindly.
+        return failure(
+            errors.TIMEOUT_UNKNOWN,
+            f"Rivile did not confirm the write (HTTP {status}); check the document in Rivile "
+            f"before retrying{detail}",
+            retryable=False,
+            no_effect=False,
+        )
     if status in {500, 502, 503, 504, 408}:
-        if mutating:
-            # The gateway or Rivile may have applied the write before failing to
-            # answer ("No response received from client gateway" is ambiguous).
-            return failure(
-                errors.TIMEOUT_UNKNOWN,
-                "Rivile did not confirm the write; check the document in Rivile before retrying"
-                f"{detail}",
-                retryable=False,
-                no_effect=False,
-            )
         if status in {502, 503}:
             return failure(
                 errors.GATEWAY_UNAVAILABLE,

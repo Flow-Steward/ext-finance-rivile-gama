@@ -24,7 +24,7 @@ artifact_policies:
     binding_key: rivile_document_download
     filename: rivile-document.bin
     content_type: application/octet-stream
-    max_size_bytes: 52428800
+    max_size_bytes: 41943040
     retention_class: run_window
 - operation_id: attach_file_to_document
   inputs:
@@ -41,7 +41,7 @@ artifact_policies:
     binding_key: rivile_document_file
     filename: rivile-document.bin
     content_type: application/octet-stream
-    max_size_bytes: 52428800
+    max_size_bytes: 41943040
     retention_class: run_window
 - operation_id: export_list
   outputs:

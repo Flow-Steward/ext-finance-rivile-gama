@@ -72,13 +72,13 @@ components:
 
     ### Register payment
 
-    Records a payment against a purchase or sales document (EDIT_I13: I13_KODAS_PO, I13_KODAS_SS, I13_SUMA).
+    Records a payment against a purchase or sales document (EDIT_I13: I13_KODAS_PO, I13_KODAS_SS, I13_SUMA). First reads the document's payments (GET_I06_LIST list=A); a payment with the same money account and amount is returned with created=false instead of being added again.
 
     - Action id: `register_payment`
     - Kind: write
     - Rivile methods: [EDIT_I13](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i13)
     - Inputs: `document_code`, `amount`, `money_account_code`, `currency_amount` (optional), `description` (optional)
-    - Results: `document_code`, `line_number`, `record`
+    - Results: `document_code`, `line_number`, `created`, `record`
 
     ### Find or create product
 
@@ -97,7 +97,7 @@ components:
     - Action id: `stock_levels`
     - Kind: read
     - Rivile methods: [GET_I17_LIST](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i17_list)
-    - Inputs: `product_code` (optional), `warehouse_code` (optional), `max_pages` (optional)
+    - Inputs: `product_code` (optional), `warehouse_code` (optional), `page` (optional), `max_pages` (optional)
     - Results: `items`, `count`, `has_more`, `next_page`
 
     ### Product prices
@@ -117,7 +117,7 @@ components:
     - Action id: `changes_since`
     - Kind: read
     - Rivile methods: [GET_CLIENTS_TIME](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_clients_time), [GET_PROD_BY_BARCODE_TIME](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_prod_by_barcode_time), [GET_PRICES_TIME](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_prices_time), [GET_I17_LIST_TIME](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i17_list_time), [GET_I06_LIST](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i06_list)
-    - Inputs: `entity`, `since`, `max_pages` (optional)
+    - Inputs: `entity`, `since`, `page` (optional), `max_pages` (optional)
     - Results: `entity`, `method`, `records`, `count`, `has_more`, `next_page`
 
     ### Client debt

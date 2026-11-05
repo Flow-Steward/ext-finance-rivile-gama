@@ -19,15 +19,20 @@ from flowsteward_extension_sdk import (
 from . import budget, catalog, errors, friendly
 from .connection import Connection, connection_from_payload
 from .errors import ExtensionError, error_response
+from .inputs import flag as _bool
+from .inputs import invalid as _invalid
+from .inputs import whole as _whole
 from .models import Method
-from .transport import DeadlineReached, Reply, RivileTransport
+from .transport import MIN_CALL_WINDOW_SECONDS, DeadlineReached, Reply, RivileTransport
 
 PAGE_SIZE = 100
 DEFAULT_MAX_PAGES = 10
 MAX_PAGES = 100
 EXPORT_MAX_PAGES = 2000
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
-MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024
+#: Rivile sends the file as Base64 inside XML; 40 MB of file is about 54 MB of
+#: answer, inside the transport's 60 MB response cap.
+MAX_DOWNLOAD_BYTES = 40 * 1024 * 1024
 MAX_EXPORT_BYTES = 200 * 1024 * 1024
 MAX_PARAM_TEXT = 30 * 1024 * 1024
 #: The entrypoint is given 600 s (extension.yaml). Every request must start early
@@ -48,7 +53,6 @@ _ALLOWED_ACTION_KEYS = frozenset(
     {"action_id", "operation_id", "page_id", "component_id", "context", "input", "target"}
 )
 _UPPER_PARAMS = frozenset({"oper", "erroraction", "list", "listtype"})
-_DIGITS = re.compile(r"[0-9]{1,9}")
 _EXT_RE = re.compile(r"^\.?[A-Za-z0-9]{1,10}$")
 _CONTENT_TYPES = {
     ".pdf": "application/pdf",
@@ -83,15 +87,6 @@ _FILE_WRITING_OPS = frozenset(
 
 TransportFactory = Callable[[Connection], RivileTransport]
 ArtifactWriter = Callable[..., Mapping[str, Any]]
-
-
-def _invalid(message: str) -> ExtensionError:
-    return ExtensionError(
-        errors.INVALID_PAYLOAD,
-        message,
-        definitely_no_external_effect=True,
-        external_effect_status="failed",
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -252,25 +247,6 @@ def _scalar(name: str, value: Any) -> Any:
     raise _invalid(f"{name} must be text or a number")
 
 
-def _whole(name: str, value: Any, *, default: int, maximum: int) -> int:
-    """A whole number from 1 to ``maximum``; ASCII digit strings are accepted."""
-    if value is None:
-        return default
-    if isinstance(value, str) and _DIGITS.fullmatch(value.strip()):
-        value = int(value.strip())
-    if isinstance(value, bool) or not isinstance(value, int) or value < 1 or value > maximum:
-        raise _invalid(f"{name} must be a whole number from 1 to {maximum}")
-    return value
-
-
-def _bool(name: str, value: Any, default: bool) -> bool:
-    if value is None:
-        return default
-    if not isinstance(value, bool):
-        raise _invalid(f"{name} must be true or false")
-    return value
-
-
 def _allowed_inputs(method: Method) -> set[str]:
     names = {"connection_ref", "extra_params"} | {name for name, _wire in method.params}
     if method.data_roots:
@@ -418,11 +394,19 @@ def _ok(result: Mapping[str, Any]) -> dict[str, Any]:
     return response
 
 
+def _asks_for_files(params: Mapping[str, Any]) -> bool:
+    """show_doc set to 1, given as a number or as text."""
+    value = next((v for k, v in params.items() if k.lower() == "show_doc"), None)
+    return str(value).strip() == "1" if value is not None and not isinstance(value, bool) else False
+
+
 def _strip_documents(rows: Iterable[Any]) -> None:
-    """Drop inline Base64 file content (DOC) from returned rows."""
+    """Drop inline Base64 file content (DOC, any case) from returned rows."""
     for row in rows:
-        if isinstance(row, dict) and row.get("DOC"):
-            row["DOC"] = None
+        if isinstance(row, dict):
+            for key in [k for k in row if isinstance(k, str) and k.lower() == "doc"]:
+                if row[key]:
+                    row[key] = None
 
 
 # ---------------------------------------------------------------------------
@@ -454,7 +438,7 @@ def _run_method(context: _Context, method: Method) -> dict[str, Any]:
     if method.method in catalog.DOWNLOAD_METHODS:
         _save_download(context, result)
     if method.method in catalog.UPLOAD_METHODS or (
-        method.method in catalog.SHOW_DOC_DEFAULT_ZERO and params.get("show_doc") != 1
+        method.method in catalog.SHOW_DOC_DEFAULT_ZERO and not _asks_for_files(params)
     ):
         # A write never hands file content back: an echoed multi-MB upload would
         # overflow the step output after Rivile had already attached the file.
@@ -836,8 +820,18 @@ def _attach_upload(context: _Context, params: dict[str, Any]) -> None:
     _upload_needs_content(params, has_file=bool(handle))
     if not handle:
         return
+    declared = _declared_size(context.payload, handle)
+    if declared is not None and declared > MAX_UPLOAD_BYTES:
+        raise _invalid("document_file is larger than 15 MB")
+    remaining = context.transport.remaining() - MIN_CALL_WINDOW_SECONDS
+    if remaining <= 0:
+        raise DeadlineReached
     try:
-        body = context.artifact_reader(dict(context.payload), artifact_id=handle)
+        body = context.artifact_reader(
+            dict(context.payload),
+            artifact_id=handle,
+            timeout_seconds=min(ARTIFACT_WRITE_TIMEOUT_SECONDS, remaining),
+        )
     except ExtensionError:
         raise
     except Exception as exc:
@@ -857,6 +851,16 @@ def _attach_upload(context: _Context, params: dict[str, Any]) -> None:
             raise _invalid("The file type of document_file is unknown; set ext, for example .pdf")
         params["ext"] = ext
     params["doc"] = base64.b64encode(bytes(body)).decode("ascii")
+
+
+def _declared_size(payload: Mapping[str, Any], handle: str) -> int | None:
+    """The file size the host declares for an input file, before reading it."""
+    try:
+        descriptor = find_artifact_descriptor(dict(payload), artifact_id=handle)
+    except Exception:
+        return None
+    size = descriptor.get("size_bytes") if isinstance(descriptor, Mapping) else None
+    return size if isinstance(size, int) and not isinstance(size, bool) else None
 
 
 def _sniff_extension(head: bytes) -> str:
@@ -891,7 +895,7 @@ def _save_download(
     record = result.get("record")
     if not isinstance(record, dict):
         return
-    encoded = record.get("DOC")
+    encoded = friendly.field(record, "DOC")
     if not isinstance(encoded, str) or not encoded.strip():
         return
     try:
@@ -902,13 +906,16 @@ def _save_download(
         ) from exc
     if len(body) > MAX_DOWNLOAD_BYTES:
         raise ExtensionError(
-            errors.RESPONSE_TOO_LARGE, "The attached document is larger than 50 MB"
+            errors.RESPONSE_TOO_LARGE, "The attached document is larger than 40 MB"
         )
-    ext = str(record.get("EXT") or "").strip().lower()
+    ext = str(friendly.field(record, "EXT") or "").strip().lower()
     ext = ext if _EXT_RE.fullmatch(ext or "-") else ""
     if ext and not ext.startswith("."):
         ext = "." + ext
-    code = re.sub(r"[^A-Za-z0-9_-]+", "", str(record.get("KODAS_PO") or "document")) or "document"
+    code = (
+        re.sub(r"[^A-Za-z0-9_-]+", "", str(friendly.field(record, "KODAS_PO") or "document"))
+        or "document"
+    )
     handle = _write_artifact(
         context,
         [body],

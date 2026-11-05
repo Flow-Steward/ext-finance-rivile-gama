@@ -29,6 +29,8 @@ from typing import Any
 
 from . import budget, errors
 from .errors import ExtensionError
+from .inputs import flag, whole
+from .inputs import invalid as _invalid
 from .transport import DeadlineReached, Reply
 
 #: Rivile client kinds (N08_RUSIS): 1 buyer, 2 supplier, 3 buyer and supplier.
@@ -69,15 +71,6 @@ _NUMBER_RE = re.compile(r"^-?[0-9]{0,15}([.,][0-9]{1,6})?$")
 
 # ---------------------------------------------------------------------------
 # Shared helpers
-
-
-def _invalid(message: str) -> ExtensionError:
-    return ExtensionError(
-        errors.INVALID_PAYLOAD,
-        message,
-        definitely_no_external_effect=True,
-        external_effect_status="failed",
-    )
 
 
 def _text(
@@ -154,12 +147,7 @@ def _date(value: Any, name: str, *, required: bool = False) -> str:
 
 
 def _bool(inputs: Mapping[str, Any], name: str, default: bool) -> bool:
-    value = inputs.get(name)
-    if value is None:
-        return default
-    if not isinstance(value, bool):
-        raise _invalid(f"{name} must be true or false")
-    return value
+    return flag(name, inputs.get(name), default)
 
 
 def sql_literal(value: str) -> str:
@@ -525,8 +513,16 @@ def _foreign_currency(inputs: Mapping[str, Any]) -> bool:
     "with VAT" twin, so foreign_currency and prices_include_vat are exclusive.
     """
     foreign = _bool(inputs, "foreign_currency", False)
-    if foreign and not _code(inputs, "currency", limit=12):
+    currency = _code(inputs, "currency", limit=12)
+    if foreign and not currency:
         raise _invalid("foreign_currency needs currency (the document's currency code)")
+    if currency and not foreign:
+        # I06_KODAS_VL alone makes Rivile treat a non-base currency as a currency
+        # document (I06_VAL_POZ=1) while the prices were sent as base amounts.
+        raise _invalid(
+            "currency is only for foreign-currency documents: set foreign_currency to true, "
+            "or leave currency empty for the company's base currency"
+        )
     if foreign and _bool(inputs, "prices_include_vat", False):
         raise _invalid(
             "Foreign-currency prices are net; prices_include_vat cannot be used with them"
@@ -603,6 +599,40 @@ def _invoice_result(
     }
 
 
+#: I06_PERKELTA: 2 when the document is posted (moved), as the step reads it.
+_POSTED = "2"
+
+
+def _post(call: Callable[..., Reply], code: str) -> tuple[bool | None, str]:
+    """Post one document; the invoice exists either way, so a failure is reported, not raised."""
+    try:
+        call("EDIT_I06", {"oper": "P"}, {"I06": {"I06_KODAS_PO": code}}, mutating=True)
+        return True, ""
+    except ExtensionError as exc:
+        # Unknown stays unknown: an ambiguous answer may have posted it.
+        return (None if exc.code in errors.AMBIGUOUS_ERROR_CODES else False), exc.message
+    except DeadlineReached:
+        return False, "The step ran out of time before posting"
+
+
+def _post_existing(
+    call: Callable[..., Reply], existing: Mapping[str, Any], inputs: Mapping[str, Any]
+) -> tuple[bool | None, str]:
+    """The real posted state of a document found by number, posting it if asked.
+
+    A rerun after a failed post finds the document unposted: with post=true it is
+    posted now instead of being returned as is.
+    """
+    if _value(existing, "I06_PERKELTA") == _POSTED:
+        return True, ""
+    if not _bool(inputs, "post", False):
+        return False, ""
+    code = _value(existing, "I06_KODAS_PO")
+    if not code:
+        return False, "Rivile did not return the document code; not posted"
+    return _post(call, code)
+
+
 def create_invoice(
     call: Callable[..., Reply], inputs: Mapping[str, Any], progress: Progress, *, op_type: int
 ) -> dict[str, Any]:
@@ -632,15 +662,15 @@ def create_invoice(
             lambda: _existing_invoice(call, number, client_code, op_type),
         )
         if existing is not None:
-            already_posted = _value(existing, "I06_PERKELTA") == "2"
+            found_posted, found_error = _post_existing(call, existing, inputs)
             return _invoice_result(
                 existing,
                 header,
                 client_code,
                 created=False,
                 client_created=client_created,
-                posted=already_posted,
-                post_error="",
+                posted=found_posted,
+                post_error=found_error,
             )
     header["I07"] = lines
     reply = progress.guard(
@@ -656,15 +686,7 @@ def create_invoice(
         if not code:
             posted, post_error = False, "Rivile did not return the document code; not posted"
         else:
-            try:
-                call("EDIT_I06", {"oper": "P"}, {"I06": {"I06_KODAS_PO": code}}, mutating=True)
-                posted = True
-            except ExtensionError as exc:
-                # The invoice exists; posting can be done again. Unknown stays unknown.
-                posted = None if exc.code in errors.AMBIGUOUS_ERROR_CODES else False
-                post_error = exc.message
-            except DeadlineReached:
-                posted, post_error = False, "The step ran out of time before posting"
+            posted, post_error = _post(call, code)
     return _invoice_result(
         record,
         header,
@@ -701,13 +723,51 @@ def _payment(inputs: Mapping[str, Any]) -> dict[str, Any]:
     return payment
 
 
+def _payment_rows(call: Callable[..., Reply], document_code: str) -> list[dict[str, Any]]:
+    """The document's I13 payment rows, from GET_I06_LIST with list=A (I06+I07+I08+I13)."""
+    reply = call(
+        "GET_I06_LIST",
+        {"list": "A", "fil": f"i06_kodas_po={sql_literal(document_code)}"},
+        None,
+        mutating=False,
+    )
+    rows: list[dict[str, Any]] = []
+    for record in reply.parsed.records:
+        nested = field(record, "I13")
+        if isinstance(nested, list):
+            rows.extend(dict(r) for r in nested if isinstance(r, Mapping))
+    rows.extend(dict(r) for r in reply.parsed.tables.get("I13", []) if isinstance(r, Mapping))
+    return rows
+
+
+def _same_payment(row: Mapping[str, Any], payment: Mapping[str, Any]) -> bool:
+    if not _same(_value(row, "I13_KODAS_SS"), str(payment["I13_KODAS_SS"])):
+        return False
+    if _decimal(row, "I13_SUMA") != Decimal(str(payment["I13_SUMA"])):
+        return False
+    if "I13_SUMA_VAL" in payment:
+        return _decimal(row, "I13_SUMA_VAL") == Decimal(str(payment["I13_SUMA_VAL"]))
+    return True
+
+
 def register_payment(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict[str, Any]:
     payment = _payment(inputs)
+    # EDIT_I13 has no idempotency key: a rerun after an unknown outcome looks for
+    # the same payment (document, money account, amount) before adding another.
+    for row in _payment_rows(call, payment["I13_KODAS_PO"]):
+        if _same_payment(row, payment):
+            return {
+                "document_code": payment["I13_KODAS_PO"],
+                "line_number": _value(row, "I13_EIL_NR"),
+                "created": False,
+                "record": dict(row),
+            }
     reply = call("EDIT_I13", {"oper": "I"}, {"I13": payment}, mutating=True)
     record = _first(reply) or {}
     return {
         "document_code": payment["I13_KODAS_PO"],
         "line_number": _value(record, "I13_EIL_NR"),
+        "created": True,
         "record": record,
     }
 
@@ -811,6 +871,7 @@ def _pages(
     *,
     page_param: str,
     max_pages: int,
+    start: int = 1,
 ) -> tuple[list[dict[str, Any]], bool, int | None]:
     """Read pages until a short page, max_pages, the deadline or the output budget.
 
@@ -818,19 +879,19 @@ def _pages(
     """
     rows: list[dict[str, Any]] = []
     meter = budget.Meter()
-    page = 1
+    page = start
     has_more = False
     for _ in range(max_pages):
         try:
             reply = call(method, {**params, page_param: page}, None, mutating=False)
         except DeadlineReached:
-            if page == 1:
+            if page == start:
                 raise
             has_more = True
             break
         batch = reply.parsed.records
         if not meter.admit({"items": batch}):
-            if page == 1:
+            if page == start:
                 raise budget.too_large()
             has_more = True
             break
@@ -855,7 +916,7 @@ def _quantity(
 
 
 def stock_levels(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict[str, Any]:
-    _allowed(inputs, {"product_code", "warehouse_code", "max_pages"})
+    _allowed(inputs, {"product_code", "warehouse_code", "page", "max_pages"})
     conditions = []
     product = _code(inputs, "product_code", limit=12)
     warehouse = _code(inputs, "warehouse_code", limit=12)
@@ -867,7 +928,12 @@ def stock_levels(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict[
     if conditions:
         params["fil"] = " and ".join(conditions)
     rows, has_more, next_page = _pages(
-        call, "GET_I17_LIST", params, page_param="pagenumber", max_pages=_max_pages(inputs)
+        call,
+        "GET_I17_LIST",
+        params,
+        page_param="pagenumber",
+        max_pages=_max_pages(inputs),
+        start=_start_page(inputs),
     )
     items = [
         {
@@ -934,7 +1000,7 @@ def _since(inputs: Mapping[str, Any]) -> tuple[str, str]:
 
 
 def changes_since(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict[str, Any]:
-    _allowed(inputs, {"entity", "since", "max_pages"})
+    _allowed(inputs, {"entity", "since", "page", "max_pages"})
     entity = _text(inputs, "entity", required=True).lower()
     if entity not in CHANGE_SOURCES:
         raise _invalid(f"entity must be one of {', '.join(CHANGE_SOURCES)}")
@@ -946,7 +1012,12 @@ def changes_since(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict
     else:
         params["lastDate"] = last_date
     rows, has_more, next_page = _pages(
-        call, method, params, page_param="pagenumber", max_pages=_max_pages(inputs)
+        call,
+        method,
+        params,
+        page_param="pagenumber",
+        max_pages=_max_pages(inputs),
+        start=_start_page(inputs),
     )
     return {
         "entity": entity,
@@ -1033,7 +1104,12 @@ NEUTRAL_OUTPUTS: dict[str, dict[str, Any]] = {
         "record": None,
     },
     "attach_file_to_document": {"document_code": "", "file_extension": "", "record": None},
-    "register_payment": {"document_code": "", "line_number": "", "record": None},
+    "register_payment": {
+        "document_code": "",
+        "line_number": "",
+        "created": False,
+        "record": None,
+    },
     "find_or_create_product": {
         "product_code": "",
         "created": False,
@@ -1050,10 +1126,11 @@ def neutral_result(operation_id: str) -> dict[str, Any]:
 
 
 def _max_pages(inputs: Mapping[str, Any]) -> int:
-    value = inputs.get("max_pages", 10)
-    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 100:
-        raise _invalid("max_pages must be a whole number from 1 to 100")
-    return value
+    return whole("max_pages", inputs.get("max_pages"), default=10, maximum=100)
+
+
+def _start_page(inputs: Mapping[str, Any]) -> int:
+    return whole("page", inputs.get("page"), default=1, maximum=1000000)
 
 
 __all__ = [
