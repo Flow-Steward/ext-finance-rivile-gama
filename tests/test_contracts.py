@@ -285,3 +285,55 @@ def _user_facing_texts() -> list[tuple[str, str]]:
 def test_product_name_is_spelled_rivile_in_plain_latin() -> None:
     offenders = [where for where, text in _user_facing_texts() if "Rivilė" in text]
     assert offenders == []
+
+
+_WIDGETS_BY_VALUE_TYPE = {
+    "artifact_handle": {"artifact_picker"},
+    "object": {"json", "select"},
+    "array": {"json", "select"},
+    "json": {"json"},
+    "boolean": {"boolean", "select"},
+    "integer": {"number", "select"},
+    "number": {"number", "select"},
+    "text": {"text", "textarea", "select"},
+}
+
+
+def test_every_input_has_a_matching_form_field(built) -> None:
+    forms = {form["operation_id"]: form for form in built["forms"]}
+    actions = {action["action_id"]: action for action in built["actions"]}
+    for op in built["operations"]:
+        oid = op["operation_id"]
+        fields = {field["name"]: field for field in forms[oid]["fields"]}
+        inputs = {item["name"]: item for item in op["inputs"] if item["name"] != "connection_ref"}
+        assert set(fields) == set(inputs), oid
+        for name, item in inputs.items():
+            field = fields[name]
+            assert field["required"] == bool(item.get("required")), (oid, name)
+            allowed = _WIDGETS_BY_VALUE_TYPE[item["value_type"]]
+            assert field["widget_type"] in allowed, (oid, name, field["widget_type"])
+            if field["widget_type"] == "select":
+                assert (item.get("schema") or {}).get("enum"), (oid, name)
+        action = actions[oid]
+        assert [p["name"] for p in action["parameters"]] == [i["name"] for i in op["inputs"]], oid
+        # Actions name results bare (as Shopify's do); operations prefix them with "result.".
+        assert [f"result.{name}" for name in action["result_fields"]] == op["result_fields"], oid
+        assert op["result_fields"] == [f"result.{o['name']}" for o in op["outputs"]], oid
+
+
+def test_every_file_input_has_a_file_picker(built) -> None:
+    forms = {form["operation_id"]: form for form in built["forms"]}
+    file_inputs = [
+        (op["operation_id"], item["name"])
+        for op in built["operations"]
+        for item in op["inputs"]
+        if item["value_type"] == "artifact_handle"
+    ]
+    assert {oid for oid, _ in file_inputs} >= {
+        "attach_file_to_document",
+        "edit_i06_doc",
+        "edit_i06_docs",
+    }
+    for oid, name in file_inputs:
+        field = next(f for f in forms[oid]["fields"] if f["name"] == name)
+        assert field["widget_type"] == "artifact_picker", oid

@@ -311,7 +311,7 @@ def operations() -> list[dict[str, Any]]:
                         "type": "string",
                         "maxLength": 512,
                         "title": "File",
-                        "description": "A workflow file, up to 15 MB.",
+                        "description": "A workflow file, e.g. the invoice PDF from an earlier step, up to 15 MB.",
                     },
                 },
                 text(

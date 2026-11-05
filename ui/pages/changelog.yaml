@@ -8,7 +8,18 @@ components:
   type: markdown
   title: Release history
   body: |
-    ## 0.1.0 — unreleased
+    ## 0.1.1
+
+    ### Fixed
+
+    - **Attach file to document** and **Advanced · Purchase/sales document: attach, replace or remove
+      a file / files (EDIT_I06_DOC, EDIT_I06_DOCS)** now show a file picker for `document_file` in the step form; before, the
+      file could not be chosen.
+    - A test checks that every input of every operation has a matching form field (widget by value
+      type, required flag), that every file input has a file picker, and that actions and
+      operations declare the same inputs and results.
+
+    ## 0.1.0
 
     First release, not yet verified against a live Rivile GAMA key (1.0.0 follows that check).
 

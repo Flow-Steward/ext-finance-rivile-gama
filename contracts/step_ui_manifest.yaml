@@ -347,6 +347,11 @@ forms:
     widget_type: text
     required: true
     help_text: Rivile operation code (I06_KODAS_PO), e.g. from Create sales invoice.
+  - name: document_file
+    label: File
+    widget_type: artifact_picker
+    required: true
+    help_text: A workflow file, e.g. the invoice PDF from an earlier step, up to 15 MB.
   - name: file_extension
     label: File extension
     widget_type: text
@@ -1067,6 +1072,11 @@ forms:
       value: 0
     - label: '1'
       value: 1
+  - name: document_file
+    label: File
+    widget_type: artifact_picker
+    required: false
+    help_text: A workflow file, e.g. the invoice PDF from an earlier step, up to 15 MB.
   - name: extra_params
     label: Extra params
     widget_type: json
@@ -1159,6 +1169,11 @@ forms:
       value: 0
     - label: '1'
       value: 1
+  - name: document_file
+    label: File
+    widget_type: artifact_picker
+    required: false
+    help_text: A workflow file, e.g. the invoice PDF from an earlier step, up to 15 MB.
   - name: extra_params
     label: Extra params
     widget_type: json

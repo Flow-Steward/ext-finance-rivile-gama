@@ -749,7 +749,7 @@ operations:
       type: string
       maxLength: 512
       title: File
-      description: A workflow file, up to 15 MB.
+      description: A workflow file, e.g. the invoice PDF from an earlier step, up to 15 MB.
   - name: file_extension
     value_type: text
     required: false

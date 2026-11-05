@@ -964,10 +964,24 @@ def widget_for(item: dict[str, Any]) -> str:
     return "text"
 
 
+FILE_FIELD_HELP = "A workflow file, e.g. the invoice PDF from an earlier step, up to 15 MB."
+
+
 def form_for(op: dict[str, Any]) -> dict[str, Any]:
     fields = []
     for item in op["inputs"]:
-        if item["value_type"] in {"connection_ref", "artifact_handle"}:
+        if item["value_type"] == "connection_ref":
+            continue
+        if item["value_type"] == "artifact_handle":
+            fields.append(
+                {
+                    "name": item["name"],
+                    "label": "File",
+                    "widget_type": "artifact_picker",
+                    "required": bool(item.get("required")),
+                    "help_text": FILE_FIELD_HELP,
+                }
+            )
             continue
         schema = item.get("schema") or {}
         field: dict[str, Any] = {
