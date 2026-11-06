@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.3
+
+### Changed
+
+- README: the icon note removed.
+- Releases: the release text is this version's section of the changelog, checked before anything is built,
+  followed by GitHub's list of changes since the previous release.
+
 ## 0.1.2
 
 ### Fixed

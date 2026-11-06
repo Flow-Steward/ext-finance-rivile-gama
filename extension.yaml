@@ -4,7 +4,7 @@ lifecycle:
   data_migrations: []
 extension_id: flowsteward.rivile-gama
 kind: tool_provider
-version: 0.1.2
+version: 0.1.3
 release_stage: active
 billing_mode: free
 display_name: Rivile GAMA

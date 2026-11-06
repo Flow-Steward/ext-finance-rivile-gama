@@ -1,6 +1,12 @@
 # Push a tag matching extension.yaml's version (`git tag v1.0.1 && git push --tags`).
 # The release publishes exactly what CI built and checked; the Flow Steward
 # extension catalog picks it up within the hour.
+#
+# The release text is the version's section of CHANGELOG.md, followed by
+# GitHub's generated notes (pull requests, new contributors, and the
+# "Full Changelog" compare link to the previous release). The tag job checks
+# both the version and the CHANGELOG section first, so a wrong tag fails in
+# seconds, before CI runs.
 name: Release
 
 on:
@@ -15,11 +21,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            extension.yaml
+            CHANGELOG.md
+            .github/scripts/release_notes.py
+          sparse-checkout-cone-mode: false
       - name: The tag must match extension.yaml
         run: |
           version=$(sed -n 's/^version:[[:space:]]*//p' extension.yaml | tr -d "'\"")
           test "${GITHUB_REF_NAME}" = "v${version}" \
             || { echo "::error::tag ${GITHUB_REF_NAME} does not match version ${version}"; exit 1; }
+      - name: CHANGELOG.md must describe this version
+        run: python3 .github/scripts/release_notes.py "${GITHUB_REF_NAME}" > notes.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: notes.md
 
   ci:
     needs: tag
@@ -33,9 +51,13 @@ jobs:
         with:
           name: dist
           path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: >
           gh release create "${GITHUB_REF_NAME}" dist/*.zip
-          --repo "${GITHUB_REPOSITORY}" --title "${GITHUB_REF_NAME}" --generate-notes
+          --repo "${GITHUB_REPOSITORY}" --title "${GITHUB_REF_NAME}"
+          --notes-file notes.md --generate-notes
