@@ -125,9 +125,3 @@ python3 tests/reference/build_contracts.py          # regenerate from the Rivile
 ./flow-steward extensions bundle flowsteward.rivile-gama --root <parent> --with-wheels --non-interactive --confirm
 ./core/entrypoints/cli/scripts/lint.sh --checks extension-static,extension-tests --extension-root <abs path>
 ```
-
-## Icon
-
-`icon.png` is the Rivile logo, © Rivile, used to identify the integration. Source:
-https://www.rivile.lt/favicon.svg (the embedded image), scaled to 128×128 on a transparent
-background with its proportions and colour unchanged.
