@@ -1,9 +1,12 @@
 # Rivile GAMA for Flow Steward
 
-`flowsteward.rivile-gama` connects Flow Steward workflows to **Rivile GAMA REST API v2**
-(`https://api.manorivile.lt/client/v2`). Every method documented in the Rivile guide
-(<https://gidas.rivile.lt/internetiniai_moduliai/api_rest>) is a typed workflow operation:
-**209 methods** — 91 reads and 118 writes — plus eleven everyday operations (below) and:
+Connect the Rivile GAMA system behind Manorivile-Gateway to Flow Steward using REST API v2. Everyday operations find or create clients and products, create sales or purchase invoices with optional posting, register document payments and attach or download document files. Stock, price, client-balance and date-based change readers provide building blocks for storefront updates, accounting exchanges and debt review.
+
+For integrations needing more of GAMA's data model, the release contains typed operations for 209 methods from its pinned API reference. Supported families include purchases and sales, general ledger, debts and payments, products and services, inventory and stocktaking, production, fixed assets, prices, payroll, personnel, point of sale, loyalty and gift vouchers, contracts and document management. Advanced steps accept the corresponding method parameters and Rivile data blocks, while list export can write paginated records to a JSONL workflow file.
+
+Each connection uses a Rivile API key and the associated user's rights. The gateway and company settings determine which functions are available. Workflows can combine everyday steps with the more detailed method operations for company-specific document and inventory processes. Configure Rivile change tracking before relying on the incremental readers that require it.
+
+Enable the Rivile API service with a valid version-access agreement, use GAMA 119 or later and run Manorivile-Gateway beside the company database. Add the username.secret API key to a project connection and check the Rivile user rights and relevant RGI parameters, including change-tracking initialization when needed.
 
 | Operation | What it does |
 |---|---|
