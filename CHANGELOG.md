@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+### Fixed
+
+- Prepared a fresh patch release for automatic CI and tag publication after GitHub Actions were re-enabled for this repository. The existing main-push, pull-request and reusable CI gates remain in place.
+
 ## 0.1.4
 
 ### Changed
