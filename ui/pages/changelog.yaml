@@ -8,6 +8,28 @@ components:
   type: markdown
   title: Release history
   body: |
+    ## 0.1.8 — 2026-11-16
+
+    ### Changed
+
+    - Compatible with Flow Steward 0.9.16, whose secret scan of extension output no longer
+      counts candidate strings and allows far more nodes and compared text. The step output
+      budget follows it: the 12,000-string limit is gone and the node budget rises from 48,000
+      to 1,000,000, both far inside the host's limits. A single page of a wide Rivile table
+      (100 rows of 80 or more fields) now fits one step output instead of being refused; a
+      multi-page read still stops at the page that would pass 3.5 MB.
+    - `BRANDING.md` ships in the bundle: the icon's official source (rivile.lt/favicon.svg),
+      SHA-256 of the source artwork and of `icon.png`, how the icon was made, and Rivile's
+      published terms. The icon itself is unchanged.
+    - `extension.yaml` is kept in the layout `flow-steward extensions lock-deps` writes; the
+      contract generator now writes the same layout.
+
+    ### Fixed
+
+    - The tests that check results against the host's secret scan load the Flow Steward
+      0.9.16 module correctly and use its current API; without a Flow Steward checkout they
+      are skipped with the reason.
+
     ## 0.1.7
 
     ### Added
