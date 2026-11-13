@@ -34,6 +34,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 
+# E402: the sibling generator modules import only after HERE is on sys.path.
 import build_ui_pages  # noqa: E402
 import friendly_contracts  # noqa: E402
 from titles import DEFAULT_GROUP, GROUPS, TITLES  # noqa: E402
@@ -1219,8 +1220,10 @@ def splice_effects(effects: list[dict[str, Any]]) -> None:
         if key != "external_effects":
             rebuilt[key] = value
     rebuilt.setdefault("external_effects", effects)
+    # The default width matches what ``flow-steward extensions lock-deps`` writes, so the
+    # generator and lock-deps leave the same file.
     manifest.write_text(
-        yaml.safe_dump(rebuilt, sort_keys=False, allow_unicode=True, width=100), encoding="utf-8"
+        yaml.safe_dump(rebuilt, sort_keys=False, allow_unicode=True), encoding="utf-8"
     )
 
 

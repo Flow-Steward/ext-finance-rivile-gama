@@ -26,6 +26,7 @@ from pathlib import Path
 from types import ModuleType
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+# E402: package_extension sits next to this script and imports only after the path insert.
 from package_extension import ICON_FILE, icon_problem  # noqa: E402
 
 CATALOG_REVISION = "f21511cba4bba6e283d74494e87f9a69e0c342ab"
