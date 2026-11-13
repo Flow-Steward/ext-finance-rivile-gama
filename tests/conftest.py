@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import importlib.util
 import io
 import json
+import os
 import sys
 from email.message import Message
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 from urllib.error import HTTPError
 
@@ -17,36 +20,63 @@ GENERATOR_ROOT = BUNDLE_ROOT / "tests" / "reference"
 if str(GENERATOR_ROOT) not in sys.path:
     sys.path.insert(0, str(GENERATOR_ROOT))
 
+# The bundle root has to be on sys.path before the runtime package can be imported.
 from runtime.transport import RivileTransport  # noqa: E402
 
+_HOST_MODULE_PATH = "core/application/extensions/secret_reflection.py"
+_HOST_MODULE_NAME = "fs_core_secret_reflection"
 
-def _core_secret_guard():
-    """The host's own value_exposes_secret, loaded from the Flow Steward checkout.
+
+def _load_host_secret_reflection() -> tuple[ModuleType | None, str]:
+    """The host's own ``secret_reflection`` module, loaded from the Flow Steward checkout.
 
     Loaded by file path (no Core package import chain). The gate and the
     Development test runner mount the checkout at /app; FLOW_STEWARD_ROOT
-    overrides that.
+    overrides that. Returns the module, or ``None`` and the reason it is missing.
     """
-    import importlib.util
-    import os
-
+    if _HOST_MODULE_NAME in sys.modules:
+        return sys.modules[_HOST_MODULE_NAME], ""
     candidates = [os.environ.get("FLOW_STEWARD_ROOT", ""), "/app", *map(str, BUNDLE_ROOT.parents)]
-    for root in candidates:
-        path = Path(root) / "core/application/extensions/secret_reflection.py" if root else None
-        if path and path.is_file():
-            spec = importlib.util.spec_from_file_location("fs_core_secret_reflection", path)
-            if spec and spec.loader:
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                return module.value_exposes_secret
-    return None
+    for root in filter(None, candidates):
+        path = Path(root) / _HOST_MODULE_PATH
+        if not path.is_file():
+            continue
+        spec = importlib.util.spec_from_file_location(_HOST_MODULE_NAME, path)
+        if spec is None or spec.loader is None:
+            continue
+        module = importlib.util.module_from_spec(spec)
+        # dataclasses resolve the module through sys.modules while the class is
+        # created, so it must be registered before the module body runs.
+        sys.modules[_HOST_MODULE_NAME] = module
+        try:
+            spec.loader.exec_module(module)
+        except BaseException:
+            sys.modules.pop(_HOST_MODULE_NAME, None)
+            raise
+        return module, ""
+    return None, (
+        f"Flow Steward checkout with {_HOST_MODULE_PATH} not found; "
+        "set FLOW_STEWARD_ROOT to run the host secret-scan checks"
+    )
 
 
 @pytest.fixture
-def host_secret_guard():
-    guard = _core_secret_guard()
+def host_secret_reflection() -> ModuleType:
+    module, reason = _load_host_secret_reflection()
+    if module is None:
+        pytest.skip(reason)
+    return module
+
+
+@pytest.fixture
+def host_secret_guard(host_secret_reflection: ModuleType):
+    """``find_secret_exposure(value, secrets)``: ``None`` when the host accepts ``value``."""
+    guard = getattr(host_secret_reflection, "find_secret_exposure", None)
     if guard is None:
-        pytest.skip("Flow Steward checkout not found; set FLOW_STEWARD_ROOT")
+        pytest.skip(
+            "host secret_reflection has no find_secret_exposure (Flow Steward older than "
+            "0.9.16?); the host secret-scan checks need the 0.9.16 API"
+        )
     return guard
 
 

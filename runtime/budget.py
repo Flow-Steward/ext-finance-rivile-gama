@@ -1,13 +1,20 @@
 """Keep one step's result inside what the host accepts.
 
 The host scans every string of an extension response for reflected secrets and
-fails closed past fixed budgets (core ``secret_reflection``: 16,384 candidate
-strings — dict keys and string values — 65,536 traversed nodes, 8 M compared
-code points), and ``main.py`` caps the serialized response at 4.5 MiB. A wide
-Rivile table reaches those limits quickly: 100 rows of 80 fields is already
-16,000 strings. This module measures a result the same way, with a margin for
-the envelope, so multi-page reads stop at a page boundary instead of being
-blocked whole.
+fails closed past fixed budgets (core ``secret_reflection`` since Flow Steward
+0.9.16: 3,145,728 traversed nodes and 64 Mi compared code points — distinct
+strings times the number of connection secrets; earlier hosts also capped the
+response at 16,384 candidate strings, a limit that no longer exists), and
+``main.py`` caps the serialized response at 4.5 MiB. This module measures a
+result the same way, well inside those limits and with a margin for the
+envelope, so multi-page reads stop at a page boundary instead of being blocked
+whole.
+
+The budgets below are not a copy of the host's numbers. Each one stays far
+below the matching host limit: a 3.5 MB JSON document holds at most ~1.75 M
+nodes, so the serialized-bytes budget is in practice the binding one, and the
+comparison work (code points plus one unit per string, for the one API key a
+connection holds) stays under 6 M of the host's 64 Mi.
 """
 
 from __future__ import annotations
@@ -18,43 +25,39 @@ from typing import Any
 from . import errors
 from .errors import ExtensionError
 
-MAX_CANDIDATE_STRINGS = 12_000
-MAX_NODES = 48_000
+MAX_NODES = 1_000_000
 MAX_CODEPOINTS = 5_000_000
 MAX_SERIALIZED_BYTES = 3_500_000
 
 
-def measure(value: Any) -> tuple[int, int, int, int]:
-    """(candidate strings, nodes, string code points, serialized bytes) of ``value``."""
-    candidates = nodes = codepoints = 0
+def measure(value: Any) -> tuple[int, int, int]:
+    """(nodes, string code points, serialized bytes) of ``value``.
+
+    Nodes are counted as the host traverses them: every value, and every dict
+    key next to its value.
+    """
+    nodes = codepoints = 0
     stack: list[Any] = [value]
     while stack:
         node = stack.pop()
         nodes += 1
         if isinstance(node, str):
-            candidates += 1
             codepoints += len(node)
         elif isinstance(node, dict):
             for key, nested in node.items():
                 nodes += 1
                 if isinstance(key, str):
-                    candidates += 1
                     codepoints += len(key)
                 stack.append(nested)
         elif isinstance(node, (list, tuple)):
             stack.extend(node)
     size = len(json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
-    return candidates, nodes, codepoints, size
+    return nodes, codepoints, size
 
 
-def _within(totals: tuple[int, int, int, int]) -> bool:
-    candidates, nodes, codepoints, size = totals
-    return (
-        candidates <= MAX_CANDIDATE_STRINGS
-        and nodes <= MAX_NODES
-        and codepoints <= MAX_CODEPOINTS
-        and size <= MAX_SERIALIZED_BYTES
-    )
+def _within(totals: tuple[int, int, int]) -> bool:
+    nodes, codepoints, size = totals
+    return nodes <= MAX_NODES and codepoints <= MAX_CODEPOINTS and size <= MAX_SERIALIZED_BYTES
 
 
 def too_large() -> ExtensionError:
@@ -80,7 +83,7 @@ class Meter:
     """Running totals for a result assembled page by page."""
 
     def __init__(self) -> None:
-        self.totals = (0, 0, 0, 0)
+        self.totals = (0, 0, 0)
 
     def admit(self, chunk: Any) -> bool:
         """Add ``chunk`` if the running result still fits; report whether it did."""
@@ -89,7 +92,6 @@ class Meter:
             self.totals[0] + added[0],
             self.totals[1] + added[1],
             self.totals[2] + added[2],
-            self.totals[3] + added[3],
         )
         if not _within(combined):
             return False
@@ -97,4 +99,13 @@ class Meter:
         return True
 
 
-__all__ = ["Meter", "ensure_fits", "fits", "measure", "too_large"]
+__all__ = [
+    "MAX_CODEPOINTS",
+    "MAX_NODES",
+    "MAX_SERIALIZED_BYTES",
+    "Meter",
+    "ensure_fits",
+    "fits",
+    "measure",
+    "too_large",
+]

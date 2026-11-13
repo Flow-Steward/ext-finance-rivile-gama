@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 import yaml
 from conftest import API_KEY, BUNDLE_ROOT, FakeOpener, n08, payload, ret_dok
+from main import MAX_SERIALIZED_RESPONSE_BYTES
 
 from runtime import budget, catalog
 from runtime.operations import handle_runtime
@@ -383,42 +384,69 @@ def test_max_pages_reports_the_last_page_read(make_factory) -> None:
     assert result["page_number"] == 1 and result["next_page"] == 2 and result["has_more"] is True
 
 
-def _wide_page(start: int, fields: int) -> str:
+def _wide_page(start: int, fields: int, value_width: int = 0) -> str:
+    pad = "v" * value_width
     rows = "".join(
         "<N17>"
-        + "".join(f"<N17_F{f:02d}>v{start + r}-{f}</N17_F{f:02d}>" for f in range(fields))
+        + "".join(f"<N17_F{f:02d}>v{start + r}-{f}{pad}</N17_F{f:02d}>" for f in range(fields))
         + "</N17>"
         for r in range(100)
     )
     return ret_dok(rows)
 
 
+def _host_limit(module: Any, name: str) -> int:
+    limit = getattr(module, name, None)
+    if not isinstance(limit, int):
+        pytest.skip(f"host secret_reflection no longer defines {name}; review runtime/budget.py")
+    return limit
+
+
 def test_wide_multi_page_reads_stay_within_the_host_secret_scan(
     make_factory, host_secret_guard
 ) -> None:
-    pages = [(200, _wide_page(i * 100, 45)) for i in range(10)]
+    # 45 fields of ~100 characters: each page is ~0.5 MB, so the output budget
+    # stops the read at a page boundary well before max_pages.
+    pages = [(200, _wide_page(i * 100, 45, value_width=90)) for i in range(10)]
     response = run(
         make_factory, FakeOpener(*pages), payload("get_n17_list", {"fetch_all_pages": True})
     )
     assert response["ok"] is True
     result = response["result"]
+    assert 1 < result["pages_fetched"] < 10
     assert result["has_more"] is True and result["next_page"] == result["page_number"] + 1
-    assert not host_secret_guard(response, [API_KEY])
+    assert host_secret_guard(response, [API_KEY]) is None
+    assert len(json.dumps(response, ensure_ascii=False).encode()) < MAX_SERIALIZED_RESPONSE_BYTES
 
 
 def test_one_page_too_wide_for_a_step_points_to_export(make_factory) -> None:
-    response = run(make_factory, FakeOpener((200, _wide_page(0, 130))), payload("get_n17_list"))
+    page = _wide_page(0, 130, value_width=300)  # ~4 MB of values in one page
+    response = run(make_factory, FakeOpener((200, page)), payload("get_n17_list"))
     assert response["error_code"] == "response_too_large"
     assert "export_list" in response["error"]
 
 
+def test_budget_stays_inside_the_host_limits(host_secret_reflection) -> None:
+    nodes = _host_limit(host_secret_reflection, "_MAX_TRAVERSAL_NODES")
+    comparison = _host_limit(host_secret_reflection, "_MAX_COMPARISON_CODEPOINTS")
+    assert budget.MAX_NODES * 2 <= nodes
+    # Comparison work is code points plus one per string, once per secret (one API key).
+    assert (budget.MAX_CODEPOINTS + budget.MAX_NODES) * 2 <= comparison
+    # The serialized result, plus the response envelope, stays under main.py's cap.
+    assert budget.MAX_SERIALIZED_BYTES + 512 * 1024 <= MAX_SERIALIZED_RESPONSE_BYTES
+
+
 def test_budget_matches_the_host_guard(host_secret_guard) -> None:
-    fits = [{f"F{f}": f"v{r}-{f}" for f in range(50)} for r in range(110)]
-    assert budget.measure({"records": fits})[0] <= budget.MAX_CANDIDATE_STRINGS
-    assert not host_secret_guard({"result": {"records": fits}}, [API_KEY])
-    over = [{f"F{f}": f"v{r}-{f}" for f in range(50)} for r in range(170)]
-    assert budget.measure({"records": over})[0] > budget.MAX_CANDIDATE_STRINGS
-    assert host_secret_guard({"result": {"records": over}}, [API_KEY])  # what the budget prevents
+    # 100 rows of 120 fields: 24,000 strings, past the 16,384-string cap of hosts
+    # before 0.9.16 but accepted by both the budget and the current host scan.
+    wide = [{f"F{f}": f"v{r}-{f}" for f in range(120)} for r in range(100)]
+    assert budget.fits({"records": wide})
+    assert host_secret_guard({"result": {"records": wide}}, [API_KEY]) is None
+    over = [{f"F{f}": "v" * 300 for f in range(120)} for _ in range(100)]
+    assert not budget.fits({"records": over})  # 3.6 MB: past the serialized budget
+    leaked = [{"F0": "ok"}, {"F1": f"key {API_KEY}"}]
+    finding = host_secret_guard({"result": {"records": leaked}}, [API_KEY])
+    assert finding is not None and finding.reason == "match"
 
 
 def test_top_sets_the_page_size(make_factory) -> None:
@@ -745,22 +773,25 @@ def test_export_saves_what_it_has_when_the_file_is_full(make_factory, monkeypatc
 
 def test_fetch_all_meters_data_errors_too(make_factory, host_secret_guard) -> None:
     errors_xml = "".join(
-        f"<error><data>d{i}</data><dataErrors><dataError><tag>T{i}</tag><code>{i}</code>"
-        f"<message>m{i}</message></dataError></dataErrors></error>"
+        f"<error><data>d{i}{'x' * 500}</data><dataErrors><dataError><tag>T{i}{'x' * 300}</tag>"
+        f"<code>{i}{'x' * 300}</code><message>m{i}{'x' * 300}</message></dataError></dataErrors>"
+        "</error>"
         for i in range(200)
     )
     page = ret_dok(*[n08(str(i)) for i in range(100)], extra=f"<errors>{errors_xml}</errors>")
     response = run(
         make_factory,
-        FakeOpener(*[(200, page)] * 10),
-        payload("get_n08_list", {"fetch_all_pages": True}),
+        FakeOpener(*[(200, page)] * 20),
+        payload("get_n08_list", {"fetch_all_pages": True, "max_pages": 20}),
     )
     assert response["ok"] is True and response["result"]["has_more"] is True
-    assert not host_secret_guard(response, [API_KEY])
+    # Only the ~0.3 MB of data errors per page make the output budget stop the read early.
+    assert 1 < response["result"]["pages_fetched"] < 20
+    assert host_secret_guard(response, [API_KEY]) is None
 
 
 def test_oversized_write_echo_is_shortened_not_failed(make_factory) -> None:
-    wide = "".join(f"<F{f:03d}>{'v' * 40}</F{f:03d}>" for f in range(200))
+    wide = "".join(f"<F{f:03d}>{'v' * 300}</F{f:03d}>" for f in range(200))  # ~5 MB echo
     rows = "".join(f"<N08><N08_KODAS_KS>{i}</N08_KODAS_KS>{wide}</N08>" for i in range(80))
     response = run(
         make_factory,
