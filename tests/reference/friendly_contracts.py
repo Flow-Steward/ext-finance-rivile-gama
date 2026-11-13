@@ -111,7 +111,7 @@ CLIENT_OUT = [
 LINE_SCHEMA = {
     "type": "array",
     "title": "Lines",
-    "description": "Document lines.",
+    "description": "Document lines, 1 to 500: product_code, quantity, unit and unit_price. Each line also needs a department_code here or in the step's Department / warehouse field.",
     "minItems": 1,
     "maxItems": 500,
     "items": {
@@ -477,7 +477,7 @@ def operations() -> list[dict[str, Any]]:
         },
         {
             "operation_id": "stock_levels",
-            "display_name": "Stock levels",
+            "display_name": "Read stock levels",
             "description": (
                 "FIFO stock balance per product, unit and warehouse (GET_I17_LIST grouped by "
                 "I17_KODAS_IS), as decimal quantities in the base unit."
@@ -499,7 +499,7 @@ def operations() -> list[dict[str, Any]]:
         },
         {
             "operation_id": "product_prices",
-            "display_name": "Product prices",
+            "display_name": "Read product prices",
             "description": (
                 "Every price, price list, promotion and discount Rivile resolves for a product "
                 "(GET_PS_KAIN), flattened."
@@ -521,7 +521,7 @@ def operations() -> list[dict[str, Any]]:
         },
         {
             "operation_id": "changes_since",
-            "display_name": "Changes since",
+            "display_name": "Read records changed since a date",
             "description": (
                 "Clients, products, prices (all products) or stock changed since a date (the "
                 "*_TIME methods; run Advanced · Enable change tracking (INIT_TRIGGER) once first), "
@@ -551,7 +551,7 @@ def operations() -> list[dict[str, Any]]:
         },
         {
             "operation_id": "client_debt",
-            "display_name": "Client debt",
+            "display_name": "Read client debt",
             "description": (
                 "Debt totals of a client or supplier (GET_T03_LIST): debit, credit and balance "
                 "(debit − credit)."

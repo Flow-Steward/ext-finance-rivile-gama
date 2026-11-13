@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6
+
+- Clarify everyday read action titles and add schema-compatible form examples.
+- Add a workflow action guide covering setup, invoice lines, paging and advanced inputs.
+
+
 ## 0.1.5
 
 ### Fixed

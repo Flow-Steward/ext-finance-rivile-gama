@@ -1,5 +1,8 @@
 # Rivile GAMA for Flow Steward
 
+See the [workflow action guide](docs/workflow-actions.md) for setup, invoice examples,
+paging and advanced-action inputs.
+
 Connect the Rivile GAMA system behind Manorivile-Gateway to Flow Steward using REST API v2. Everyday operations find or create clients and products, create sales or purchase invoices with optional posting, register document payments and attach or download document files. Stock, price, client-balance and date-based change readers provide building blocks for storefront updates, accounting exchanges and debt review.
 
 For integrations needing more of GAMA's data model, the release contains typed operations for 209 methods from its pinned API reference. Supported families include purchases and sales, general ledger, debts and payments, products and services, inventory and stocktaking, production, fixed assets, prices, payroll, personnel, point of sale, loyalty and gift vouchers, contracts and document management. Advanced steps accept the corresponding method parameters and Rivile data blocks, while list export can write paginated records to a JSONL workflow file.

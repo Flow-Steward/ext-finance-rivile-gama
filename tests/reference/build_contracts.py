@@ -131,7 +131,7 @@ ERROR_ACTION_HELP = (
 LIST_HELP = "H — header records only (default); A — headers with all related detail tables."
 FIL_HELP = (
     "Filter: a T-SQL WHERE condition on the method's table without the WHERE keyword, "
-    "for example n08_kodas_ks='121411842'. Optional."
+    "using field names from this method's Rivile table. Optional; omit to read all records."
 )
 PAGE_HELP = (
     "Page number. List methods return 100 records per page; without it Rivile returns the "
@@ -322,7 +322,19 @@ def param_input(row: dict[str, Any], param: dict[str, Any]) -> dict[str, Any]:
         schema = {"type": "string", "maxLength": 200000}
     else:
         schema = {"type": "string", "maxLength": 4000}
-    schema["title"] = f"{wire}"
+    labels = {
+        "oper": "Record operation (oper)",
+        "erroraction": "On detail-line error (errorAction)",
+        "fil": "Record filter (T-SQL)",
+        "pagenumber": "Page number",
+        "list": "Detail level (list)",
+        "kodas_po": "Document code (kodas_po)",
+        "show_doc": "Return Base64 file content (show_doc)",
+        "overwrite": "Replace existing file (overwrite)",
+        "doc": "File content (Base64)",
+        "ext": "File extension (ext)",
+    }
+    schema["title"] = labels.get(lower, wire)
     if description:
         schema["description"] = clean(description, 600)
     return {
@@ -660,9 +672,23 @@ def method_operation(row: dict[str, Any]) -> dict[str, Any]:
     if len(names) != len(set(names)):
         raise SystemExit(f"duplicate input names for {row['method']}: {names}")
     outputs = common_outputs(row, write=row["write"])
+    usage = []
+    if any(p["name"] == "oper" for p in row["params"]):
+        usage.append(
+            "Choose the record operation; supply Rivile table fields in Data for the chosen operation."
+        )
+    elif row["data_roots"]:
+        usage.append("Supply the method's Rivile table fields in Data.")
+    if row["paged"]:
+        usage.append(
+            "Read one page of up to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue."
+        )
+    if any(p["name"] == "fil" for p in row["params"]):
+        usage.append("Use a T-SQL filter on this method's table to restrict results.")
     description = (
-        f"Rivile GAMA {row['method']} — {row['title']}. Rivile: {row['lt_description']} "
-        f"Docs: {DOCS_BASE}{row['page']}"
+        f"Rivile GAMA {row['method']} — {row['title']}. "
+        + " ".join(usage)
+        + f" Docs: {DOCS_BASE}{row['page']}. Rivile: {row['lt_description']}"
     )
     op: dict[str, Any] = {
         "operation_id": row["operation_id"],
@@ -967,6 +993,18 @@ def widget_for(item: dict[str, Any]) -> str:
 FILE_FIELD_HELP = "A workflow file, e.g. the invoice PDF from an earlier step, up to 15 MB."
 
 
+FORM_PLACEHOLDERS = {
+    (
+        "create_sales_invoice",
+        "lines",
+    ): '[{"product_code":"PRODUCT01","quantity":2,"unit":"VNT","unit_price":12.5,"department_code":"MAIN"}]',
+    ("find_or_create_client", "name"): "Example customer Ltd",
+    ("find_or_create_product", "name"): "Example product",
+    ("changes_since", "since"): "2026-01-01T00:00:00",
+    ("get_n08_list", "fil"): "n08_kodas_ks='CLIENT01'",
+}
+
+
 def form_for(op: dict[str, Any]) -> dict[str, Any]:
     fields = []
     for item in op["inputs"]:
@@ -994,6 +1032,9 @@ def form_for(op: dict[str, Any]) -> dict[str, Any]:
             field["help_text"] = clean(schema["description"], 400)
         if schema.get("enum"):
             field["options"] = [{"label": str(v), "value": v} for v in schema["enum"]]
+        example = FORM_PLACEHOLDERS.get((op["operation_id"], item["name"]))
+        if example is not None:
+            field["placeholder"] = example
         fields.append(field)
     return {"operation_id": op["operation_id"], "title": op["display_name"], "fields": fields}
 

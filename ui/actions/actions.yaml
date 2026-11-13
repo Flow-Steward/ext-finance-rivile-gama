@@ -565,7 +565,7 @@ actions:
   - blocked_address
   - timeout_unknown
 - action_id: stock_levels
-  title: Stock levels
+  title: Read stock levels
   description: FIFO stock balance per product, unit and warehouse (GET_I17_LIST grouped by I17_KODAS_IS),
     as decimal quantities in the base unit.
   required_scopes:
@@ -614,7 +614,7 @@ actions:
   - redirect_rejected
   - blocked_address
 - action_id: product_prices
-  title: Product prices
+  title: Read product prices
   description: Every price, price list, promotion and discount Rivile resolves for a product (GET_PS_KAIN),
     flattened.
   required_scopes:
@@ -664,7 +664,7 @@ actions:
   - redirect_rejected
   - blocked_address
 - action_id: changes_since
-  title: Changes since
+  title: Read records changed since a date
   description: Clients, products, prices (all products) or stock changed since a date (the *_TIME methods;
     run Advanced · Enable change tracking (INIT_TRIGGER) once first), or documents corrected since then
     (GET_I06_LIST by I06_R_DATE).
@@ -716,7 +716,7 @@ actions:
   - redirect_rejected
   - blocked_address
 - action_id: client_debt
-  title: Client debt
+  title: Read client debt
   description: 'Debt totals of a client or supplier (GET_T03_LIST): debit, credit and balance (debit −
     credit).'
   required_scopes:
@@ -758,8 +758,9 @@ actions:
   - blocked_address
 - action_id: edit_a02
   title: 'Advanced · Payroll variables: create, update or delete (EDIT_A02)'
-  description: 'Rivile GAMA EDIT_A02 — Payroll variables: create, update or delete. Rivile: Algos kintamųjų
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a02'
+  description: 'Rivile GAMA EDIT_A02 — Payroll variables: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a02.
+    Rivile: Algos kintamųjų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -814,8 +815,9 @@ actions:
   - timeout_unknown
 - action_id: edit_a06
   title: 'Advanced · Employees: create, update or delete (EDIT_A06)'
-  description: 'Rivile GAMA EDIT_A06 — Employees: create, update or delete. Rivile: Darbuotojo koregavimas.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a06'
+  description: 'Rivile GAMA EDIT_A06 — Employees: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a06.
+    Rivile: Darbuotojo koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -870,8 +872,9 @@ actions:
   - timeout_unknown
 - action_id: edit_a06_full
   title: 'Advanced · Employees: create with departments and banks (EDIT_A06_FULL)'
-  description: 'Rivile GAMA EDIT_A06_FULL — Employees: create with departments and banks. Rivile: Naujo
-    darbuotojo sukūrimas (kartu su papildoma informacija) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a06_full'
+  description: 'Rivile GAMA EDIT_A06_FULL — Employees: create with departments and banks. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a06_full.
+    Rivile: Naujo darbuotojo sukūrimas (kartu su papildoma informacija)'
   required_scopes:
   - extension:invoke
   handler:
@@ -932,8 +935,9 @@ actions:
   - timeout_unknown
 - action_id: edit_a07
   title: 'Advanced · Employee departments: create, update or delete (EDIT_A07)'
-  description: 'Rivile GAMA EDIT_A07 — Employee departments: create, update or delete. Rivile: Darbuotojo
-    padalinių koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a07'
+  description: 'Rivile GAMA EDIT_A07 — Employee departments: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a07.
+    Rivile: Darbuotojo padalinių koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -988,8 +992,9 @@ actions:
   - timeout_unknown
 - action_id: edit_a08
   title: 'Advanced · Employee bank accounts: create, update or delete (EDIT_A08)'
-  description: 'Rivile GAMA EDIT_A08 — Employee bank accounts: create, update or delete. Rivile: Darbuotojo
-    bankų koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a08'
+  description: 'Rivile GAMA EDIT_A08 — Employee bank accounts: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a08.
+    Rivile: Darbuotojo bankų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -1044,8 +1049,9 @@ actions:
   - timeout_unknown
 - action_id: edit_a11
   title: 'Advanced · Employee accruals and deductions: create, update or delete (EDIT_A11)'
-  description: 'Rivile GAMA EDIT_A11 — Employee accruals and deductions: create, update or delete. Rivile:
-    Darbuotojų priskaitymų/atskaitymų koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a11'
+  description: 'Rivile GAMA EDIT_A11 — Employee accruals and deductions: create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a11.
+    Rivile: Darbuotojų priskaitymų/atskaitymų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -1100,8 +1106,9 @@ actions:
   - timeout_unknown
 - action_id: edit_a24
   title: 'Advanced · Payroll documents: create, update or delete (EDIT_A24)'
-  description: 'Rivile GAMA EDIT_A24 — Payroll documents: create, update or delete. Rivile: Algos dokumentų
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a24'
+  description: 'Rivile GAMA EDIT_A24 — Payroll documents: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a24.
+    Rivile: Algos dokumentų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -1156,8 +1163,9 @@ actions:
   - timeout_unknown
 - action_id: edit_a26
   title: 'Advanced · Payroll positions: create, update or delete (EDIT_A26)'
-  description: 'Rivile GAMA EDIT_A26 — Payroll positions: create, update or delete. Rivile: Algos - pareigų
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a26'
+  description: 'Rivile GAMA EDIT_A26 — Payroll positions: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_a26.
+    Rivile: Algos - pareigų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -1212,8 +1220,9 @@ actions:
   - timeout_unknown
 - action_id: edit_b00
   title: 'Advanced · Import/export operations: create, update or delete (EDIT_B00)'
-  description: 'Rivile GAMA EDIT_B00 — Import/export operations: create, update or delete. Rivile: Importo/Eksporto
-    operacijų koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_b00'
+  description: 'Rivile GAMA EDIT_B00 — Import/export operations: create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_b00.
+    Rivile: Importo/Eksporto operacijų koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -1268,7 +1277,8 @@ actions:
   - timeout_unknown
 - action_id: edit_bus
   title: 'Advanced · Document status: change (EDIT_BUS)'
-  description: 'Rivile GAMA EDIT_BUS — Document status: change. Rivile: Būsenų koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_bus'
+  description: 'Rivile GAMA EDIT_BUS — Document status: change. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_bus.
+    Rivile: Būsenų koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -1329,8 +1339,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i01
   title: 'Advanced · General ledger journals: create, update or delete (EDIT_I01)'
-  description: 'Rivile GAMA EDIT_I01 — General ledger journals: create, update or delete. Rivile: DK žurnalo
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i01'
+  description: 'Rivile GAMA EDIT_I01 — General ledger journals: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i01.
+    Rivile: DK žurnalo koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -1388,8 +1399,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i02
   title: 'Advanced · General ledger entries: create, update, post or delete (EDIT_I02)'
-  description: 'Rivile GAMA EDIT_I02 — General ledger entries: create, update, post or delete. Rivile:
-    DK įrašo koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i02'
+  description: 'Rivile GAMA EDIT_I02 — General ledger entries: create, update, post or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i02.
+    Rivile: DK įrašo koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -1447,8 +1459,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i02_full
   title: 'Advanced · General ledger entries: create with lines (EDIT_I02_FULL)'
-  description: 'Rivile GAMA EDIT_I02_FULL — General ledger entries: create with lines. Rivile: Naujo DK
-    įrašo sukūrimas (kartu su detaliomis eilutėmis). Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i02_full'
+  description: 'Rivile GAMA EDIT_I02_FULL — General ledger entries: create with lines. Supply the method''s
+    Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i02_full.
+    Rivile: Naujo DK įrašo sukūrimas (kartu su detaliomis eilutėmis).'
   required_scopes:
   - extension:invoke
   handler:
@@ -1506,8 +1519,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i03
   title: 'Advanced · General ledger entry lines: create, update or delete (EDIT_I03)'
-  description: 'Rivile GAMA EDIT_I03 — General ledger entry lines: create, update or delete. Rivile: Didžiosios
-    knygos operacijos detalios eilutės koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i03'
+  description: 'Rivile GAMA EDIT_I03 — General ledger entry lines: create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i03.
+    Rivile: Didžiosios knygos operacijos detalios eilutės koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -1565,8 +1579,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i06
   title: 'Advanced · Purchase/sales documents: create, update, post or delete (EDIT_I06)'
-  description: 'Rivile GAMA EDIT_I06 — Purchase/sales documents: create, update, post or delete. Rivile:
-    Pirkimų, pardavimų dokumento sukūrimas, koregavimas, perkėlimas, trynimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06'
+  description: 'Rivile GAMA EDIT_I06 — Purchase/sales documents: create, update, post or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06.
+    Rivile: Pirkimų, pardavimų dokumento sukūrimas, koregavimas, perkėlimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -1622,8 +1637,8 @@ actions:
 - action_id: edit_i06_doc
   title: 'Advanced · Purchase/sales document: attach, replace or remove a file (EDIT_I06_DOC)'
   description: 'Rivile GAMA EDIT_I06_DOC — Purchase/sales document: attach, replace or remove a file.
-    Rivile: Prie pirkimų/pardavimų operacijos dokumento/nuorodos prisegimas, koregavimas, trynimas. Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_doc'
+    Choose the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_doc.
+    Rivile: Prie pirkimų/pardavimų operacijos dokumento/nuorodos prisegimas, koregavimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -1699,8 +1714,8 @@ actions:
 - action_id: edit_i06_docs
   title: 'Advanced · Purchase/sales document: attach, replace or remove files (multiple) (EDIT_I06_DOCS)'
   description: 'Rivile GAMA EDIT_I06_DOCS — Purchase/sales document: attach, replace or remove files (multiple).
-    Rivile: Prie pirkimų/pardavimų operacijos dokumentų/nuorodų prisegimas, koregavimas, trynimas. Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_docs'
+    Choose the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_docs.
+    Rivile: Prie pirkimų/pardavimų operacijos dokumentų/nuorodų prisegimas, koregavimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -1794,7 +1809,8 @@ actions:
 - action_id: edit_i06_full
   title: 'Advanced · Purchase/sales documents: create with lines, terms and payments (EDIT_I06_FULL)'
   description: 'Rivile GAMA EDIT_I06_FULL — Purchase/sales documents: create with lines, terms and payments.
-    Rivile: Naujo pirkimo, pardavimo dokumento sukūrimas (kartu su detaliomis eilutėmis). Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_full'
+    Supply the method''s Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_full.
+    Rivile: Naujo pirkimo, pardavimo dokumento sukūrimas (kartu su detaliomis eilutėmis).'
   required_scopes:
   - extension:invoke
   handler:
@@ -1849,8 +1865,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i06_kop
   title: 'Advanced · Purchase/sales documents: copy and change (EDIT_I06_KOP)'
-  description: 'Rivile GAMA EDIT_I06_KOP — Purchase/sales documents: copy and change. Rivile: Pirkimų,
-    pardavimų dokumento kopijavimas ir keitimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_kop'
+  description: 'Rivile GAMA EDIT_I06_KOP — Purchase/sales documents: copy and change. Supply the method''s
+    Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i06_kop.
+    Rivile: Pirkimų, pardavimų dokumento kopijavimas ir keitimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -1902,8 +1919,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i07
   title: 'Advanced · Purchase/sales document lines: create, update or delete (EDIT_I07)'
-  description: 'Rivile GAMA EDIT_I07 — Purchase/sales document lines: create, update or delete. Rivile:
-    Pirkimų, pardavimų dokumento detalios informacijos sukūrimas, koregavimas, trynimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i07'
+  description: 'Rivile GAMA EDIT_I07 — Purchase/sales document lines: create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i07.
+    Rivile: Pirkimų, pardavimų dokumento detalios informacijos sukūrimas, koregavimas, trynimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -1958,8 +1976,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i08
   title: 'Advanced · Purchase/sales payment terms: create, update or delete (EDIT_I08)'
-  description: 'Rivile GAMA EDIT_I08 — Purchase/sales payment terms: create, update or delete. Rivile:
-    Pirkimų,pardavimų dokumento atidėjimų koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i08'
+  description: 'Rivile GAMA EDIT_I08 — Purchase/sales payment terms: create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i08.
+    Rivile: Pirkimų,pardavimų dokumento atidėjimų koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -2014,8 +2033,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i09
   title: 'Advanced · Internal documents: create, update, post or delete (EDIT_I09)'
-  description: 'Rivile GAMA EDIT_I09 — Internal documents: create, update, post or delete. Rivile: Vidinių
-    dokumentų koregavimas (antraštės) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i09'
+  description: 'Rivile GAMA EDIT_I09 — Internal documents: create, update, post or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i09.
+    Rivile: Vidinių dokumentų koregavimas (antraštės)'
   required_scopes:
   - extension:invoke
   handler:
@@ -2070,8 +2090,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i09_full
   title: 'Advanced · Internal documents: create with lines (EDIT_I09_FULL)'
-  description: 'Rivile GAMA EDIT_I09_FULL — Internal documents: create with lines. Rivile: Naujo vidinio
-    dokumento sukūrimas (kartu su detaliomis eilutėmis). Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i09_full'
+  description: 'Rivile GAMA EDIT_I09_FULL — Internal documents: create with lines. Supply the method''s
+    Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i09_full.
+    Rivile: Naujo vidinio dokumento sukūrimas (kartu su detaliomis eilutėmis).'
   required_scopes:
   - extension:invoke
   handler:
@@ -2126,8 +2147,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i09_kop
   title: 'Advanced · Internal documents: copy and change (EDIT_I09_KOP)'
-  description: 'Rivile GAMA EDIT_I09_KOP — Internal documents: copy and change. Rivile: Vidinių dokumentų
-    kopijavimas ir keitimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i09_kop'
+  description: 'Rivile GAMA EDIT_I09_KOP — Internal documents: copy and change. Supply the method''s Rivile
+    table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i09_kop.
+    Rivile: Vidinių dokumentų kopijavimas ir keitimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -2179,8 +2201,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i10
   title: 'Advanced · Internal document lines: create, update or delete (EDIT_I10)'
-  description: 'Rivile GAMA EDIT_I10 — Internal document lines: create, update or delete. Rivile: Vidinio
-    dokumento detalios informacijos koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i10'
+  description: 'Rivile GAMA EDIT_I10 — Internal document lines: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i10.
+    Rivile: Vidinio dokumento detalios informacijos koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -2235,8 +2258,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i11
   title: 'Advanced · Inventory operations: create, update, post or delete (EDIT_I11)'
-  description: 'Rivile GAMA EDIT_I11 — Inventory operations: create, update, post or delete. Rivile: Atsargų
-    operacijų dokumento koregavimas (antraštės) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i11'
+  description: 'Rivile GAMA EDIT_I11 — Inventory operations: create, update, post or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i11.
+    Rivile: Atsargų operacijų dokumento koregavimas (antraštės)'
   required_scopes:
   - extension:invoke
   handler:
@@ -2291,8 +2315,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i11_full
   title: 'Advanced · Inventory operations: create with lines (EDIT_I11_FULL)'
-  description: 'Rivile GAMA EDIT_I11_FULL — Inventory operations: create with lines. Rivile: Naujos atsargų
-    operacijos sukūrimas (kartu su detaliomis eilutėmis). Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i11_full'
+  description: 'Rivile GAMA EDIT_I11_FULL — Inventory operations: create with lines. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i11_full.
+    Rivile: Naujos atsargų operacijos sukūrimas (kartu su detaliomis eilutėmis).'
   required_scopes:
   - extension:invoke
   handler:
@@ -2350,8 +2375,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i12
   title: 'Advanced · Inventory operation lines: create, update or delete (EDIT_I12)'
-  description: 'Rivile GAMA EDIT_I12 — Inventory operation lines: create, update or delete. Rivile: Atsargų
-    operacijos detalios informacijos koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i12'
+  description: 'Rivile GAMA EDIT_I12 — Inventory operation lines: create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i12.
+    Rivile: Atsargų operacijos detalios informacijos koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -2406,8 +2432,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i13
   title: 'Advanced · Purchase/sales document payments: create, update or delete (EDIT_I13)'
-  description: 'Rivile GAMA EDIT_I13 — Purchase/sales document payments: create, update or delete. Rivile:
-    Pirkimų,pardavimų dokumento apmokėjimo koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i13'
+  description: 'Rivile GAMA EDIT_I13 — Purchase/sales document payments: create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i13.
+    Rivile: Pirkimų,pardavimų dokumento apmokėjimo koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -2462,8 +2489,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i14
   title: 'Advanced · Repricing lines (promotion): create, update or delete (EDIT_I14)'
-  description: 'Rivile GAMA EDIT_I14 — Repricing lines (promotion): create, update or delete. Rivile:
-    Perkainavimo detalios eilutės (akcijos) koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i14'
+  description: 'Rivile GAMA EDIT_I14 — Repricing lines (promotion): create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i14.
+    Rivile: Perkainavimo detalios eilutės (akcijos) koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -2521,8 +2549,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i15
   title: 'Advanced · Production operations: create, update, post or delete (EDIT_I15)'
-  description: 'Rivile GAMA EDIT_I15 — Production operations: create, update, post or delete. Rivile:
-    Gamybos operacijos sukūrimas, koregavimas, perkėlimas, trynimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i15'
+  description: 'Rivile GAMA EDIT_I15 — Production operations: create, update, post or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i15.
+    Rivile: Gamybos operacijos sukūrimas, koregavimas, perkėlimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -2577,8 +2606,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i15_full
   title: 'Advanced · Production operations: create with lines (EDIT_I15_FULL)'
-  description: 'Rivile GAMA EDIT_I15_FULL — Production operations: create with lines. Rivile: Naujos gamybos
-    operacijos sukūrimas (kartu su detaliomis eilutėmis). Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i15_full'
+  description: 'Rivile GAMA EDIT_I15_FULL — Production operations: create with lines. Supply the method''s
+    Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i15_full.
+    Rivile: Naujos gamybos operacijos sukūrimas (kartu su detaliomis eilutėmis).'
   required_scopes:
   - extension:invoke
   handler:
@@ -2633,8 +2663,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i15_kop
   title: 'Advanced · Production operations: copy and change (EDIT_I15_KOP)'
-  description: 'Rivile GAMA EDIT_I15_KOP — Production operations: copy and change. Rivile: Gamybos dokumentų
-    kopijavimas ir keitimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i15_kop'
+  description: 'Rivile GAMA EDIT_I15_KOP — Production operations: copy and change. Supply the method''s
+    Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i15_kop.
+    Rivile: Gamybos dokumentų kopijavimas ir keitimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -2686,8 +2717,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i16
   title: 'Advanced · Production components: create, update or delete (EDIT_I16)'
-  description: 'Rivile GAMA EDIT_I16 — Production components: create, update or delete. Rivile: Gamybos
-    operacijos komponentės įvedimas, koregavimas, trynimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i16'
+  description: 'Rivile GAMA EDIT_I16 — Production components: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i16.
+    Rivile: Gamybos operacijos komponentės įvedimas, koregavimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -2742,8 +2774,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i20
   title: 'Advanced · Repricing operations: create, update, post or delete (EDIT_I20)'
-  description: 'Rivile GAMA EDIT_I20 — Repricing operations: create, update, post or delete. Rivile: Perkainavimo
-    operacijos koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i20'
+  description: 'Rivile GAMA EDIT_I20 — Repricing operations: create, update, post or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i20.
+    Rivile: Perkainavimo operacijos koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -2801,8 +2834,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i20_full
   title: 'Advanced · Repricing operations: create with lines (EDIT_I20_FULL)'
-  description: 'Rivile GAMA EDIT_I20_FULL — Repricing operations: create with lines. Rivile: Naujos perkainavimo
-    operacijos sukūrimas (kartu su detaliomis eilutėmis) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i20_full'
+  description: 'Rivile GAMA EDIT_I20_FULL — Repricing operations: create with lines. Supply the method''s
+    Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i20_full.
+    Rivile: Naujos perkainavimo operacijos sukūrimas (kartu su detaliomis eilutėmis)'
   required_scopes:
   - extension:invoke
   handler:
@@ -2860,8 +2894,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i21
   title: 'Advanced · Repricing lines (sales price): create, update or delete (EDIT_I21)'
-  description: 'Rivile GAMA EDIT_I21 — Repricing lines (sales price): create, update or delete. Rivile:
-    Perkainavimo detalios eilutės (pardavimo kaina) koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i21'
+  description: 'Rivile GAMA EDIT_I21 — Repricing lines (sales price): create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i21.
+    Rivile: Perkainavimo detalios eilutės (pardavimo kaina) koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -2919,8 +2954,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i25
   title: 'Advanced · Fixed asset operations: create, update or delete (EDIT_I25)'
-  description: 'Rivile GAMA EDIT_I25 — Fixed asset operations: create, update or delete. Rivile: Ilgalaikio
-    turto operacijos koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i25'
+  description: 'Rivile GAMA EDIT_I25 — Fixed asset operations: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i25.
+    Rivile: Ilgalaikio turto operacijos koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -2975,8 +3011,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i25_full
   title: 'Advanced · Fixed asset operations: create with lines (EDIT_I25_FULL)'
-  description: 'Rivile GAMA EDIT_I25_FULL — Fixed asset operations: create with lines. Rivile: Ilgalaikio
-    turto operacijos sukūrimas (kartu su detaliomis eilutėmis). Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i25_full'
+  description: 'Rivile GAMA EDIT_I25_FULL — Fixed asset operations: create with lines. Supply the method''s
+    Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i25_full.
+    Rivile: Ilgalaikio turto operacijos sukūrimas (kartu su detaliomis eilutėmis).'
   required_scopes:
   - extension:invoke
   handler:
@@ -3034,8 +3071,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i26
   title: 'Advanced · Fixed asset operation lines: create, update or delete (EDIT_I26)'
-  description: 'Rivile GAMA EDIT_I26 — Fixed asset operation lines: create, update or delete. Rivile:
-    Ilgalaikio turto operacijos detalių eilučių koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i26'
+  description: 'Rivile GAMA EDIT_I26 — Fixed asset operation lines: create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i26.
+    Rivile: Ilgalaikio turto operacijos detalių eilučių koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -3090,8 +3128,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i28
   title: 'Advanced · Repricing lines (O/S price): create, update or delete (EDIT_I28)'
-  description: 'Rivile GAMA EDIT_I28 — Repricing lines (O/S price): create, update or delete. Rivile:
-    Perkainavimo detalios eilutės (O/S kaina) koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i28'
+  description: 'Rivile GAMA EDIT_I28 — Repricing lines (O/S price): create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i28.
+    Rivile: Perkainavimo detalios eilutės (O/S kaina) koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -3149,8 +3188,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i29
   title: 'Advanced · Repricing lines (base price): create, update or delete (EDIT_I29)'
-  description: 'Rivile GAMA EDIT_I29 — Repricing lines (base price): create, update or delete. Rivile:
-    Perkainavimo detalios eilutės (bazinė kaina) koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i29'
+  description: 'Rivile GAMA EDIT_I29 — Repricing lines (base price): create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i29.
+    Rivile: Perkainavimo detalios eilutės (bazinė kaina) koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -3208,8 +3248,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i31
   title: 'Advanced · Debtor/creditor operations: create, update, post or delete (EDIT_I31)'
-  description: 'Rivile GAMA EDIT_I31 — Debtor/creditor operations: create, update, post or delete. Rivile:
-    Debitorinių/Kreditorinių operacijų koregavimas (antraštės) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i31'
+  description: 'Rivile GAMA EDIT_I31 — Debtor/creditor operations: create, update, post or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i31.
+    Rivile: Debitorinių/Kreditorinių operacijų koregavimas (antraštės)'
   required_scopes:
   - extension:invoke
   handler:
@@ -3267,8 +3308,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i31_full
   title: 'Advanced · Debtor/creditor operations: create with lines (EDIT_I31_FULL)'
-  description: 'Rivile GAMA EDIT_I31_FULL — Debtor/creditor operations: create with lines. Rivile: Debitorinių/Kreditorinių
-    operacijų sukūrimas (kartu su detaliomis eilutėmis). Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i31_full'
+  description: 'Rivile GAMA EDIT_I31_FULL — Debtor/creditor operations: create with lines. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i31_full.
+    Rivile: Debitorinių/Kreditorinių operacijų sukūrimas (kartu su detaliomis eilutėmis).'
   required_scopes:
   - extension:invoke
   handler:
@@ -3326,8 +3368,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i32
   title: 'Advanced · Debtor/creditor operation lines: create, update or delete (EDIT_I32)'
-  description: 'Rivile GAMA EDIT_I32 — Debtor/creditor operation lines: create, update or delete. Rivile:
-    Debitorinių/Kreditorinių operacijų detalios informacijos koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i32'
+  description: 'Rivile GAMA EDIT_I32 — Debtor/creditor operation lines: create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i32.
+    Rivile: Debitorinių/Kreditorinių operacijų detalios informacijos koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -3385,8 +3428,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i33
   title: 'Advanced · Product prices per department: create, update or delete (EDIT_I33)'
-  description: 'Rivile GAMA EDIT_I33 — Product prices per department: create, update or delete. Rivile:
-    Prekės, paslaugos kainos padalinyje koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i33'
+  description: 'Rivile GAMA EDIT_I33 — Product prices per department: create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i33.
+    Rivile: Prekės, paslaugos kainos padalinyje koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -3441,8 +3485,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i34
   title: 'Advanced · Repricing lines (price list): create, update or delete (EDIT_I34)'
-  description: 'Rivile GAMA EDIT_I34 — Repricing lines (price list): create, update or delete. Rivile:
-    Perkainavimo detalios eilutės (kainynas) koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i34'
+  description: 'Rivile GAMA EDIT_I34 — Repricing lines (price list): create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i34.
+    Rivile: Perkainavimo detalios eilutės (kainynas) koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -3500,8 +3545,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i45
   title: 'Advanced · Stocktaking item lists: create, update or delete (EDIT_I45)'
-  description: 'Rivile GAMA EDIT_I45 — Stocktaking item lists: create, update or delete. Rivile: Inventorizuojamų
-    prekių operacijos koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i45'
+  description: 'Rivile GAMA EDIT_I45 — Stocktaking item lists: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i45.
+    Rivile: Inventorizuojamų prekių operacijos koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -3556,8 +3602,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i45_full
   title: 'Advanced · Stocktaking item lists: create with lines (EDIT_I45_FULL)'
-  description: 'Rivile GAMA EDIT_I45_FULL — Stocktaking item lists: create with lines. Rivile: Naujos
-    inventorizuojamų prekių sąrašo sukūrimas (kartu su papildoma informacija) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i45_full'
+  description: 'Rivile GAMA EDIT_I45_FULL — Stocktaking item lists: create with lines. Supply the method''s
+    Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i45_full.
+    Rivile: Naujos inventorizuojamų prekių sąrašo sukūrimas (kartu su papildoma informacija)'
   required_scopes:
   - extension:invoke
   handler:
@@ -3615,8 +3662,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i46
   title: 'Advanced · Stocktaking item list lines: create, update or delete (EDIT_I46)'
-  description: 'Rivile GAMA EDIT_I46 — Stocktaking item list lines: create, update or delete. Rivile:
-    Inventorizuojamų prekių sąrašo detalios eilutės koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i46'
+  description: 'Rivile GAMA EDIT_I46 — Stocktaking item list lines: create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i46.
+    Rivile: Inventorizuojamų prekių sąrašo detalios eilutės koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -3671,8 +3719,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i47
   title: 'Advanced · Stocktaking operations: create, update or delete (EDIT_I47)'
-  description: 'Rivile GAMA EDIT_I47 — Stocktaking operations: create, update or delete. Rivile: Inventorizacijos
-    operacijų koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i47'
+  description: 'Rivile GAMA EDIT_I47 — Stocktaking operations: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i47.
+    Rivile: Inventorizacijos operacijų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -3727,8 +3776,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i47_full
   title: 'Advanced · Stocktaking operations: create with lines (EDIT_I47_FULL)'
-  description: 'Rivile GAMA EDIT_I47_FULL — Stocktaking operations: create with lines. Rivile: Naujos
-    inventorizacijos operacijos sukūrimas (kartu su papildoma informacija) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i47_full'
+  description: 'Rivile GAMA EDIT_I47_FULL — Stocktaking operations: create with lines. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i47_full.
+    Rivile: Naujos inventorizacijos operacijos sukūrimas (kartu su papildoma informacija)'
   required_scopes:
   - extension:invoke
   handler:
@@ -3789,8 +3839,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i48
   title: 'Advanced · Stocktaking operation lines: create, update or delete (EDIT_I48)'
-  description: 'Rivile GAMA EDIT_I48 — Stocktaking operation lines: create, update or delete. Rivile:
-    Inventorizacijos operacijos detalių eilučių koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i48'
+  description: 'Rivile GAMA EDIT_I48 — Stocktaking operation lines: create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i48.
+    Rivile: Inventorizacijos operacijos detalių eilučių koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -3845,8 +3896,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i51
   title: 'Advanced · Collector operations: create, update or delete (EDIT_I51)'
-  description: 'Rivile GAMA EDIT_I51 — Collector operations: create, update or delete. Rivile: Kaupiklio
-    operacijos koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i51'
+  description: 'Rivile GAMA EDIT_I51 — Collector operations: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i51.
+    Rivile: Kaupiklio operacijos koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -3904,8 +3956,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i51_full
   title: 'Advanced · Collector operations: create with lines (EDIT_I51_FULL)'
-  description: 'Rivile GAMA EDIT_I51_FULL — Collector operations: create with lines. Rivile: Naujos kaupiklio
-    operacijos sukūrimas (kartu su detaliomis eilutėmis) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i51_full'
+  description: 'Rivile GAMA EDIT_I51_FULL — Collector operations: create with lines. Supply the method''s
+    Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i51_full.
+    Rivile: Naujos kaupiklio operacijos sukūrimas (kartu su detaliomis eilutėmis)'
   required_scopes:
   - extension:invoke
   handler:
@@ -3963,8 +4016,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i52
   title: 'Advanced · Collector operation lines: create, update or delete (EDIT_I52)'
-  description: 'Rivile GAMA EDIT_I52 — Collector operation lines: create, update or delete. Rivile: Kaupiklio
-    detalios eilutės koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i52'
+  description: 'Rivile GAMA EDIT_I52 — Collector operation lines: create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i52.
+    Rivile: Kaupiklio detalios eilutės koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -4022,8 +4076,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i53
   title: 'Advanced · Payment operations: create, update, post or delete (EDIT_I53)'
-  description: 'Rivile GAMA EDIT_I53 — Payment operations: create, update, post or delete. Rivile: Mokėjimo
-    operacijų koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i53'
+  description: 'Rivile GAMA EDIT_I53 — Payment operations: create, update, post or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i53.
+    Rivile: Mokėjimo operacijų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -4078,8 +4133,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i53_full
   title: 'Advanced · Payment operations: create with lines (EDIT_I53_FULL)'
-  description: 'Rivile GAMA EDIT_I53_FULL — Payment operations: create with lines. Rivile: Naujo mokėjimo
-    dokumento sukūrimas (kartu su detaliomis eilutėmis) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i53_full'
+  description: 'Rivile GAMA EDIT_I53_FULL — Payment operations: create with lines. Supply the method''s
+    Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i53_full.
+    Rivile: Naujo mokėjimo dokumento sukūrimas (kartu su detaliomis eilutėmis)'
   required_scopes:
   - extension:invoke
   handler:
@@ -4137,8 +4193,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i61_full
   title: 'Advanced · POS operations: import (cash in, cash out, receipts) (EDIT_I61_FULL)'
-  description: 'Rivile GAMA EDIT_I61_FULL — POS operations: import (cash in, cash out, receipts). Rivile:
-    POS operacijų importas (pinigų įdėjimas, išėmimas, kvito formavimas) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i61_full'
+  description: 'Rivile GAMA EDIT_I61_FULL — POS operations: import (cash in, cash out, receipts). Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i61_full.
+    Rivile: POS operacijų importas (pinigų įdėjimas, išėmimas, kvito formavimas)'
   required_scopes:
   - extension:invoke
   handler:
@@ -4197,8 +4254,9 @@ actions:
 - action_id: edit_i61_opt
   title: 'Advanced · POS receipt: set client, person or invoice before posting (EDIT_I61_OPT)'
   description: 'Rivile GAMA EDIT_I61_OPT — POS receipt: set client, person or invoice before posting.
+    Supply the method''s Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i61_opt.
     Rivile: Neperkelto kvito parametrų (kliento, asmens, Sąskaitos faktūros) koregavimas. Koregavimas
-    vyksta pagal kvito numerį. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i61_opt'
+    vyksta pagal kvito numerį.'
   required_scopes:
   - extension:invoke
   handler:
@@ -4250,8 +4308,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i61_perk
   title: 'Advanced · POS operations: post (EDIT_I61_PERK)'
-  description: 'Rivile GAMA EDIT_I61_PERK — POS operations: post. Rivile: POS operacijų perkėlimas. Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i61_perk'
+  description: 'Rivile GAMA EDIT_I61_PERK — POS operations: post. Supply the method''s Rivile table fields
+    in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i61_perk. Rivile: POS
+    operacijų perkėlimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -4303,8 +4362,9 @@ actions:
   - timeout_unknown
 - action_id: edit_i64
   title: 'Advanced · Loyalty points: create, update or delete (EDIT_I64)'
-  description: 'Rivile GAMA EDIT_I64 — Loyalty points: create, update or delete. Rivile: Lojalumo taškų
-    koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i64'
+  description: 'Rivile GAMA EDIT_I64 — Loyalty points: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i64.
+    Rivile: Lojalumo taškų koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -4359,8 +4419,9 @@ actions:
   - timeout_unknown
 - action_id: edit_k00
   title: 'Advanced · Document and card file links: create, update or delete (EDIT_K00)'
-  description: 'Rivile GAMA EDIT_K00 — Document and card file links: create, update or delete. Rivile:
-    Operacijų ir kortelių dokumentų sąrašo nuorodų koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k00'
+  description: 'Rivile GAMA EDIT_K00 — Document and card file links: create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k00.
+    Rivile: Operacijų ir kortelių dokumentų sąrašo nuorodų koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -4418,8 +4479,9 @@ actions:
   - timeout_unknown
 - action_id: edit_k11
   title: 'Advanced · HR classifiers: create, update or delete (EDIT_K11)'
-  description: 'Rivile GAMA EDIT_K11 — HR classifiers: create, update or delete. Rivile: Personalo klasifikatoriaus
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k11'
+  description: 'Rivile GAMA EDIT_K11 — HR classifiers: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k11.
+    Rivile: Personalo klasifikatoriaus koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -4475,7 +4537,8 @@ actions:
 - action_id: edit_k42
   title: 'Advanced · Document management (DVS) operations: create, update, post or delete (EDIT_K42)'
   description: 'Rivile GAMA EDIT_K42 — Document management (DVS) operations: create, update, post or delete.
-    Rivile: DVS operacijos koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k42'
+    Choose the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k42.
+    Rivile: DVS operacijos koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -4533,8 +4596,9 @@ actions:
   - timeout_unknown
 - action_id: edit_k45
   title: 'Advanced · Object kits: create, update or delete (EDIT_K45)'
-  description: 'Rivile GAMA EDIT_K45 — Object kits: create, update or delete. Rivile: Rinkinio sukūrimas,
-    koregavimas, išmetimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k45'
+  description: 'Rivile GAMA EDIT_K45 — Object kits: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k45.
+    Rivile: Rinkinio sukūrimas, koregavimas, išmetimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -4589,8 +4653,9 @@ actions:
   - timeout_unknown
 - action_id: edit_k56
   title: 'Advanced · CRM operations: create, update or delete (EDIT_K56)'
-  description: 'Rivile GAMA EDIT_K56 — CRM operations: create, update or delete. Rivile: CRM operacijos
-    sukūrimas, koregavimas, trinimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k56'
+  description: 'Rivile GAMA EDIT_K56 — CRM operations: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k56.
+    Rivile: CRM operacijos sukūrimas, koregavimas, trinimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -4645,8 +4710,9 @@ actions:
   - timeout_unknown
 - action_id: edit_k62
   title: 'Advanced · Document settlements (offsets): create, update or delete (EDIT_K62)'
-  description: 'Rivile GAMA EDIT_K62 — Document settlements (offsets): create, update or delete. Rivile:
-    Dokumentų sudengimų koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k62'
+  description: 'Rivile GAMA EDIT_K62 — Document settlements (offsets): create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k62.
+    Rivile: Dokumentų sudengimų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -4701,8 +4767,9 @@ actions:
   - timeout_unknown
 - action_id: edit_k78
   title: 'Advanced · Gift voucher operations: create, update, post or delete (EDIT_K78)'
-  description: 'Rivile GAMA EDIT_K78 — Gift voucher operations: create, update, post or delete. Rivile:
-    Dovanų čekių operacijų dokumento koregavimas (antraštės) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k78'
+  description: 'Rivile GAMA EDIT_K78 — Gift voucher operations: create, update, post or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k78.
+    Rivile: Dovanų čekių operacijų dokumento koregavimas (antraštės)'
   required_scopes:
   - extension:invoke
   handler:
@@ -4757,8 +4824,9 @@ actions:
   - timeout_unknown
 - action_id: edit_k78_full
   title: 'Advanced · Gift voucher operations: create with lines (EDIT_K78_FULL)'
-  description: 'Rivile GAMA EDIT_K78_FULL — Gift voucher operations: create with lines. Rivile: Naujos
-    dovanų čekių operacijos sukūrimas (kartu su detaliomis eilutėmis). Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k78_full'
+  description: 'Rivile GAMA EDIT_K78_FULL — Gift voucher operations: create with lines. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k78_full.
+    Rivile: Naujos dovanų čekių operacijos sukūrimas (kartu su detaliomis eilutėmis).'
   required_scopes:
   - extension:invoke
   handler:
@@ -4816,8 +4884,9 @@ actions:
   - timeout_unknown
 - action_id: edit_k79
   title: 'Advanced · Gift voucher operation lines: create, update or delete (EDIT_K79)'
-  description: 'Rivile GAMA EDIT_K79 — Gift voucher operation lines: create, update or delete. Rivile:
-    Dovanų čekių operacijos detalios informacijos koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k79'
+  description: 'Rivile GAMA EDIT_K79 — Gift voucher operation lines: create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_k79.
+    Rivile: Dovanų čekių operacijos detalios informacijos koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -4872,8 +4941,9 @@ actions:
   - timeout_unknown
 - action_id: edit_l01
   title: 'Advanced · Filter tables: create, update or delete (EDIT_L01)'
-  description: 'Rivile GAMA EDIT_L01 — Filter tables: create, update or delete. Rivile: Filtravimo lentelės
-    koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_l01'
+  description: 'Rivile GAMA EDIT_L01 — Filter tables: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_l01.
+    Rivile: Filtravimo lentelės koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -4928,8 +4998,9 @@ actions:
   - timeout_unknown
 - action_id: edit_l01_full
   title: 'Advanced · Filter tables: create with lines (EDIT_L01_FULL)'
-  description: 'Rivile GAMA EDIT_L01_FULL — Filter tables: create with lines. Rivile: Naujos filtravimo
-    lentelės sukūrimas (kartu su detaliomis eilutėmis). Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_l01_full'
+  description: 'Rivile GAMA EDIT_L01_FULL — Filter tables: create with lines. Supply the method''s Rivile
+    table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_l01_full.
+    Rivile: Naujos filtravimo lentelės sukūrimas (kartu su detaliomis eilutėmis).'
   required_scopes:
   - extension:invoke
   handler:
@@ -4984,8 +5055,9 @@ actions:
   - timeout_unknown
 - action_id: edit_l02
   title: 'Advanced · Filter table lines: create, update or delete (EDIT_L02)'
-  description: 'Rivile GAMA EDIT_L02 — Filter table lines: create, update or delete. Rivile: Filtravimo
-    lentelės detalios eilutės koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_l02'
+  description: 'Rivile GAMA EDIT_L02 — Filter table lines: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_l02.
+    Rivile: Filtravimo lentelės detalios eilutės koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -5040,8 +5112,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n06
   title: 'Advanced · Objects: create, update or delete (EDIT_N06)'
-  description: 'Rivile GAMA EDIT_N06 — Objects: create, update or delete. Rivile: Objekto kortelės koregavimas.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n06'
+  description: 'Rivile GAMA EDIT_N06 — Objects: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n06.
+    Rivile: Objekto kortelės koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -5096,8 +5169,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n07
   title: 'Advanced · Departments: create, update or delete (EDIT_N07)'
-  description: 'Rivile GAMA EDIT_N07 — Departments: create, update or delete. Rivile: Objekto kortelės
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n07'
+  description: 'Rivile GAMA EDIT_N07 — Departments: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n07.
+    Rivile: Objekto kortelės koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -5152,8 +5226,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n08
   title: 'Advanced · Clients: create, update or delete (EDIT_N08)'
-  description: 'Rivile GAMA EDIT_N08 — Clients: create, update or delete. Rivile: Kliento sukūrimas, koregavimas,
-    trynimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n08'
+  description: 'Rivile GAMA EDIT_N08 — Clients: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n08.
+    Rivile: Kliento sukūrimas, koregavimas, trynimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -5208,8 +5283,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n08_full
   title: 'Advanced · Clients: create with addresses and bank accounts (EDIT_N08_FULL)'
-  description: 'Rivile GAMA EDIT_N08_FULL — Clients: create with addresses and bank accounts. Rivile:
-    Naujos kliento kortelės sukūrimas (kartu su papildoma informacija) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n08_full'
+  description: 'Rivile GAMA EDIT_N08_FULL — Clients: create with addresses and bank accounts. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n08_full.
+    Rivile: Naujos kliento kortelės sukūrimas (kartu su papildoma informacija)'
   required_scopes:
   - extension:invoke
   handler:
@@ -5270,8 +5346,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n09
   title: 'Advanced · Locations: create, update or delete (EDIT_N09)'
-  description: 'Rivile GAMA EDIT_N09 — Locations: create, update or delete. Rivile: Vietovių kortelės
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n09'
+  description: 'Rivile GAMA EDIT_N09 — Locations: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n09.
+    Rivile: Vietovių kortelės koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -5326,8 +5403,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n13
   title: 'Advanced · Product promotions: create, update or delete (EDIT_N13)'
-  description: 'Rivile GAMA EDIT_N13 — Product promotions: create, update or delete. Rivile: Prekės akcijų
-    įrašų koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n13'
+  description: 'Rivile GAMA EDIT_N13 — Product promotions: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n13.
+    Rivile: Prekės akcijų įrašų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -5382,8 +5460,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n15
   title: 'Advanced · Managers: create, update or delete (EDIT_N15)'
-  description: 'Rivile GAMA EDIT_N15 — Managers: create, update or delete. Rivile: Menedžerio kortelės
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n15'
+  description: 'Rivile GAMA EDIT_N15 — Managers: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n15.
+    Rivile: Menedžerio kortelės koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -5438,8 +5517,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n17
   title: 'Advanced · Products and services: create, update or delete (EDIT_N17)'
-  description: 'Rivile GAMA EDIT_N17 — Products and services: create, update or delete. Rivile: Prekių,
-    paslaugų sukūrimas, koregavimas, trynimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n17'
+  description: 'Rivile GAMA EDIT_N17 — Products and services: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n17.
+    Rivile: Prekių, paslaugų sukūrimas, koregavimas, trynimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -5495,7 +5575,8 @@ actions:
 - action_id: edit_n17_full
   title: 'Advanced · Products and services: create with units, barcodes and departments (EDIT_N17_FULL)'
   description: 'Rivile GAMA EDIT_N17_FULL — Products and services: create with units, barcodes and departments.
-    Rivile: Prekės/paslaugos kortelės sukūrimas (kartu su papildoma informacija) Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n17_full'
+    Supply the method''s Rivile table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n17_full.
+    Rivile: Prekės/paslaugos kortelės sukūrimas (kartu su papildoma informacija)'
   required_scopes:
   - extension:invoke
   handler:
@@ -5553,8 +5634,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n18
   title: 'Advanced · Units of measure: create, update or delete (EDIT_N18)'
-  description: 'Rivile GAMA EDIT_N18 — Units of measure: create, update or delete. Rivile: Matavimo vienetų
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n18'
+  description: 'Rivile GAMA EDIT_N18 — Units of measure: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n18.
+    Rivile: Matavimo vienetų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -5609,8 +5691,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n19
   title: 'Advanced · Groups: create, update or delete (EDIT_N19)'
-  description: 'Rivile GAMA EDIT_N19 — Groups: create, update or delete. Rivile: Grupės kortelės koregavimas.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n19'
+  description: 'Rivile GAMA EDIT_N19 — Groups: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n19.
+    Rivile: Grupės kortelės koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -5665,8 +5748,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n25
   title: 'Advanced · Purchase and sales codes: create, update or delete (EDIT_N25)'
-  description: 'Rivile GAMA EDIT_N25 — Purchase and sales codes: create, update or delete. Rivile: Pirkimo,
-    pardavimo ir kt. kodų koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n25'
+  description: 'Rivile GAMA EDIT_N25 — Purchase and sales codes: create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n25.
+    Rivile: Pirkimo, pardavimo ir kt. kodų koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -5721,8 +5805,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n26
   title: 'Advanced · Product components: create, update or delete (EDIT_N26)'
-  description: 'Rivile GAMA EDIT_N26 — Product components: create, update or delete. Rivile: Prekės komponentės
-    sukūrimas, koregavimas, išmetimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n26'
+  description: 'Rivile GAMA EDIT_N26 — Product components: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n26.
+    Rivile: Prekės komponentės sukūrimas, koregavimas, išmetimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -5777,8 +5862,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n27
   title: 'Advanced · Packaging coefficients: create, update or delete (EDIT_N27)'
-  description: 'Rivile GAMA EDIT_N27 — Packaging coefficients: create, update or delete. Rivile: Įpokavimo
-    koeficientų koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n27'
+  description: 'Rivile GAMA EDIT_N27 — Packaging coefficients: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n27.
+    Rivile: Įpokavimo koeficientų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -5833,8 +5919,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n32
   title: 'Advanced · Price lists (ABC): create, update or delete (EDIT_N32)'
-  description: 'Rivile GAMA EDIT_N32 — Price lists (ABC): create, update or delete. Rivile: Kainynų ABC
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n32'
+  description: 'Rivile GAMA EDIT_N32 — Price lists (ABC): create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n32.
+    Rivile: Kainynų ABC koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -5890,8 +5977,9 @@ actions:
 - action_id: edit_n33
   title: 'Advanced · Client addresses, bank accounts and other details: create, update or delete (EDIT_N33)'
   description: 'Rivile GAMA EDIT_N33 — Client addresses, bank accounts and other details: create, update
-    or delete. Rivile: Papildomos kliento informacijos (pristatymo informacija, bankinių sąskaitų informacija
-    ir kita) koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n33'
+    or delete. Choose the record operation; supply Rivile table fields in Data for the chosen operation.
+    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n33. Rivile: Papildomos kliento
+    informacijos (pristatymo informacija, bankinių sąskaitų informacija ir kita) koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -5946,8 +6034,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n35
   title: 'Advanced · Logistics cards: create, update or delete (EDIT_N35)'
-  description: 'Rivile GAMA EDIT_N35 — Logistics cards: create, update or delete. Rivile: Logistikos kortelės
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n35'
+  description: 'Rivile GAMA EDIT_N35 — Logistics cards: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n35.
+    Rivile: Logistikos kortelės koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -6002,8 +6091,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n37
   title: 'Advanced · Product units and barcodes: create, update or delete (EDIT_N37)'
-  description: 'Rivile GAMA EDIT_N37 — Product units and barcodes: create, update or delete. Rivile: Koreguoti
-    prekės/paslaugos matavimo vienetų informaciją Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n37'
+  description: 'Rivile GAMA EDIT_N37 — Product units and barcodes: create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n37.
+    Rivile: Koreguoti prekės/paslaugos matavimo vienetų informaciją'
   required_scopes:
   - extension:invoke
   handler:
@@ -6058,8 +6148,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n39
   title: 'Advanced · Fixed asset cards: create, update or delete (EDIT_N39)'
-  description: 'Rivile GAMA EDIT_N39 — Fixed asset cards: create, update or delete. Rivile: Ilgalaikio
-    turto kortelės koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n39'
+  description: 'Rivile GAMA EDIT_N39 — Fixed asset cards: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n39.
+    Rivile: Ilgalaikio turto kortelės koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -6114,8 +6205,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n40
   title: 'Advanced · Product alternative barcodes: create, update or delete (EDIT_N40)'
-  description: 'Rivile GAMA EDIT_N40 — Product alternative barcodes: create, update or delete. Rivile:
-    Koreguoti prekės/paslaugos alternatyvaus barkodo informaciją Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n40'
+  description: 'Rivile GAMA EDIT_N40 — Product alternative barcodes: create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n40.
+    Rivile: Koreguoti prekės/paslaugos alternatyvaus barkodo informaciją'
   required_scopes:
   - extension:invoke
   handler:
@@ -6170,8 +6262,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n41
   title: 'Advanced · Fixed asset groups: create, update or delete (EDIT_N41)'
-  description: 'Rivile GAMA EDIT_N41 — Fixed asset groups: create, update or delete. Rivile: Ilgalaikio
-    turto grupės koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n41'
+  description: 'Rivile GAMA EDIT_N41 — Fixed asset groups: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n41.
+    Rivile: Ilgalaikio turto grupės koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -6226,8 +6319,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n47
   title: 'Advanced · Product department settings: create, update or delete (EDIT_N47)'
-  description: 'Rivile GAMA EDIT_N47 — Product department settings: create, update or delete. Rivile:
-    Koreguoti prekės/paslaugos padalinių informaciją Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n47'
+  description: 'Rivile GAMA EDIT_N47 — Product department settings: create, update or delete. Choose the
+    record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n47.
+    Rivile: Koreguoti prekės/paslaugos padalinių informaciją'
   required_scopes:
   - extension:invoke
   handler:
@@ -6282,8 +6376,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n51
   title: 'Advanced · Contracts: create, update or delete (EDIT_N51)'
-  description: 'Rivile GAMA EDIT_N51 — Contracts: create, update or delete. Rivile: Sutarčių koregavimas.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n51'
+  description: 'Rivile GAMA EDIT_N51 — Contracts: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n51.
+    Rivile: Sutarčių koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -6338,8 +6433,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n51_full
   title: 'Advanced · Contracts: create with lines (EDIT_N51_FULL)'
-  description: 'Rivile GAMA EDIT_N51_FULL — Contracts: create with lines. Rivile: Naujos sutarties sukūrimas
-    (kartu su detaliomis eilutėmis). Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n51_full'
+  description: 'Rivile GAMA EDIT_N51_FULL — Contracts: create with lines. Supply the method''s Rivile
+    table fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n51_full.
+    Rivile: Naujos sutarties sukūrimas (kartu su detaliomis eilutėmis).'
   required_scopes:
   - extension:invoke
   handler:
@@ -6394,8 +6490,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n52
   title: 'Advanced · Contract annexes: create, update or delete (EDIT_N52)'
-  description: 'Rivile GAMA EDIT_N52 — Contract annexes: create, update or delete. Rivile: Sutarčių priedų
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n52'
+  description: 'Rivile GAMA EDIT_N52 — Contract annexes: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n52.
+    Rivile: Sutarčių priedų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -6450,8 +6547,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n60
   title: 'Advanced · Persons: create, update or delete (EDIT_N60)'
-  description: 'Rivile GAMA EDIT_N60 — Persons: create, update or delete. Rivile: Asmens kortelės koregavimas.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n60'
+  description: 'Rivile GAMA EDIT_N60 — Persons: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n60.
+    Rivile: Asmens kortelės koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -6506,8 +6604,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n64
   title: 'Advanced · Loyalty cards: create, update or delete (EDIT_N64)'
-  description: 'Rivile GAMA EDIT_N64 — Loyalty cards: create, update or delete. Rivile: Lojalumo kortelės
-    koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n64'
+  description: 'Rivile GAMA EDIT_N64 — Loyalty cards: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n64.
+    Rivile: Lojalumo kortelės koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -6562,8 +6661,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n66
   title: 'Advanced · Customs goods: create, update or delete (EDIT_N66)'
-  description: 'Rivile GAMA EDIT_N66 — Customs goods: create, update or delete. Rivile: Muitinės prekių
-    kortelės koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n66'
+  description: 'Rivile GAMA EDIT_N66 — Customs goods: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n66.
+    Rivile: Muitinės prekių kortelės koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -6618,8 +6718,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n67
   title: 'Advanced · Intrastat classifiers: create, update or delete (EDIT_N67)'
-  description: 'Rivile GAMA EDIT_N67 — Intrastat classifiers: create, update or delete. Rivile: Intrastato
-    klasifikatorių kortelės koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n67'
+  description: 'Rivile GAMA EDIT_N67 — Intrastat classifiers: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n67.
+    Rivile: Intrastato klasifikatorių kortelės koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -6674,8 +6775,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n72
   title: 'Advanced · Vehicles: create, update or delete (EDIT_N72)'
-  description: 'Rivile GAMA EDIT_N72 — Vehicles: create, update or delete. Rivile: Automobilio kortelės
-    koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n72'
+  description: 'Rivile GAMA EDIT_N72 — Vehicles: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n72.
+    Rivile: Automobilio kortelės koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -6730,8 +6832,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n77
   title: 'Advanced · Gift vouchers: create, update or delete (EDIT_N77)'
-  description: 'Rivile GAMA EDIT_N77 — Gift vouchers: create, update or delete. Rivile: Dovanų čekių koregavimas.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n77'
+  description: 'Rivile GAMA EDIT_N77 — Gift vouchers: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n77.
+    Rivile: Dovanų čekių koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -6786,8 +6889,9 @@ actions:
   - timeout_unknown
 - action_id: edit_n87
   title: 'Advanced · Supplier product codes: create, update or delete (EDIT_N87)'
-  description: 'Rivile GAMA EDIT_N87 — Supplier product codes: create, update or delete. Rivile: Prekės
-    tiekėjo kodų koregavimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n87'
+  description: 'Rivile GAMA EDIT_N87 — Supplier product codes: create, update or delete. Choose the record
+    operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_n87.
+    Rivile: Prekės tiekėjo kodų koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -6842,8 +6946,9 @@ actions:
   - timeout_unknown
 - action_id: edit_pap
   title: 'Advanced · Extra fields: set values (EDIT_PAP)'
-  description: 'Rivile GAMA EDIT_PAP — Extra fields: set values. Rivile: Papildomų laukų koregavimas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_pap'
+  description: 'Rivile GAMA EDIT_PAP — Extra fields: set values. Supply the method''s Rivile table fields
+    in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_pap. Rivile: Papildomų
+    laukų koregavimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -6895,8 +7000,10 @@ actions:
   - timeout_unknown
 - action_id: get_a02_list
   title: 'Advanced · Payroll variable values: list (GET_A02_LIST)'
-  description: 'Rivile GAMA GET_A02_LIST — Payroll variable values: list. Rivile: Algos kintamųjų reikšmių
-    sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_a02_list'
+  description: 'Rivile GAMA GET_A02_LIST — Payroll variable values: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_a02_list.
+    Rivile: Algos kintamųjų reikšmių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -6957,7 +7064,10 @@ actions:
   - blocked_address
 - action_id: get_a06_list
   title: 'Advanced · Employees: list (GET_A06_LIST)'
-  description: 'Rivile GAMA GET_A06_LIST — Employees: list. Rivile: Darbuotojoų sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_a06_list'
+  description: 'Rivile GAMA GET_A06_LIST — Employees: list. Read one page of up to 100 records, or enable
+    Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_a06_list.
+    Rivile: Darbuotojoų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -7021,8 +7131,10 @@ actions:
   - blocked_address
 - action_id: get_a11_list
   title: 'Advanced · Employee accruals and deductions: list (GET_A11_LIST)'
-  description: 'Rivile GAMA GET_A11_LIST — Employee accruals and deductions: list. Rivile: Darbuotojų
-    priskaitymų/atskaitymų sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_a11_list'
+  description: 'Rivile GAMA GET_A11_LIST — Employee accruals and deductions: list. Read one page of up
+    to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL
+    filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_a11_list.
+    Rivile: Darbuotojų priskaitymų/atskaitymų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -7083,8 +7195,10 @@ actions:
   - blocked_address
 - action_id: get_a24_list
   title: 'Advanced · Payroll documents: list (GET_A24_LIST)'
-  description: 'Rivile GAMA GET_A24_LIST — Payroll documents: list. Rivile: Algos dokumentų sąrašas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_a24_list'
+  description: 'Rivile GAMA GET_A24_LIST — Payroll documents: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_a24_list.
+    Rivile: Algos dokumentų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -7148,8 +7262,10 @@ actions:
   - blocked_address
 - action_id: get_a26_list
   title: 'Advanced · Payroll positions: list (GET_A26_LIST)'
-  description: 'Rivile GAMA GET_A26_LIST — Payroll positions: list. Rivile: Algos - pareigų sąrašas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_a26_list'
+  description: 'Rivile GAMA GET_A26_LIST — Payroll positions: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_a26_list.
+    Rivile: Algos - pareigų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -7213,8 +7329,10 @@ actions:
   - blocked_address
 - action_id: get_b00_list
   title: 'Advanced · Import/export operations: list (GET_B00_LIST)'
-  description: 'Rivile GAMA GET_B00_LIST — Import/export operations: list. Rivile: Importo/Eksporto operacijų
-    sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_b00_list'
+  description: 'Rivile GAMA GET_B00_LIST — Import/export operations: list. Read one page of up to 100
+    records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter
+    on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_b00_list.
+    Rivile: Importo/Eksporto operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -7275,9 +7393,11 @@ actions:
   - blocked_address
 - action_id: get_clients_time
   title: Advanced · Clients changed since a date (GET_CLIENTS_TIME)
-  description: 'Rivile GAMA GET_CLIENTS_TIME — Clients changed since a date. Rivile: Metodas grąžina informaciją
-    apie klientą, remiantis koregavimo data. Grąžinama klientų informacija ir jų alternatyvūs adresai.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_clients_time'
+  description: 'Rivile GAMA GET_CLIENTS_TIME — Clients changed since a date. Read one page of up to 100
+    records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter
+    on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_clients_time.
+    Rivile: Metodas grąžina informaciją apie klientą, remiantis koregavimo data. Grąžinama klientų informacija
+    ir jų alternatyvūs adresai.'
   required_scopes:
   - extension:invoke
   handler:
@@ -7353,8 +7473,10 @@ actions:
   - blocked_address
 - action_id: get_i02_list
   title: 'Advanced · General ledger entries: list (GET_I02_LIST)'
-  description: 'Rivile GAMA GET_I02_LIST — General ledger entries: list. Rivile: DK operacijų sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i02_list'
+  description: 'Rivile GAMA GET_I02_LIST — General ledger entries: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i02_list.
+    Rivile: DK operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -7418,8 +7540,10 @@ actions:
   - blocked_address
 - action_id: get_i02_list_ext
   title: Advanced · Account balances at a date (GET_I02_LIST_EXT)
-  description: 'Rivile GAMA GET_I02_LIST_EXT — Account balances at a date. Rivile: Sąskaitų likučių suformavimas
-    datai Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i02_list_ext'
+  description: 'Rivile GAMA GET_I02_LIST_EXT — Account balances at a date. Read one page of up to 100
+    records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter
+    on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i02_list_ext.
+    Rivile: Sąskaitų likučių suformavimas datai'
   required_scopes:
   - extension:invoke
   handler:
@@ -7492,8 +7616,10 @@ actions:
   - blocked_address
 - action_id: get_i04_list
   title: Advanced · Receipts and payouts register (GET_I04_LIST)
-  description: 'Rivile GAMA GET_I04_LIST — Receipts and payouts register. Rivile: Įplaukų/išmokų registras
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i04_list'
+  description: 'Rivile GAMA GET_I04_LIST — Receipts and payouts register. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i04_list.
+    Rivile: Įplaukų/išmokų registras'
   required_scopes:
   - extension:invoke
   handler:
@@ -7557,8 +7683,10 @@ actions:
   - blocked_address
 - action_id: get_i06_debt
   title: Advanced · Unposted purchase/sales document debts (GET_I06_DEBT)
-  description: 'Rivile GAMA GET_I06_DEBT — Unposted purchase/sales document debts. Rivile: Neperkeltų
-    pirkimų, pardavimų dokumentų skolos Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i06_debt'
+  description: 'Rivile GAMA GET_I06_DEBT — Unposted purchase/sales document debts. Read one page of up
+    to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL
+    filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i06_debt.
+    Rivile: Neperkeltų pirkimų, pardavimų dokumentų skolos'
   required_scopes:
   - extension:invoke
   handler:
@@ -7622,10 +7750,9 @@ actions:
   - blocked_address
 - action_id: get_i06_doc
   title: 'Advanced · Purchase/sales document: download the attached file (GET_I06_DOC)'
-  description: 'Rivile GAMA GET_I06_DOC — Purchase/sales document: download the attached file. Rivile:
-    Pirkimo/Pardavimo operacijoje prikabinto dokumento gavimas BINARY BASE64 koduote. Rivilės programoje,
-    norint prikabinti failą pirkimo/pardavimo operacijoje reikia INIT-e įrašyti thisform.dokumentas=.t.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i06_doc'
+  description: 'Rivile GAMA GET_I06_DOC — Purchase/sales document: download the attached file. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i06_doc.
+    Rivile: Pirkimo/Pardavimo operacijoje prikabinto dokumento gavimas BINARY BASE64 koduote. Rivilės
+    programoje, norint prikabinti failą pirkimo/pardavimo operacijoje reikia INIT-e įrašyti thisform.dokumentas=.t.'
   required_scopes:
   - extension:invoke
   handler:
@@ -7681,10 +7808,10 @@ actions:
   - artifact_output_unavailable
 - action_id: get_i06_docs
   title: 'Advanced · Purchase/sales document: download all attached files (GET_I06_DOCS)'
-  description: 'Rivile GAMA GET_I06_DOCS — Purchase/sales document: download all attached files. Rivile:
-    Pirkimo/Pardavimo operacijoje prikabintų dokumentų nuorodų ir dokumentų gavimas BINARY BASE64 koduote.
-    Rivilės programoje, norint prikabinti failą pirkimo/pardavimo operacijoje reikia INIT-e įrašyti thisform.dokumentai=.t.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i06_docs'
+  description: 'Rivile GAMA GET_I06_DOCS — Purchase/sales document: download all attached files. Docs:
+    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i06_docs. Rivile: Pirkimo/Pardavimo operacijoje
+    prikabintų dokumentų nuorodų ir dokumentų gavimas BINARY BASE64 koduote. Rivilės programoje, norint
+    prikabinti failą pirkimo/pardavimo operacijoje reikia INIT-e įrašyti thisform.dokumentai=.t.'
   required_scopes:
   - extension:invoke
   handler:
@@ -7735,8 +7862,10 @@ actions:
   - blocked_address
 - action_id: get_i06_list
   title: 'Advanced · Purchase/sales documents: list (GET_I06_LIST)'
-  description: 'Rivile GAMA GET_I06_LIST — Purchase/sales documents: list. Rivile: Pirkimų, pardavimų
-    dokumentų sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i06_list'
+  description: 'Rivile GAMA GET_I06_LIST — Purchase/sales documents: list. Read one page of up to 100
+    records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter
+    on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i06_list.
+    Rivile: Pirkimų, pardavimų dokumentų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -7801,8 +7930,10 @@ actions:
 - action_id: get_i06_list_ext
   title: 'Advanced · Purchase/sales documents: list with department, client and product fields (GET_I06_LIST_EXT)'
   description: 'Rivile GAMA GET_I06_LIST_EXT — Purchase/sales documents: list with department, client
-    and product fields. Rivile: Pirkimų, pardavimų dokumentų sąrašas su papildomais laukais iš padalinių,
-    klientų, prekių kortelių Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i06_list_ext'
+    and product fields. Read one page of up to 100 records, or enable Fetch all pages with a page limit;
+    pass next_page to continue. Use a T-SQL filter on this method''s table to restrict results. Docs:
+    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i06_list_ext. Rivile: Pirkimų, pardavimų
+    dokumentų sąrašas su papildomais laukais iš padalinių, klientų, prekių kortelių'
   required_scopes:
   - extension:invoke
   handler:
@@ -7887,8 +8018,10 @@ actions:
   - blocked_address
 - action_id: get_i09_list
   title: 'Advanced · Internal documents: list (GET_I09_LIST)'
-  description: 'Rivile GAMA GET_I09_LIST — Internal documents: list. Rivile: Vidinių operacijų sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i09_list'
+  description: 'Rivile GAMA GET_I09_LIST — Internal documents: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i09_list.
+    Rivile: Vidinių operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -7953,7 +8086,9 @@ actions:
 - action_id: get_i09_list_ext
   title: 'Advanced · Internal documents: list with department and product fields (GET_I09_LIST_EXT)'
   description: 'Rivile GAMA GET_I09_LIST_EXT — Internal documents: list with department and product fields.
-    Rivile: Vidinių operacijų sąrašas su papildomais laukais iš padalinių, prekių kortelių Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i09_list_ext'
+    Read one page of up to 100 records, or enable Fetch all pages with a page limit; pass next_page to
+    continue. Use a T-SQL filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i09_list_ext.
+    Rivile: Vidinių operacijų sąrašas su papildomais laukais iš padalinių, prekių kortelių'
   required_scopes:
   - extension:invoke
   handler:
@@ -8026,8 +8161,10 @@ actions:
   - blocked_address
 - action_id: get_i11_list
   title: 'Advanced · Inventory operations: list (GET_I11_LIST)'
-  description: 'Rivile GAMA GET_I11_LIST — Inventory operations: list. Rivile: Atsargų operacijų sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i11_list'
+  description: 'Rivile GAMA GET_I11_LIST — Inventory operations: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i11_list.
+    Rivile: Atsargų operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8091,8 +8228,10 @@ actions:
   - blocked_address
 - action_id: get_i15_list
   title: 'Advanced · Production operations: list (GET_I15_LIST)'
-  description: 'Rivile GAMA GET_I15_LIST — Production operations: list. Rivile: Gamybos operacijų sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i15_list'
+  description: 'Rivile GAMA GET_I15_LIST — Production operations: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i15_list.
+    Rivile: Gamybos operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8156,8 +8295,10 @@ actions:
   - blocked_address
 - action_id: get_i17_list
   title: 'Advanced · Stock balances: list (GET_I17_LIST)'
-  description: 'Rivile GAMA GET_I17_LIST — Stock balances: list. Rivile: Prekių likučių sąrašas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i17_list'
+  description: 'Rivile GAMA GET_I17_LIST — Stock balances: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i17_list.
+    Rivile: Prekių likučių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8221,8 +8362,10 @@ actions:
   - blocked_address
 - action_id: get_i17_list_time
   title: Advanced · Stock balances changed since a date (GET_I17_LIST_TIME)
-  description: 'Rivile GAMA GET_I17_LIST_TIME — Stock balances changed since a date. Rivile: Metodas grąžina
-    informaciją apie prekių likučius, remiantis koregavimo data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i17_list_time'
+  description: 'Rivile GAMA GET_I17_LIST_TIME — Stock balances changed since a date. Read one page of
+    up to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a
+    T-SQL filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i17_list_time.
+    Rivile: Metodas grąžina informaciją apie prekių likučius, remiantis koregavimo data.'
   required_scopes:
   - extension:invoke
   handler:
@@ -8289,8 +8432,10 @@ actions:
   - blocked_address
 - action_id: get_i20_list
   title: 'Advanced · Repricing operations: list (GET_I20_LIST)'
-  description: 'Rivile GAMA GET_I20_LIST — Repricing operations: list. Rivile: Perkainavimo operacijų
-    sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i20_list'
+  description: 'Rivile GAMA GET_I20_LIST — Repricing operations: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i20_list.
+    Rivile: Perkainavimo operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8354,8 +8499,10 @@ actions:
   - blocked_address
 - action_id: get_i24_list
   title: 'Advanced · External devices: list (GET_I24_LIST)'
-  description: 'Rivile GAMA GET_I24_LIST — External devices: list. Rivile: Išorinių įrenginių sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i24_list'
+  description: 'Rivile GAMA GET_I24_LIST — External devices: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i24_list.
+    Rivile: Išorinių įrenginių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8419,8 +8566,10 @@ actions:
   - blocked_address
 - action_id: get_i25_list
   title: 'Advanced · Fixed asset operations: list (GET_I25_LIST)'
-  description: 'Rivile GAMA GET_I25_LIST — Fixed asset operations: list. Rivile: Ilgalaikio turto operacijų
-    sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i25_list'
+  description: 'Rivile GAMA GET_I25_LIST — Fixed asset operations: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i25_list.
+    Rivile: Ilgalaikio turto operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8484,8 +8633,10 @@ actions:
   - blocked_address
 - action_id: get_i26_list
   title: 'Advanced · Fixed asset balances: list (GET_I26_LIST)'
-  description: 'Rivile GAMA GET_I26_LIST — Fixed asset balances: list. Rivile: Ilgalaikio turto likučių
-    sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i26_list'
+  description: 'Rivile GAMA GET_I26_LIST — Fixed asset balances: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i26_list.
+    Rivile: Ilgalaikio turto likučių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8546,8 +8697,10 @@ actions:
   - blocked_address
 - action_id: get_i31_list
   title: 'Advanced · Debtor/creditor operations: list (GET_I31_LIST)'
-  description: 'Rivile GAMA GET_I31_LIST — Debtor/creditor operations: list. Rivile: Debitorinių/Kreditorinių
-    operacijų sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i31_list'
+  description: 'Rivile GAMA GET_I31_LIST — Debtor/creditor operations: list. Read one page of up to 100
+    records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter
+    on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i31_list.
+    Rivile: Debitorinių/Kreditorinių operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8611,7 +8764,10 @@ actions:
   - blocked_address
 - action_id: get_i33_list
   title: 'Advanced · Product prices: list (GET_I33_LIST)'
-  description: 'Rivile GAMA GET_I33_LIST — Product prices: list. Rivile: Prekių kainų sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i33_list'
+  description: 'Rivile GAMA GET_I33_LIST — Product prices: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i33_list.
+    Rivile: Prekių kainų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8672,8 +8828,10 @@ actions:
   - blocked_address
 - action_id: get_i44_list
   title: 'Advanced · Detailed debts: list (GET_I44_LIST)'
-  description: 'Rivile GAMA GET_I44_LIST — Detailed debts: list. Rivile: Detali skolų informacija Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i44_list'
+  description: 'Rivile GAMA GET_I44_LIST — Detailed debts: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i44_list.
+    Rivile: Detali skolų informacija'
   required_scopes:
   - extension:invoke
   handler:
@@ -8737,8 +8895,10 @@ actions:
   - blocked_address
 - action_id: get_i45_list
   title: 'Advanced · Stocktaking item lists: list (GET_I45_LIST)'
-  description: 'Rivile GAMA GET_I45_LIST — Stocktaking item lists: list. Rivile: Algos dokumentų sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i45_list'
+  description: 'Rivile GAMA GET_I45_LIST — Stocktaking item lists: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i45_list.
+    Rivile: Algos dokumentų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8802,8 +8962,10 @@ actions:
   - blocked_address
 - action_id: get_i47_list
   title: 'Advanced · Stocktaking operations: list (GET_I47_LIST)'
-  description: 'Rivile GAMA GET_I47_LIST — Stocktaking operations: list. Rivile: Algos - pareigų sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i47_list'
+  description: 'Rivile GAMA GET_I47_LIST — Stocktaking operations: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i47_list.
+    Rivile: Algos - pareigų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8867,8 +9029,10 @@ actions:
   - blocked_address
 - action_id: get_i51_list
   title: 'Advanced · Collector operations: list (GET_I51_LIST)'
-  description: 'Rivile GAMA GET_I51_LIST — Collector operations: list. Rivile: Kaupiklio operacijų sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i51_list'
+  description: 'Rivile GAMA GET_I51_LIST — Collector operations: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i51_list.
+    Rivile: Kaupiklio operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -8932,8 +9096,10 @@ actions:
   - blocked_address
 - action_id: get_i53_list
   title: 'Advanced · Payment operations: list (GET_I53_LIST)'
-  description: 'Rivile GAMA GET_I53_LIST — Payment operations: list. Rivile: Mokėjimo operacijų sąrašas.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i53_list'
+  description: 'Rivile GAMA GET_I53_LIST — Payment operations: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i53_list.
+    Rivile: Mokėjimo operacijų sąrašas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -8997,7 +9163,10 @@ actions:
   - blocked_address
 - action_id: get_i61_list
   title: 'Advanced · POS operations: list (GET_I61_LIST)'
-  description: 'Rivile GAMA GET_I61_LIST — POS operations: list. Rivile: POS operacijos Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i61_list'
+  description: 'Rivile GAMA GET_I61_LIST — POS operations: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i61_list.
+    Rivile: POS operacijos'
   required_scopes:
   - extension:invoke
   handler:
@@ -9058,7 +9227,10 @@ actions:
   - blocked_address
 - action_id: get_i63_list
   title: 'Advanced · POS parameters: list (GET_I63_LIST)'
-  description: 'Rivile GAMA GET_I63_LIST — POS parameters: list. Rivile: POS parametrai Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i63_list'
+  description: 'Rivile GAMA GET_I63_LIST — POS parameters: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i63_list.
+    Rivile: POS parametrai'
   required_scopes:
   - extension:invoke
   handler:
@@ -9119,8 +9291,10 @@ actions:
   - blocked_address
 - action_id: get_i64_list
   title: 'Advanced · Loyalty points: list (GET_I64_LIST)'
-  description: 'Rivile GAMA GET_I64_LIST — Loyalty points: list. Rivile: Lojalumo taškų sąrašas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i64_list'
+  description: 'Rivile GAMA GET_I64_LIST — Loyalty points: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_i64_list.
+    Rivile: Lojalumo taškų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9181,8 +9355,10 @@ actions:
   - blocked_address
 - action_id: get_k11_list
   title: 'Advanced · HR classifiers: list (GET_K11_LIST)'
-  description: 'Rivile GAMA GET_K11_LIST — HR classifiers: list. Rivile: Personalo klasifikatorių sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_k11_list'
+  description: 'Rivile GAMA GET_K11_LIST — HR classifiers: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_k11_list.
+    Rivile: Personalo klasifikatorių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9243,8 +9419,10 @@ actions:
   - blocked_address
 - action_id: get_k42_list
   title: 'Advanced · Document management (DVS) operations: list (GET_K42_LIST)'
-  description: 'Rivile GAMA GET_K42_LIST — Document management (DVS) operations: list. Rivile: DVS operacijų
-    sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_k42_list'
+  description: 'Rivile GAMA GET_K42_LIST — Document management (DVS) operations: list. Read one page of
+    up to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a
+    T-SQL filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_k42_list.
+    Rivile: DVS operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9308,7 +9486,10 @@ actions:
   - blocked_address
 - action_id: get_k56_list
   title: 'Advanced · CRM operations: list (GET_K56_LIST)'
-  description: 'Rivile GAMA GET_K56_LIST — CRM operations: list. Rivile: CRM operacijų sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_k56_list'
+  description: 'Rivile GAMA GET_K56_LIST — CRM operations: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_k56_list.
+    Rivile: CRM operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9369,8 +9550,10 @@ actions:
   - blocked_address
 - action_id: get_k78_list
   title: 'Advanced · Gift voucher operations: list (GET_K78_LIST)'
-  description: 'Rivile GAMA GET_K78_LIST — Gift voucher operations: list. Rivile: Dovanų čekių operacijų
-    sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_k78_list'
+  description: 'Rivile GAMA GET_K78_LIST — Gift voucher operations: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_k78_list.
+    Rivile: Dovanų čekių operacijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9434,8 +9617,10 @@ actions:
   - blocked_address
 - action_id: get_l01_list
   title: 'Advanced · Filter tables: list (GET_L01_LIST)'
-  description: 'Rivile GAMA GET_L01_LIST — Filter tables: list. Rivile: Filtravimo lentelių sąrašas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_l01_list'
+  description: 'Rivile GAMA GET_L01_LIST — Filter tables: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_l01_list.
+    Rivile: Filtravimo lentelių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9499,8 +9684,10 @@ actions:
   - blocked_address
 - action_id: get_n01_list
   title: 'Advanced · Chart of accounts: list (GET_N01_LIST)'
-  description: 'Rivile GAMA GET_N01_LIST — Chart of accounts: list. Rivile: Įmonės sąskaitų planas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n01_list'
+  description: 'Rivile GAMA GET_N01_LIST — Chart of accounts: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n01_list.
+    Rivile: Įmonės sąskaitų planas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9561,7 +9748,10 @@ actions:
   - blocked_address
 - action_id: get_n06_list
   title: 'Advanced · Objects: list (GET_N06_LIST)'
-  description: 'Rivile GAMA GET_N06_LIST — Objects: list. Rivile: Objektų sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n06_list'
+  description: 'Rivile GAMA GET_N06_LIST — Objects: list. Read one page of up to 100 records, or enable
+    Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n06_list.
+    Rivile: Objektų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9622,7 +9812,10 @@ actions:
   - blocked_address
 - action_id: get_n07_list
   title: 'Advanced · Departments: list (GET_N07_LIST)'
-  description: 'Rivile GAMA GET_N07_LIST — Departments: list. Rivile: Padalinių sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n07_list'
+  description: 'Rivile GAMA GET_N07_LIST — Departments: list. Read one page of up to 100 records, or enable
+    Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n07_list.
+    Rivile: Padalinių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9683,8 +9876,10 @@ actions:
   - blocked_address
 - action_id: get_n08_list
   title: 'Advanced · Clients: list with alternative addresses (GET_N08_LIST)'
-  description: 'Rivile GAMA GET_N08_LIST — Clients: list with alternative addresses. Rivile: Klientų sąrašas
-    su alternatyviais adresais Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n08_list'
+  description: 'Rivile GAMA GET_N08_LIST — Clients: list with alternative addresses. Read one page of
+    up to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a
+    T-SQL filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n08_list.
+    Rivile: Klientų sąrašas su alternatyviais adresais'
   required_scopes:
   - extension:invoke
   handler:
@@ -9748,7 +9943,10 @@ actions:
   - blocked_address
 - action_id: get_n09_list
   title: 'Advanced · Locations: list (GET_N09_LIST)'
-  description: 'Rivile GAMA GET_N09_LIST — Locations: list. Rivile: Vietovių sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n09_list'
+  description: 'Rivile GAMA GET_N09_LIST — Locations: list. Read one page of up to 100 records, or enable
+    Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n09_list.
+    Rivile: Vietovių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9809,8 +10007,10 @@ actions:
   - blocked_address
 - action_id: get_n13_list
   title: 'Advanced · Product promotions: list (GET_N13_LIST)'
-  description: 'Rivile GAMA GET_N13_LIST — Product promotions: list. Rivile: Prekių/Paslaugų akcijų sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n13_list'
+  description: 'Rivile GAMA GET_N13_LIST — Product promotions: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n13_list.
+    Rivile: Prekių/Paslaugų akcijų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9871,7 +10071,10 @@ actions:
   - blocked_address
 - action_id: get_n15_list
   title: 'Advanced · Managers: list (GET_N15_LIST)'
-  description: 'Rivile GAMA GET_N15_LIST — Managers: list. Rivile: Menedžerių sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n15_list'
+  description: 'Rivile GAMA GET_N15_LIST — Managers: list. Read one page of up to 100 records, or enable
+    Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n15_list.
+    Rivile: Menedžerių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9932,8 +10135,10 @@ actions:
   - blocked_address
 - action_id: get_n16_list
   title: 'Advanced · Account relations: list (GET_N16_LIST)'
-  description: 'Rivile GAMA GET_N16_LIST — Account relations: list. Rivile: Sąskaitų ryšių sąrašas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n16_list'
+  description: 'Rivile GAMA GET_N16_LIST — Account relations: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n16_list.
+    Rivile: Sąskaitų ryšių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -9994,8 +10199,10 @@ actions:
   - blocked_address
 - action_id: get_n17_list
   title: 'Advanced · Products and services: list (GET_N17_LIST)'
-  description: 'Rivile GAMA GET_N17_LIST — Products and services: list. Rivile: Prekių, paslaugų sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n17_list'
+  description: 'Rivile GAMA GET_N17_LIST — Products and services: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n17_list.
+    Rivile: Prekių, paslaugų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -10059,8 +10266,10 @@ actions:
   - blocked_address
 - action_id: get_n18_list
   title: 'Advanced · Units of measure: list (GET_N18_LIST)'
-  description: 'Rivile GAMA GET_N18_LIST — Units of measure: list. Rivile: Mato vienetų sąrašas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n18_list'
+  description: 'Rivile GAMA GET_N18_LIST — Units of measure: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n18_list.
+    Rivile: Mato vienetų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -10121,7 +10330,10 @@ actions:
   - blocked_address
 - action_id: get_n19_list
   title: 'Advanced · Groups: list (GET_N19_LIST)'
-  description: 'Rivile GAMA GET_N19_LIST — Groups: list. Rivile: Grupių sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n19_list'
+  description: 'Rivile GAMA GET_N19_LIST — Groups: list. Read one page of up to 100 records, or enable
+    Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n19_list.
+    Rivile: Grupių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -10182,8 +10394,10 @@ actions:
   - blocked_address
 - action_id: get_n25_list
   title: 'Advanced · Purchase and sales codes: list (GET_N25_LIST)'
-  description: 'Rivile GAMA GET_N25_LIST — Purchase and sales codes: list. Rivile: Pardavimų / Pirkimų
-    kodų sąrašas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n25_list'
+  description: 'Rivile GAMA GET_N25_LIST — Purchase and sales codes: list. Read one page of up to 100
+    records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter
+    on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n25_list.
+    Rivile: Pardavimų / Pirkimų kodų sąrašas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -10244,8 +10458,10 @@ actions:
   - blocked_address
 - action_id: get_n26_list
   title: 'Advanced · Composite product components: list (GET_N26_LIST)'
-  description: 'Rivile GAMA GET_N26_LIST — Composite product components: list. Rivile: Sudėtinių prekių
-    komponenčių sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n26_list'
+  description: 'Rivile GAMA GET_N26_LIST — Composite product components: list. Read one page of up to
+    100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL
+    filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n26_list.
+    Rivile: Sudėtinių prekių komponenčių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -10306,8 +10522,10 @@ actions:
   - blocked_address
 - action_id: get_n27_list
   title: 'Advanced · Packaging coefficients: list (GET_N27_LIST)'
-  description: 'Rivile GAMA GET_N27_LIST — Packaging coefficients: list. Rivile: Įpokavimo koeficientų
-    sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n27_list'
+  description: 'Rivile GAMA GET_N27_LIST — Packaging coefficients: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n27_list.
+    Rivile: Įpokavimo koeficientų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -10368,7 +10586,10 @@ actions:
   - blocked_address
 - action_id: get_n31_list
   title: 'Advanced · Discount tables: list (GET_N31_LIST)'
-  description: 'Rivile GAMA GET_N31_LIST — Discount tables: list. Rivile: Nuolaidų lentelės Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n31_list'
+  description: 'Rivile GAMA GET_N31_LIST — Discount tables: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n31_list.
+    Rivile: Nuolaidų lentelės'
   required_scopes:
   - extension:invoke
   handler:
@@ -10429,7 +10650,10 @@ actions:
   - blocked_address
 - action_id: get_n32_list
   title: 'Advanced · Price lists: list (GET_N32_LIST)'
-  description: 'Rivile GAMA GET_N32_LIST — Price lists: list. Rivile: Prekių kainynų sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n32_list'
+  description: 'Rivile GAMA GET_N32_LIST — Price lists: list. Read one page of up to 100 records, or enable
+    Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n32_list.
+    Rivile: Prekių kainynų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -10490,7 +10714,10 @@ actions:
   - blocked_address
 - action_id: get_n35_list
   title: 'Advanced · Logistics cards: list (GET_N35_LIST)'
-  description: 'Rivile GAMA GET_N35_LIST — Logistics cards: list. Rivile: Logistikos sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n35_list'
+  description: 'Rivile GAMA GET_N35_LIST — Logistics cards: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n35_list.
+    Rivile: Logistikos sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -10551,8 +10778,10 @@ actions:
   - blocked_address
 - action_id: get_n37_list
   title: 'Advanced · Product units and barcodes: list (GET_N37_LIST)'
-  description: 'Rivile GAMA GET_N37_LIST — Product units and barcodes: list. Rivile: Prekių matavimo vienetų/barkodų
-    informacija. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n37_list'
+  description: 'Rivile GAMA GET_N37_LIST — Product units and barcodes: list. Read one page of up to 100
+    records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter
+    on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n37_list.
+    Rivile: Prekių matavimo vienetų/barkodų informacija.'
   required_scopes:
   - extension:invoke
   handler:
@@ -10616,8 +10845,10 @@ actions:
   - blocked_address
 - action_id: get_n39_list
   title: 'Advanced · Fixed asset cards: list (GET_N39_LIST)'
-  description: 'Rivile GAMA GET_N39_LIST — Fixed asset cards: list. Rivile: Ilgalaikio turto grupių sąrašas.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n39_list'
+  description: 'Rivile GAMA GET_N39_LIST — Fixed asset cards: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n39_list.
+    Rivile: Ilgalaikio turto grupių sąrašas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -10681,8 +10912,10 @@ actions:
   - blocked_address
 - action_id: get_n40_list
   title: 'Advanced · Product alternative barcodes: list (GET_N40_LIST)'
-  description: 'Rivile GAMA GET_N40_LIST — Product alternative barcodes: list. Rivile: Prekės/paslaugos
-    alternatyvių barkodų informacija Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n40_list'
+  description: 'Rivile GAMA GET_N40_LIST — Product alternative barcodes: list. Read one page of up to
+    100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL
+    filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n40_list.
+    Rivile: Prekės/paslaugos alternatyvių barkodų informacija'
   required_scopes:
   - extension:invoke
   handler:
@@ -10743,8 +10976,10 @@ actions:
   - blocked_address
 - action_id: get_n41_list
   title: 'Advanced · Fixed asset groups: list (GET_N41_LIST)'
-  description: 'Rivile GAMA GET_N41_LIST — Fixed asset groups: list. Rivile: Ilgalaikio turto grupių sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n41_list'
+  description: 'Rivile GAMA GET_N41_LIST — Fixed asset groups: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n41_list.
+    Rivile: Ilgalaikio turto grupių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -10805,7 +11040,10 @@ actions:
   - blocked_address
 - action_id: get_n45_list
   title: 'Advanced · Currencies: list (GET_N45_LIST)'
-  description: 'Rivile GAMA GET_N45_LIST — Currencies: list. Rivile: Valiutų sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n45_list'
+  description: 'Rivile GAMA GET_N45_LIST — Currencies: list. Read one page of up to 100 records, or enable
+    Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n45_list.
+    Rivile: Valiutų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -10866,8 +11104,10 @@ actions:
   - blocked_address
 - action_id: get_n47_list
   title: 'Advanced · Product department settings: list (GET_N47_LIST)'
-  description: 'Rivile GAMA GET_N47_LIST — Product department settings: list. Rivile: Prekių/paslaugų
-    padalinių informacija Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n47_list'
+  description: 'Rivile GAMA GET_N47_LIST — Product department settings: list. Read one page of up to 100
+    records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter
+    on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n47_list.
+    Rivile: Prekių/paslaugų padalinių informacija'
   required_scopes:
   - extension:invoke
   handler:
@@ -10928,7 +11168,10 @@ actions:
   - blocked_address
 - action_id: get_n51_list
   title: 'Advanced · Contracts: list (GET_N51_LIST)'
-  description: 'Rivile GAMA GET_N51_LIST — Contracts: list. Rivile: Sutarčių sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n51_list'
+  description: 'Rivile GAMA GET_N51_LIST — Contracts: list. Read one page of up to 100 records, or enable
+    Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n51_list.
+    Rivile: Sutarčių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -10992,7 +11235,10 @@ actions:
   - blocked_address
 - action_id: get_n52_list
   title: 'Advanced · Contract annexes: list (GET_N52_LIST)'
-  description: 'Rivile GAMA GET_N52_LIST — Contract annexes: list. Rivile: Sutarčių priedai Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n52_list'
+  description: 'Rivile GAMA GET_N52_LIST — Contract annexes: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n52_list.
+    Rivile: Sutarčių priedai'
   required_scopes:
   - extension:invoke
   handler:
@@ -11053,7 +11299,10 @@ actions:
   - blocked_address
 - action_id: get_n60_list
   title: 'Advanced · Persons: list (GET_N60_LIST)'
-  description: 'Rivile GAMA GET_N60_LIST — Persons: list. Rivile: Asmenų sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n60_list'
+  description: 'Rivile GAMA GET_N60_LIST — Persons: list. Read one page of up to 100 records, or enable
+    Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n60_list.
+    Rivile: Asmenų sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -11114,8 +11363,10 @@ actions:
   - blocked_address
 - action_id: get_n63_list
   title: 'Advanced · VAT classifiers: list (GET_N63_LIST)'
-  description: 'Rivile GAMA GET_N63_LIST — VAT classifiers: list. Rivile: PVM klasifikatorių sąrašas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n63_list'
+  description: 'Rivile GAMA GET_N63_LIST — VAT classifiers: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n63_list.
+    Rivile: PVM klasifikatorių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -11176,8 +11427,10 @@ actions:
   - blocked_address
 - action_id: get_n64_list
   title: 'Advanced · Loyalty cards: list (GET_N64_LIST)'
-  description: 'Rivile GAMA GET_N64_LIST — Loyalty cards: list. Rivile: Lojalumo kortelių sąrašas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n64_list'
+  description: 'Rivile GAMA GET_N64_LIST — Loyalty cards: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n64_list.
+    Rivile: Lojalumo kortelių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -11241,8 +11494,10 @@ actions:
   - blocked_address
 - action_id: get_n66_list
   title: 'Advanced · Customs goods: list (GET_N66_LIST)'
-  description: 'Rivile GAMA GET_N66_LIST — Customs goods: list. Rivile: Muitinės prekių sąrašas Docs:
-    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n66_list'
+  description: 'Rivile GAMA GET_N66_LIST — Customs goods: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n66_list.
+    Rivile: Muitinės prekių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -11303,8 +11558,10 @@ actions:
   - blocked_address
 - action_id: get_n67_list
   title: 'Advanced · Intrastat classifiers: list (GET_N67_LIST)'
-  description: 'Rivile GAMA GET_N67_LIST — Intrastat classifiers: list. Rivile: Intrastato klasifikatorių
-    sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n67_list'
+  description: 'Rivile GAMA GET_N67_LIST — Intrastat classifiers: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n67_list.
+    Rivile: Intrastato klasifikatorių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -11365,7 +11622,10 @@ actions:
   - blocked_address
 - action_id: get_n72_list
   title: 'Advanced · Vehicles: list (GET_N72_LIST)'
-  description: 'Rivile GAMA GET_N72_LIST — Vehicles: list. Rivile: Automobilių sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n72_list'
+  description: 'Rivile GAMA GET_N72_LIST — Vehicles: list. Read one page of up to 100 records, or enable
+    Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n72_list.
+    Rivile: Automobilių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -11426,7 +11686,10 @@ actions:
   - blocked_address
 - action_id: get_n77_list
   title: 'Advanced · Gift vouchers: list (GET_N77_LIST)'
-  description: 'Rivile GAMA GET_N77_LIST — Gift vouchers: list. Rivile: Dovanų čekių sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n77_list'
+  description: 'Rivile GAMA GET_N77_LIST — Gift vouchers: list. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n77_list.
+    Rivile: Dovanų čekių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -11487,8 +11750,10 @@ actions:
   - blocked_address
 - action_id: get_n87_list
   title: 'Advanced · Supplier product codes: list (GET_N87_LIST)'
-  description: 'Rivile GAMA GET_N87_LIST — Supplier product codes: list. Rivile: Kliento prekių sąrašas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n87_list'
+  description: 'Rivile GAMA GET_N87_LIST — Supplier product codes: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_n87_list.
+    Rivile: Kliento prekių sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -11549,8 +11814,8 @@ actions:
   - blocked_address
 - action_id: get_pap_list
   title: 'Advanced · Extra fields: read values (GET_PAP_LIST)'
-  description: 'Rivile GAMA GET_PAP_LIST — Extra fields: read values. Rivile: Papildomų laukų informacija
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_pap_list'
+  description: 'Rivile GAMA GET_PAP_LIST — Extra fields: read values. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_pap_list.
+    Rivile: Papildomų laukų informacija'
   required_scopes:
   - extension:invoke
   handler:
@@ -11619,9 +11884,11 @@ actions:
   - blocked_address
 - action_id: get_prices_time
   title: Advanced · Prices changed since a date (GET_PRICES_TIME)
-  description: 'Rivile GAMA GET_PRICES_TIME — Prices changed since a date. Rivile: Metodas grąžina informaciją
-    apie prekių ir paslaugų kainų pasikeitimus remiantis koregavimo data. Grąžinama informacija gali būti
-    pagal prekę ir mato vienetą arba pagal unikalų barkodą. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_prices_time'
+  description: 'Rivile GAMA GET_PRICES_TIME — Prices changed since a date. Read one page of up to 100
+    records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter
+    on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_prices_time.
+    Rivile: Metodas grąžina informaciją apie prekių ir paslaugų kainų pasikeitimus remiantis koregavimo
+    data. Grąžinama informacija gali būti pagal prekę ir mato vienetą arba pagal unikalų barkodą.'
   required_scopes:
   - extension:invoke
   handler:
@@ -11709,9 +11976,11 @@ actions:
   - blocked_address
 - action_id: get_prod_by_barcode_time
   title: Advanced · Products by barcode changed since a date (GET_PROD_BY_BARCODE_TIME)
-  description: 'Rivile GAMA GET_PROD_BY_BARCODE_TIME — Products by barcode changed since a date. Rivile:
-    Metodas grąžina informaciją apie prekę, remiantis koregavimo data. Užklausos atsakymas pateikiamas
-    kiekvienam unikaliam barkodui. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_prod_by_barcode_time'
+  description: 'Rivile GAMA GET_PROD_BY_BARCODE_TIME — Products by barcode changed since a date. Read
+    one page of up to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue.
+    Use a T-SQL filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_prod_by_barcode_time.
+    Rivile: Metodas grąžina informaciją apie prekę, remiantis koregavimo data. Užklausos atsakymas pateikiamas
+    kiekvienam unikaliam barkodui.'
   required_scopes:
   - extension:invoke
   handler:
@@ -11800,10 +12069,11 @@ actions:
 - action_id: get_ps_kain
   title: Advanced · All prices, price lists, promotions and discounts for a product (GET_PS_KAIN)
   description: 'Rivile GAMA GET_PS_KAIN — All prices, price lists, promotions and discounts for a product.
+    Use a T-SQL filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_ps_kain.
     Rivile: Prekių/paslaugų kainų, kainynų, akcijų bei nuolaidų informacijos gavimas. Vienoje vietoje
     suformuotos visos prekės galimos kainos ir nuolaidos. Jas galima parinkinėti pagal prioritetą, kaip
     jas parinkinėja Rivile GAMA sistema arba savo nuožiūra suderinus su klientu. Pvz. mažiausia kaina
-    ir didžiausia galima nuolaida klientui. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_ps_kain'
+    ir didžiausia galima nuolaida klientui.'
   required_scopes:
   - extension:invoke
   handler:
@@ -11866,8 +12136,10 @@ actions:
   - blocked_address
 - action_id: get_t03_list
   title: Advanced · Client and supplier debt totals (GET_T03_LIST)
-  description: 'Rivile GAMA GET_T03_LIST — Client and supplier debt totals. Rivile: Suminių klientų/tiekėjų
-    skolų informacija Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_t03_list'
+  description: 'Rivile GAMA GET_T03_LIST — Client and supplier debt totals. Read one page of up to 100
+    records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter
+    on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_t03_list.
+    Rivile: Suminių klientų/tiekėjų skolų informacija'
   required_scopes:
   - extension:invoke
   handler:
@@ -11931,8 +12203,9 @@ actions:
   - blocked_address
 - action_id: get_user_proc
   title: Advanced · Run a user stored procedure (GET_USER_PROC)
-  description: 'Rivile GAMA GET_USER_PROC — Run a user stored procedure. Rivile: Paleidžia papildomą vartotojo
-    procedūrą. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_user_proc'
+  description: 'Rivile GAMA GET_USER_PROC — Run a user stored procedure. Supply the method''s Rivile table
+    fields in Data. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_user_proc. Rivile:
+    Paleidžia papildomą vartotojo procedūrą.'
   required_scopes:
   - extension:invoke
   handler:
@@ -11987,8 +12260,10 @@ actions:
   - timeout_unknown
 - action_id: get_views_list
   title: Advanced · Read an SQL view (GET_VIEWS_LIST)
-  description: 'Rivile GAMA GET_VIEWS_LIST — Read an SQL view. Rivile: SQL view''o rezultato grąžinimas
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_views_list'
+  description: 'Rivile GAMA GET_VIEWS_LIST — Read an SQL view. Read one page of up to 100 records, or
+    enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this method''s
+    table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/get_views_list.
+    Rivile: SQL view''o rezultato grąžinimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -12061,9 +12336,10 @@ actions:
   - blocked_address
 - action_id: init_trigger
   title: Advanced · Enable change tracking (required by the *_TIME methods) (INIT_TRIGGER)
-  description: 'Rivile GAMA INIT_TRIGGER — Enable change tracking (required by the *_TIME methods). Rivile:
-    Metodas skirtas sukurti reikiamą infrastrutūrą pokyčių registravimui norint dirbti tik su koreguotos
-    informacijos nuskaitymu. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/init_trigger'
+  description: 'Rivile GAMA INIT_TRIGGER — Enable change tracking (required by the *_TIME methods). Use
+    a T-SQL filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/init_trigger.
+    Rivile: Metodas skirtas sukurti reikiamą infrastrutūrą pokyčių registravimui norint dirbti tik su
+    koreguotos informacijos nuskaitymu.'
   required_scopes:
   - extension:invoke
   handler:
@@ -12118,8 +12394,9 @@ actions:
   - timeout_unknown
 - action_id: mgama_edit_k14
   title: 'Advanced · Personnel: create, update or delete (MGAMA_EDIT_K14)'
-  description: 'Rivile GAMA MGAMA_EDIT_K14 — Personnel: create, update or delete. Rivile: Personalo sąrašo
-    sukūrimas, koregavimas, trinimas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_edit_k14'
+  description: 'Rivile GAMA MGAMA_EDIT_K14 — Personnel: create, update or delete. Choose the record operation;
+    supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_edit_k14.
+    Rivile: Personalo sąrašo sukūrimas, koregavimas, trinimas'
   required_scopes:
   - extension:invoke
   handler:
@@ -12175,8 +12452,9 @@ actions:
 - action_id: mgama_edit_k16_atats
   title: 'Advanced · Vacation recall documents: create, update, move or delete (MGAMA_EDIT_K16_ATATS)'
   description: 'Rivile GAMA MGAMA_EDIT_K16_ATATS — Vacation recall documents: create, update, move or
-    delete. Rivile: Personalo atostogų atšaukimo operacijų dokumentų sukūrimas, koregavimas, trynimas.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atats'
+    delete. Choose the record operation; supply Rivile table fields in Data for the chosen operation.
+    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atats. Rivile: Personalo
+    atostogų atšaukimo operacijų dokumentų sukūrimas, koregavimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -12231,8 +12509,9 @@ actions:
   - timeout_unknown
 - action_id: mgama_edit_k16_atgra
   title: 'Advanced · Vacation schedules: create, update or delete (MGAMA_EDIT_K16_ATGRA)'
-  description: 'Rivile GAMA MGAMA_EDIT_K16_ATGRA — Vacation schedules: create, update or delete. Rivile:
-    Personalo atostogų grafikų koregavimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atgra'
+  description: 'Rivile GAMA MGAMA_EDIT_K16_ATGRA — Vacation schedules: create, update or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atgra.
+    Rivile: Personalo atostogų grafikų koregavimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -12288,7 +12567,8 @@ actions:
 - action_id: mgama_edit_k16_atld
   title: 'Advanced · Dismissal documents: create, update, move or delete (MGAMA_EDIT_K16_ATLD)'
   description: 'Rivile GAMA MGAMA_EDIT_K16_ATLD — Dismissal documents: create, update, move or delete.
-    Rivile: Personalo atleidimo operacijų dokumentų sukūrimas, koregavimas, trynimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atld'
+    Choose the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atld.
+    Rivile: Personalo atleidimo operacijų dokumentų sukūrimas, koregavimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -12344,7 +12624,8 @@ actions:
 - action_id: mgama_edit_k16_atost
   title: 'Advanced · Vacation documents: create, update, move or delete (MGAMA_EDIT_K16_ATOST)'
   description: 'Rivile GAMA MGAMA_EDIT_K16_ATOST — Vacation documents: create, update, move or delete.
-    Rivile: Personalo atostogų operacijų dokumentų sukūrimas, koregavimas, trynimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atost'
+    Choose the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atost.
+    Rivile: Personalo atostogų operacijų dokumentų sukūrimas, koregavimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -12400,8 +12681,9 @@ actions:
 - action_id: mgama_edit_k16_atpra
   title: 'Advanced · Vacation extension documents: create, update, move or delete (MGAMA_EDIT_K16_ATPRA)'
   description: 'Rivile GAMA MGAMA_EDIT_K16_ATPRA — Vacation extension documents: create, update, move
-    or delete. Rivile: Personalo atostogų pratęsimo operacijų dokumentų sukūrimas, koregavimas, trynimas.
-    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atpra'
+    or delete. Choose the record operation; supply Rivile table fields in Data for the chosen operation.
+    Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_atpra. Rivile: Personalo
+    atostogų pratęsimo operacijų dokumentų sukūrimas, koregavimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -12457,7 +12739,8 @@ actions:
 - action_id: mgama_edit_k16_kita
   title: 'Advanced · Other personnel documents: create, update, move or delete (MGAMA_EDIT_K16_KITA)'
   description: 'Rivile GAMA MGAMA_EDIT_K16_KITA — Other personnel documents: create, update, move or delete.
-    Rivile: Personalo kitų operacijų dokumentų sukūrimas, koregavimas, trynimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_kita'
+    Choose the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_kita.
+    Rivile: Personalo kitų operacijų dokumentų sukūrimas, koregavimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -12513,7 +12796,8 @@ actions:
 - action_id: mgama_edit_k16_kom
   title: 'Advanced · Business trip documents: create, update, move or delete (MGAMA_EDIT_K16_KOM)'
   description: 'Rivile GAMA MGAMA_EDIT_K16_KOM — Business trip documents: create, update, move or delete.
-    Rivile: Personalo komandiruočių dokumentų sukūrimas, koregavimas, trynimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_kom'
+    Choose the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_kom.
+    Rivile: Personalo komandiruočių dokumentų sukūrimas, koregavimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -12569,7 +12853,8 @@ actions:
 - action_id: mgama_edit_k16_perk
   title: 'Advanced · Transfer documents: create, update, move or delete (MGAMA_EDIT_K16_PERK)'
   description: 'Rivile GAMA MGAMA_EDIT_K16_PERK — Transfer documents: create, update, move or delete.
-    Rivile: Personalo perkėlimo operacijų dokumentų sukūrimas, koregavimas, trynimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_perk'
+    Choose the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_perk.
+    Rivile: Personalo perkėlimo operacijų dokumentų sukūrimas, koregavimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -12624,8 +12909,9 @@ actions:
   - timeout_unknown
 - action_id: mgama_edit_k16_priem
   title: 'Advanced · Hiring documents: create, update, move or delete (MGAMA_EDIT_K16_PRIEM)'
-  description: 'Rivile GAMA MGAMA_EDIT_K16_PRIEM — Hiring documents: create, update, move or delete. Rivile:
-    Personalo priėmimo operacijų dokumentų sukūrimas, koregavimas, trynimas. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_priem'
+  description: 'Rivile GAMA MGAMA_EDIT_K16_PRIEM — Hiring documents: create, update, move or delete. Choose
+    the record operation; supply Rivile table fields in Data for the chosen operation. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/api_mgama_edit_k16_priem.
+    Rivile: Personalo priėmimo operacijų dokumentų sukūrimas, koregavimas, trynimas.'
   required_scopes:
   - extension:invoke
   handler:
@@ -12680,7 +12966,10 @@ actions:
   - timeout_unknown
 - action_id: mgama_get_k14_list
   title: 'Advanced · Personnel: list (MGAMA_GET_K14_LIST)'
-  description: 'Rivile GAMA MGAMA_GET_K14_LIST — Personnel: list. Rivile: Personalo sąrašas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k14_list'
+  description: 'Rivile GAMA MGAMA_GET_K14_LIST — Personnel: list. Read one page of up to 100 records,
+    or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL filter on this
+    method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k14_list.
+    Rivile: Personalo sąrašas'
   required_scopes:
   - extension:invoke
   handler:
@@ -12741,8 +13030,10 @@ actions:
   - blocked_address
 - action_id: mgama_get_k16_atats_list
   title: 'Advanced · Vacation recall documents: list (MGAMA_GET_K16_ATATS_LIST)'
-  description: 'Rivile GAMA MGAMA_GET_K16_ATATS_LIST — Vacation recall documents: list. Rivile: Personalo
-    atostogų atšukimo dokumentų nuskaitymas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_atats_list'
+  description: 'Rivile GAMA MGAMA_GET_K16_ATATS_LIST — Vacation recall documents: list. Read one page
+    of up to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use
+    a T-SQL filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_atats_list.
+    Rivile: Personalo atostogų atšukimo dokumentų nuskaitymas'
   required_scopes:
   - extension:invoke
   handler:
@@ -12803,8 +13094,10 @@ actions:
   - blocked_address
 - action_id: mgama_get_k16_atgra_list
   title: 'Advanced · Vacation schedules: list (MGAMA_GET_K16_ATGRA_LIST)'
-  description: 'Rivile GAMA MGAMA_GET_K16_ATGRA_LIST — Vacation schedules: list. Rivile: Personalo atostogų
-    grafikų nuskaitymas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_atgra_list'
+  description: 'Rivile GAMA MGAMA_GET_K16_ATGRA_LIST — Vacation schedules: list. Read one page of up to
+    100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL
+    filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_atgra_list.
+    Rivile: Personalo atostogų grafikų nuskaitymas'
   required_scopes:
   - extension:invoke
   handler:
@@ -12865,8 +13158,10 @@ actions:
   - blocked_address
 - action_id: mgama_get_k16_atld_list
   title: 'Advanced · Dismissal documents: list (MGAMA_GET_K16_ATLD_LIST)'
-  description: 'Rivile GAMA MGAMA_GET_K16_ATLD_LIST — Dismissal documents: list. Rivile: Personalo atleidimo
-    dokumentų nuskaitymas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_atld_list'
+  description: 'Rivile GAMA MGAMA_GET_K16_ATLD_LIST — Dismissal documents: list. Read one page of up to
+    100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL
+    filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_atld_list.
+    Rivile: Personalo atleidimo dokumentų nuskaitymas'
   required_scopes:
   - extension:invoke
   handler:
@@ -12927,8 +13222,10 @@ actions:
   - blocked_address
 - action_id: mgama_get_k16_atost_list
   title: 'Advanced · Vacation documents: list (MGAMA_GET_K16_ATOST_LIST)'
-  description: 'Rivile GAMA MGAMA_GET_K16_ATOST_LIST — Vacation documents: list. Rivile: Personalo atostogų
-    operacijų dokumentų nuskaitymas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_atost_list'
+  description: 'Rivile GAMA MGAMA_GET_K16_ATOST_LIST — Vacation documents: list. Read one page of up to
+    100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL
+    filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_atost_list.
+    Rivile: Personalo atostogų operacijų dokumentų nuskaitymas'
   required_scopes:
   - extension:invoke
   handler:
@@ -12989,8 +13286,10 @@ actions:
   - blocked_address
 - action_id: mgama_get_k16_atpra_list
   title: 'Advanced · Vacation extension documents: list (MGAMA_GET_K16_ATPRA_LIST)'
-  description: 'Rivile GAMA MGAMA_GET_K16_ATPRA_LIST — Vacation extension documents: list. Rivile: Personalo
-    atostogų pratęsimo dokumentų nuskaitymas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_atpra_list'
+  description: 'Rivile GAMA MGAMA_GET_K16_ATPRA_LIST — Vacation extension documents: list. Read one page
+    of up to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use
+    a T-SQL filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_atpra_list.
+    Rivile: Personalo atostogų pratęsimo dokumentų nuskaitymas'
   required_scopes:
   - extension:invoke
   handler:
@@ -13051,8 +13350,10 @@ actions:
   - blocked_address
 - action_id: mgama_get_k16_kita_list
   title: 'Advanced · Other personnel documents: list (MGAMA_GET_K16_KITA_LIST)'
-  description: 'Rivile GAMA MGAMA_GET_K16_KITA_LIST — Other personnel documents: list. Rivile: Personalo
-    kitų dokumentų nuskaitymas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_kita_list'
+  description: 'Rivile GAMA MGAMA_GET_K16_KITA_LIST — Other personnel documents: list. Read one page of
+    up to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a
+    T-SQL filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_kita_list.
+    Rivile: Personalo kitų dokumentų nuskaitymas'
   required_scopes:
   - extension:invoke
   handler:
@@ -13116,8 +13417,10 @@ actions:
   - blocked_address
 - action_id: mgama_get_k16_kom_list
   title: 'Advanced · Business trip documents: list (MGAMA_GET_K16_KOM_LIST)'
-  description: 'Rivile GAMA MGAMA_GET_K16_KOM_LIST — Business trip documents: list. Rivile: Personalo
-    komandiruočių operacijų dokumentų nuskaitymas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_kom_list'
+  description: 'Rivile GAMA MGAMA_GET_K16_KOM_LIST — Business trip documents: list. Read one page of up
+    to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL
+    filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_kom_list.
+    Rivile: Personalo komandiruočių operacijų dokumentų nuskaitymas'
   required_scopes:
   - extension:invoke
   handler:
@@ -13178,8 +13481,10 @@ actions:
   - blocked_address
 - action_id: mgama_get_k16_perk_list
   title: 'Advanced · Transfer documents: list (MGAMA_GET_K16_PERK_LIST)'
-  description: 'Rivile GAMA MGAMA_GET_K16_PERK_LIST — Transfer documents: list. Rivile: Personalo perkėlimo
-    operacijų dokumentų nuskaitymas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_perk_list'
+  description: 'Rivile GAMA MGAMA_GET_K16_PERK_LIST — Transfer documents: list. Read one page of up to
+    100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL
+    filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_perk_list.
+    Rivile: Personalo perkėlimo operacijų dokumentų nuskaitymas'
   required_scopes:
   - extension:invoke
   handler:
@@ -13240,8 +13545,10 @@ actions:
   - blocked_address
 - action_id: mgama_get_k16_priem_list
   title: 'Advanced · Hiring documents: list (MGAMA_GET_K16_PRIEM_LIST)'
-  description: 'Rivile GAMA MGAMA_GET_K16_PRIEM_LIST — Hiring documents: list. Rivile: Personalo priėmimo
-    operacijų dokumentų nuskaitymas Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_priem_list'
+  description: 'Rivile GAMA MGAMA_GET_K16_PRIEM_LIST — Hiring documents: list. Read one page of up to
+    100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Use a T-SQL
+    filter on this method''s table to restrict results. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_k16_priem_list.
+    Rivile: Personalo priėmimo operacijų dokumentų nuskaitymas'
   required_scopes:
   - extension:invoke
   handler:
@@ -13302,9 +13609,11 @@ actions:
   - blocked_address
 - action_id: mgama_get_pers_lik
   title: Advanced · Employee vacation balances at a date (MGAMA_GET_PERS_LIK)
-  description: 'Rivile GAMA MGAMA_GET_PERS_LIK — Employee vacation balances at a date. Rivile: Metodas
-    grąžina darbuotojų atostogų informaciją pateiktai datai. Užklausos atsakymas pateikiamas kiekvienai
-    unikaliai priėmimo operacijai. Docs: https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_pers_lik'
+  description: 'Rivile GAMA MGAMA_GET_PERS_LIK — Employee vacation balances at a date. Read one page of
+    up to 100 records, or enable Fetch all pages with a page limit; pass next_page to continue. Docs:
+    https://gidas.rivile.lt/internetiniai_moduliai/api_rest/mgama_get_pers_lik. Rivile: Metodas grąžina
+    darbuotojų atostogų informaciją pateiktai datai. Užklausos atsakymas pateikiamas kiekvienai unikaliai
+    priėmimo operacijai.'
   required_scopes:
   - extension:invoke
   handler:
