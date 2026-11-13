@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 import subprocess
 import sys
@@ -205,6 +206,13 @@ def test_main_refuses_another_host_contract() -> None:
 
 def test_icon_is_present() -> None:
     assert Path(BUNDLE_ROOT / "icon.png").read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_branding_records_the_shipped_icon() -> None:
+    branding = (BUNDLE_ROOT / "BRANDING.md").read_text("utf-8")
+    icon_sha256 = hashlib.sha256((BUNDLE_ROOT / "icon.png").read_bytes()).hexdigest()
+    assert f"`{icon_sha256}`" in branding
+    assert "https://www.rivile.lt/favicon.svg" in branding
 
 
 def test_every_shipped_page_is_in_the_ui_manifest() -> None:
