@@ -322,6 +322,26 @@ def param_input(row: dict[str, Any], param: dict[str, Any]) -> dict[str, Any]:
         schema = {"type": "string", "maxLength": 200000}
     else:
         schema = {"type": "string", "maxLength": 4000}
+    # These optional fields have no description in the pinned method page.
+    # Keep undocumented provider options optional rather than guessing their values.
+    if (row["method"], name) == ("EDIT_I06_DOCS", "overwrite"):
+        description = (
+            "Optional Rivile overwrite flag (0 or 1), passed unchanged. The pinned "
+            "EDIT_I06_DOCS guide does not define its behavior; leave unset unless "
+            "your Rivile administrator specifies it."
+        )
+    elif (row["method"], name) == ("GET_PRICES_TIME", "list"):
+        description = (
+            "H (Rivile default) returns products with barcodes only. A includes all "
+            "products, including those without barcodes. For example, set A when "
+            "synchronizing prices for products that have no barcode."
+        )
+    elif (row["method"], name) == ("INIT_TRIGGER", "list_type"):
+        description = (
+            "Optional raw listType parameter. The pinned INIT_TRIGGER example omits "
+            "it and does not define supported values. Leave empty for normal "
+            "change-tracking initialization."
+        )
     labels = {
         "oper": "Record operation (oper)",
         "erroraction": "On detail-line error (errorAction)",
@@ -334,7 +354,12 @@ def param_input(row: dict[str, Any], param: dict[str, Any]) -> dict[str, Any]:
         "doc": "File content (Base64)",
         "ext": "File extension (ext)",
     }
-    schema["title"] = labels.get(lower, wire)
+    method_labels = {
+        ("EDIT_I06_DOCS", "overwrite"): "Overwrite flag (overwrite)",
+        ("GET_PRICES_TIME", "list"): "Products to include (list)",
+        ("INIT_TRIGGER", "list_type"): "Optional list type (listType)",
+    }
+    schema["title"] = method_labels.get((row["method"], name), labels.get(lower, wire))
     if description:
         schema["description"] = clean(description, 600)
     return {
@@ -1002,6 +1027,7 @@ FORM_PLACEHOLDERS = {
     ("find_or_create_product", "name"): "Example product",
     ("changes_since", "since"): "2026-01-01T00:00:00",
     ("get_n08_list", "fil"): "n08_kodas_ks='CLIENT01'",
+    ("get_prices_time", "list"): "A",
 }
 
 

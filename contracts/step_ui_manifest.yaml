@@ -1177,9 +1177,11 @@ forms:
     required: false
     help_text: dokumento aprašymas 3
   - name: overwrite
-    label: Replace existing file (overwrite)
+    label: Overwrite flag (overwrite)
     widget_type: select
     required: false
+    help_text: Optional Rivile overwrite flag (0 or 1), passed unchanged. The pinned EDIT_I06_DOCS guide
+      does not define its behavior; leave unset unless your Rivile administrator specifies it.
     options:
     - label: '0'
       value: 0
@@ -6768,9 +6770,12 @@ forms:
     required: false
     help_text: kainos pagal nurodytą klientą.
   - name: list
-    label: Detail level (list)
+    label: Products to include (list)
     widget_type: text
     required: false
+    help_text: H (Rivile default) returns products with barcodes only. A includes all products, including
+      those without barcodes. For example, set A when synchronizing prices for products that have no barcode.
+    placeholder: A
   - name: fetch_all_pages
     label: Fetch all pages
     widget_type: boolean
@@ -7037,9 +7042,11 @@ forms:
   title: Advanced · Enable change tracking (required by the *_TIME methods) (INIT_TRIGGER)
   fields:
   - name: list_type
-    label: listType
+    label: Optional list type (listType)
     widget_type: text
     required: false
+    help_text: Optional raw listType parameter. The pinned INIT_TRIGGER example omits it and does not
+      define supported values. Leave empty for normal change-tracking initialization.
   - name: fil
     label: Record filter (T-SQL)
     widget_type: textarea

@@ -6176,7 +6176,9 @@ operations:
       enum:
       - 0
       - 1
-      title: Replace existing file (overwrite)
+      title: Overwrite flag (overwrite)
+      description: Optional Rivile overwrite flag (0 or 1), passed unchanged. The pinned EDIT_I06_DOCS
+        guide does not define its behavior; leave unset unless your Rivile administrator specifies it.
   - name: document_file
     value_type: artifact_handle
     required: false
@@ -49165,7 +49167,10 @@ operations:
     schema:
       type: string
       maxLength: 4000
-      title: Detail level (list)
+      title: Products to include (list)
+      description: H (Rivile default) returns products with barcodes only. A includes all products, including
+        those without barcodes. For example, set A when synchronizing prices for products that have no
+        barcode.
   - name: fetch_all_pages
     value_type: boolean
     required: false
@@ -50341,7 +50346,9 @@ operations:
     schema:
       type: string
       maxLength: 4000
-      title: listType
+      title: Optional list type (listType)
+      description: Optional raw listType parameter. The pinned INIT_TRIGGER example omits it and does
+        not define supported values. Leave empty for normal change-tracking initialization.
   - name: fil
     value_type: text
     required: false
