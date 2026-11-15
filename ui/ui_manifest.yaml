@@ -4,3 +4,4 @@ pages:
   - ref: pages/connection.yaml
   - ref: pages/rivile-api.yaml
   - ref: pages/changelog.yaml
+  - ref: pages/support.yaml

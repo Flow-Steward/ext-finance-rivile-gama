@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.7
+
+### Added
+
+- Added a Support tab with links for reporting a problem, asking a question or requesting a feature in this extension's GitHub repository, and what to include in a report.
+
 ## 0.1.6
 
 - Clarify everyday read action titles and add schema-compatible form examples.
