@@ -22,6 +22,7 @@ from __future__ import annotations
 import http.client
 import json
 import re
+import threading
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -190,7 +191,7 @@ class RivileTransport:
             },
         )
         self._pace()
-        status, raw, headers = self._open(request, mutating=mutating)
+        status, raw, headers = self._bounded_open(request, mutating=mutating)
         raw = _redact_bytes(raw, self._connection)
         rate_limit = _rate_limit(headers)
         self.last_rate_limit = rate_limit
@@ -236,6 +237,42 @@ class RivileTransport:
 
     # -- network -----------------------------------------------------------
 
+    def _read_expiry(self) -> float | None:
+        """When the exchange must stop: the request deadline plus its minimum window."""
+        return None if self.deadline is None else self.deadline + MIN_CALL_WINDOW_SECONDS
+
+    def _bounded_open(self, request: Request, *, mutating: bool) -> tuple[int, bytes, Any]:
+        """``_open`` with the step deadline over the whole exchange.
+
+        Name resolution (the SDK resolves before it opens, with no timeout of its own),
+        the wait for headers and every read run in a daemon worker thread; the step waits
+        for it only until the deadline plus its minimum window. A read still waiting then
+        has no effect; a write's outcome is unknown and it is not retried.
+        """
+        expires = self._read_expiry()
+        if expires is None:
+            return self._open(request, mutating=mutating)
+        outcome: dict[str, Any] = {}
+
+        def work() -> None:
+            try:
+                outcome["value"] = self._open(request, mutating=mutating)
+            except BaseException as exc:  # handed to the caller below
+                outcome["error"] = exc
+
+        worker = threading.Thread(target=work, name="rivile-gama-call", daemon=True)
+        worker.start()
+        while worker.is_alive():
+            left = expires - self.clock()
+            if left <= 0:
+                break
+            worker.join(min(0.25, left))
+        if worker.is_alive():
+            _late(mutating)
+        if "error" in outcome:
+            raise outcome["error"]
+        return outcome["value"]
+
     def _open(self, request: Request, *, mutating: bool) -> tuple[int, bytes, Any]:
         try:
             self.attempted = True
@@ -247,7 +284,12 @@ class RivileTransport:
                 status = int(getattr(response, "status", 0) or getattr(response, "code", 0) or 0)
                 headers = getattr(response, "headers", None)
                 raw = read_bounded(
-                    response, MAX_RESPONSE_BYTES, mutating=mutating, hint=self._size_hint
+                    response,
+                    MAX_RESPONSE_BYTES,
+                    mutating=mutating,
+                    hint=self._size_hint,
+                    expires=self._read_expiry(),
+                    clock=self.clock,
                 )
         except HTTPError as exc:
             raise _http_error(exc, self._connection, mutating=mutating) from exc
@@ -289,14 +331,39 @@ class RivileTransport:
         return status, raw, headers
 
 
-def read_bounded(response: Any, limit: int, *, mutating: bool = False, hint: str = "") -> bytes:
-    """Read at most ``limit`` bytes; an oversized answer to a write is an unknown outcome."""
+def read_bounded(
+    response: Any,
+    limit: int,
+    *,
+    mutating: bool = False,
+    hint: str = "",
+    expires: float | None = None,
+    clock: Callable[[], float] = time.monotonic,
+) -> bytes:
+    """Read at most ``limit`` bytes before ``expires``.
+
+    Before every read the socket's timeout is set to the time left, so one read cannot
+    wait past ``expires``. An oversized or too slow answer to a write is an unknown
+    outcome; to a read it is "out of time" (DeadlineReached) or "too large".
+    """
     buffer = bytearray()
+    sock = _socket_of(response)
     while True:
+        if expires is not None:
+            left = expires - clock()
+            if left <= 0:
+                _late(mutating)
+            if sock is not None:
+                try:
+                    sock.settimeout(max(0.5, left))
+                except OSError:  # pragma: no cover - a closed socket fails the read below
+                    pass
         chunk = response.read(min(CHUNK_BYTES, limit + 1 - len(buffer)))
         if not chunk:
             break
         buffer.extend(chunk)
+        if expires is not None and clock() > expires:
+            _late(mutating)
         if len(buffer) > limit:
             raise ExtensionError(
                 errors.TIMEOUT_UNKNOWN if mutating else errors.RESPONSE_TOO_LARGE,
@@ -308,6 +375,31 @@ def read_bounded(response: Any, limit: int, *, mutating: bool = False, hint: str
                 ),
             )
     return bytes(buffer)
+
+
+def _late(mutating: bool) -> None:
+    """The step's time ran out during an exchange."""
+    if not mutating:
+        raise DeadlineReached
+    raise ExtensionError(
+        errors.TIMEOUT_UNKNOWN,
+        "Rivile's answer to the write did not arrive in time; check in Rivile whether it "
+        "was applied before retrying",
+        failure_class="transient",
+        retryable=False,
+        definitely_no_external_effect=False,
+        external_effect_status="timeout_unknown",
+    )
+
+
+def _socket_of(response: Any) -> Any:
+    for path in (("fp", "raw", "_sock"), ("fp", "fp", "raw", "_sock"), ("_sock",)):
+        node: Any = response
+        for name in path:
+            node = getattr(node, name, None)
+        if node is not None and hasattr(node, "settimeout"):
+            return node
+    return None
 
 
 def _xml_escaped(text: str) -> str:
