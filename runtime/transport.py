@@ -207,8 +207,20 @@ class RivileTransport:
                     external_effect_status="timeout_unknown",
                     http_status=status,
                 ) from exc
-            raise
+            raise ExtensionError(
+                exc.code,
+                exc.message,
+                failure_class="provider",
+                retryable=False,
+                definitely_no_external_effect=True,
+                external_effect_status="failed",
+                http_status=status,
+            ) from exc
         _redact_parsed(parsed, self._connection)
+        if status != 207 and (parsed.root != "RET_DOK" or parsed.error_message):
+            # An error inside a success status: Rivile did not do what was asked, or (a
+            # write) it is not known how far it got.
+            raise _error_in_success(status, parsed, mutating=mutating)
         return Reply(status=status, parsed=parsed, rate_limit=rate_limit)
 
     # -- pacing ------------------------------------------------------------
@@ -450,6 +462,32 @@ def _status_error(
         f"Rivile answered HTTP {status}{detail}",
         retryable=False,
         no_effect=True,
+    )
+
+
+def _error_in_success(status: int, parsed: ParsedResponse, *, mutating: bool) -> ExtensionError:
+    detail = f": {parsed.error_message}" if parsed.error_message else ""
+    if mutating:
+        return ExtensionError(
+            errors.TIMEOUT_UNKNOWN,
+            f"Rivile answered the write with an error (HTTP {status}){detail}; it is not known "
+            "whether anything was saved: check the document in Rivile before retrying",
+            failure_class="provider",
+            retryable=False,
+            definitely_no_external_effect=False,
+            external_effect_status="timeout_unknown",
+            http_status=status,
+            data_errors=parsed.data_errors,
+        )
+    return ExtensionError(
+        errors.UPSTREAM_FAILURE,
+        f"Rivile answered with an error (HTTP {status}){detail}",
+        failure_class="provider",
+        retryable=False,
+        definitely_no_external_effect=True,
+        external_effect_status="failed",
+        http_status=status,
+        data_errors=parsed.data_errors,
     )
 
 

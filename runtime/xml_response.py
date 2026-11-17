@@ -44,6 +44,8 @@ class ParsedResponse:
     data_errors: list[dict[str, str]] = field(default_factory=list)
     error_message: str = ""
     duration_ms: int | None = None
+    #: "RET_DOK", or "Map" for the platform's error body.
+    root: str = "RET_DOK"
 
     @property
     def record_type(self) -> str | None:
@@ -129,9 +131,11 @@ def _data_errors(element: Any) -> list[dict[str, str]]:
 
 
 def parse(raw: bytes, *, trim: bool = True) -> ParsedResponse:
-    """Parse one response body; refuse anything that is not well-formed, safe XML."""
+    """Parse one response body; refuse anything that is not well-formed, safe XML in
+    Rivile's envelope: ``<RET_DOK>``, or the platform's ``<Map>`` error body. An empty
+    body is no answer: an empty result is an empty ``<RET_DOK/>``."""
     if not raw.strip():
-        return ParsedResponse()
+        raise ExtensionError(errors.INVALID_XML_RESPONSE, "Rivile returned an empty response")
     try:
         root = SafeElementTree.fromstring(raw, forbid_dtd=True)
     except (DefusedXmlException, SafeElementTree.ParseError, ValueError) as exc:
@@ -143,10 +147,17 @@ def parse(raw: bytes, *, trim: bool = True) -> ParsedResponse:
     if root_tag == "Map":
         # The platform's generic error body (HTTP 500): <Map><status/><error/><message/></Map>
         values = {_local(c.tag): c.text for c in list(root)}
-        parsed.error_message = errors.safe_text(
-            values.get("message") or values.get("error") or "", 300
+        parsed.root = "Map"
+        parsed.error_message = (
+            errors.safe_text(values.get("message") or values.get("error") or "", 300)
+            or "Rivile returned an error"
         )
         return parsed
+    if root_tag != "RET_DOK":
+        raise ExtensionError(
+            errors.INVALID_XML_RESPONSE,
+            f"Rivile returned XML that is not its answer (root <{errors.safe_text(root_tag, 40)}>)",
+        )
     for child in list(root):
         tag = _local(child.tag)
         if tag == "durationMs":
