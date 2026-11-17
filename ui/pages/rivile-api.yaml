@@ -72,12 +72,12 @@ components:
 
     ### Register payment
 
-    Records a payment against a purchase or sales document (EDIT_I13: I13_KODAS_PO, I13_KODAS_SS, I13_SUMA). First reads the document's payments (GET_I06_LIST list=A); a payment with the same money account and amount is returned with created=false instead of being added again.
+    Records a payment against a purchase or sales document (EDIT_I13: I13_KODAS_PO, I13_KODAS_SS, I13_SUMA). First reads the document's payments (GET_I06_LIST list=A). With a payment reference (kept as the first word of I13_PAV) a payment already carrying it is returned with created=false. Without one, a payment with the same money account and amount stops the step with a conflict unless Matching payment says whether it is this payment or another one.
 
     - Action id: `register_payment`
     - Kind: write
     - Rivile methods: [EDIT_I13](https://gidas.rivile.lt/internetiniai_moduliai/api_rest/edit_i13)
-    - Inputs: `document_code`, `amount`, `money_account_code`, `currency_amount` (optional), `description` (optional)
+    - Inputs: `document_code`, `amount`, `money_account_code`, `currency_amount` (optional), `description` (optional), `payment_reference` (optional), `matching_payment` (optional)
     - Results: `document_code`, `line_number`, `created`, `record`
 
     ### Find or create product

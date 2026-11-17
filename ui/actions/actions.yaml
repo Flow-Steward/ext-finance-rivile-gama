@@ -451,8 +451,10 @@ actions:
 - action_id: register_payment
   title: Register payment
   description: 'Records a payment against a purchase or sales document (EDIT_I13: I13_KODAS_PO, I13_KODAS_SS,
-    I13_SUMA). First reads the document''s payments (GET_I06_LIST list=A); a payment with the same money
-    account and amount is returned with created=false instead of being added again.'
+    I13_SUMA). First reads the document''s payments (GET_I06_LIST list=A). With a payment reference (kept
+    as the first word of I13_PAV) a payment already carrying it is returned with created=false. Without
+    one, a payment with the same money account and amount stops the step with a conflict unless Matching
+    payment says whether it is this payment or another one.'
   required_scopes:
   - extension:invoke
   handler:
@@ -477,6 +479,12 @@ actions:
     type: number
     required: false
   - name: description
+    type: string
+    required: false
+  - name: payment_reference
+    type: string
+    required: false
+  - name: matching_payment
     type: string
     required: false
   result_fields:

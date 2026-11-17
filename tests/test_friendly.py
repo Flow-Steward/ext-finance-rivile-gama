@@ -605,7 +605,12 @@ def test_register_payment_rerun_finds_the_same_payment(make_factory) -> None:
         opener,
         payload(
             "register_payment",
-            {"document_code": "010R00001041", "money_account_code": "2703", "amount": "19.62"},
+            {
+                "document_code": "010R00001041",
+                "money_account_code": "2703",
+                "amount": "19.62",
+                "matching_payment": "is_repeat",
+            },
         ),
     )
     assert [b["method"] for b in bodies(opener)] == ["GET_I06_LIST"]

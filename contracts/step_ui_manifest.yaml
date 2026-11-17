@@ -404,7 +404,27 @@ forms:
     label: Description
     widget_type: text
     required: false
-    help_text: I13_PAV (40 characters).
+    help_text: I13_PAV (40 characters, together with the payment reference).
+  - name: payment_reference
+    label: Payment reference
+    widget_type: text
+    required: false
+    help_text: The payment's own ID from the bank or the shop, without spaces. Kept as the first word
+      of I13_PAV, so a rerun finds this payment and a second payment of the same amount is still added.
+  - name: matching_payment
+    label: Matching payment
+    widget_type: select
+    required: false
+    help_text: 'Without a payment reference, what a payment of the same money account and amount already
+      on the document is: stop (default: a conflict, nothing added), is_repeat (it is this payment: return
+      it) or is_new (it is another payment: add this one).'
+    options:
+    - label: stop
+      value: stop
+    - label: is_repeat
+      value: is_repeat
+    - label: is_new
+      value: is_new
 - operation_id: find_or_create_product
   title: Find or create product
   fields:

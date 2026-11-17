@@ -780,9 +780,24 @@ def create_invoice(
 # Payments, products, stock, prices, changes, debts
 
 
+#: I13_PAV, the payment's name: the only fixed text field of I13 (C(40)); PAP_n fields
+#: exist only where a company defined them. The payment reference is kept at its start.
+I13_PAV_LIMIT = 40
+MATCHING_PAYMENT = ("stop", "is_repeat", "is_new")
+
+
 def _payment(inputs: Mapping[str, Any]) -> dict[str, Any]:
     _allowed(
-        inputs, {"document_code", "amount", "money_account_code", "currency_amount", "description"}
+        inputs,
+        {
+            "document_code",
+            "amount",
+            "money_account_code",
+            "currency_amount",
+            "description",
+            "payment_reference",
+            "matching_payment",
+        },
     )
     payment: dict[str, Any] = {
         "I13_KODAS_PO": _code(inputs, "document_code", required=True, limit=12),
@@ -795,10 +810,32 @@ def _payment(inputs: Mapping[str, Any]) -> dict[str, Any]:
                 inputs.get("currency_amount"), "currency_amount", MONEY, minimum=Decimal(0)
             )
         )
-    description = _text(inputs, "description", limit=40)
-    if description:
-        payment["I13_PAV"] = description
+    reference = _text(inputs, "payment_reference", limit=I13_PAV_LIMIT)
+    if reference and " " in reference:
+        raise _invalid("payment_reference must have no spaces")
+    description = _text(inputs, "description", limit=I13_PAV_LIMIT)
+    name = " ".join(part for part in (reference, description) if part)
+    if len(name) > I13_PAV_LIMIT:
+        raise _invalid(
+            f"payment_reference and description together take {len(name)} of the "
+            f"{I13_PAV_LIMIT} characters of I13_PAV"
+        )
+    if name:
+        payment["I13_PAV"] = name
     return payment
+
+
+def _matching(inputs: Mapping[str, Any]) -> str:
+    choice = (_text(inputs, "matching_payment") or "stop").lower()
+    if choice not in MATCHING_PAYMENT:
+        raise _invalid("matching_payment must be stop, is_repeat or is_new")
+    return choice
+
+
+def _reference_of(row: Mapping[str, Any]) -> str:
+    """The first word of a payment row's I13_PAV: where payment_reference is kept."""
+    name = (_value(row, "I13_PAV") or "").strip()
+    return name.split(" ", 1)[0] if name else ""
 
 
 def _payment_rows(call: Callable[..., Reply], document_code: str) -> list[dict[str, Any]]:
@@ -828,26 +865,62 @@ def _same_payment(row: Mapping[str, Any], payment: Mapping[str, Any]) -> bool:
     return True
 
 
-def register_payment(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict[str, Any]:
-    payment = _payment(inputs)
-    # EDIT_I13 has no idempotency key: a rerun after an unknown outcome looks for
-    # the same payment (document, money account, amount) before adding another.
-    for row in _payment_rows(call, payment["I13_KODAS_PO"]):
-        if _same_payment(row, payment):
-            return {
-                "document_code": payment["I13_KODAS_PO"],
-                "line_number": _value(row, "I13_EIL_NR"),
-                "created": False,
-                "record": dict(row),
-            }
-    reply = call("EDIT_I13", {"oper": "I"}, {"I13": payment}, mutating=True)
-    record = _first(reply) or {}
+def _payment_result(
+    payment: Mapping[str, Any], row: Mapping[str, Any], *, created: bool
+) -> dict[str, Any]:
     return {
         "document_code": payment["I13_KODAS_PO"],
-        "line_number": _value(record, "I13_EIL_NR"),
-        "created": True,
-        "record": record,
+        "line_number": _value(row, "I13_EIL_NR"),
+        "created": created,
+        "record": dict(row),
     }
+
+
+def register_payment(call: Callable[..., Reply], inputs: Mapping[str, Any]) -> dict[str, Any]:
+    """Add a payment once.
+
+    EDIT_I13 has no idempotency key. With ``payment_reference`` (kept as the first word of
+    I13_PAV) a payment is the same one only when a row of the document has that
+    reference: then it is returned if the account and amount agree, and a conflict if they
+    do not. Without a reference, a row with the same money account and amount may be this
+    payment or another one of the same amount: that is a conflict unless
+    ``matching_payment`` says which (is_repeat returns it, is_new adds another).
+    """
+    payment = _payment(inputs)
+    matching = _matching(inputs)
+    reference = _text(inputs, "payment_reference", limit=I13_PAV_LIMIT)
+    rows = _payment_rows(call, payment["I13_KODAS_PO"])
+    if reference:
+        tagged = [r for r in rows if _same(_reference_of(r), reference)]
+        if tagged:
+            row = tagged[0]
+            if len(tagged) == 1 and _same_payment(row, payment):
+                return _payment_result(payment, row, created=False)
+            lines = ", ".join(_value(r, "I13_EIL_NR") or "?" for r in tagged[:5])
+            raise _conflict(
+                f"Document {payment['I13_KODAS_PO']} already has payment {reference} (line "
+                f"{lines}) with another money account or amount, or more than once; nothing "
+                "was added. Check the document's payments in Rivile"
+            )
+    else:
+        same = [r for r in rows if _same_payment(r, payment)]
+        if same and matching == "stop":
+            lines = ", ".join(_value(r, "I13_EIL_NR") or "?" for r in same[:5])
+            raise _conflict(
+                f"Document {payment['I13_KODAS_PO']} already has a payment of the same money "
+                f"account and amount (line {lines}). It may be this payment or another one of "
+                "the same amount, so nothing was added: give payment_reference, or set "
+                "matching_payment to is_repeat (it is this payment) or is_new (add another)"
+            )
+        if same and matching == "is_repeat":
+            if len(same) > 1:
+                raise _conflict(
+                    f"Document {payment['I13_KODAS_PO']} has {len(same)} payments of the same "
+                    "money account and amount; they do not name one payment, nothing was added"
+                )
+            return _payment_result(payment, same[0], created=False)
+    reply = call("EDIT_I13", {"oper": "I"}, {"I13": payment}, mutating=True)
+    return _payment_result(payment, _first(reply) or {}, created=True)
 
 
 PRODUCT_INPUTS = {
@@ -1152,6 +1225,7 @@ def validate(operation_id: str, inputs: Mapping[str, Any]) -> None:
         _code(inputs, "document_code", required=True, limit=12)
     elif operation_id == "register_payment":
         _payment(inputs)
+        _matching(inputs)
     elif operation_id == "find_or_create_product":
         _allowed(inputs, PRODUCT_INPUTS)
         if not _code(inputs, "product_code", limit=12) and not _code(inputs, "barcode", limit=25):

@@ -381,8 +381,11 @@ def operations() -> list[dict[str, Any]]:
             "description": (
                 "Records a payment against a purchase or sales document (EDIT_I13: "
                 "I13_KODAS_PO, I13_KODAS_SS, I13_SUMA). First reads the document's payments "
-                "(GET_I06_LIST list=A); a payment with the same money account and amount is "
-                "returned with created=false instead of being added again."
+                "(GET_I06_LIST list=A). With a payment reference (kept as the first word of "
+                "I13_PAV) a payment already carrying it is returned with created=false. "
+                "Without one, a payment with the same money account and amount stops the step "
+                "with a conflict unless Matching payment says whether it is this payment or "
+                "another one."
             ),
             "kind": "action",
             "inputs": [
@@ -410,7 +413,28 @@ def operations() -> list[dict[str, Any]]:
                 number(
                     "currency_amount", "Amount in currency", "I13_SUMA_VAL for currency documents."
                 ),
-                text("description", "Description", "I13_PAV (40 characters)."),
+                text(
+                    "description",
+                    "Description",
+                    "I13_PAV (40 characters, together with the payment reference).",
+                ),
+                text(
+                    "payment_reference",
+                    "Payment reference",
+                    "The payment's own ID from the bank or the shop, without spaces. Kept as "
+                    "the first word of I13_PAV, so a rerun finds this payment and a second "
+                    "payment of the same amount is still added.",
+                    maxLength=40,
+                ),
+                text(
+                    "matching_payment",
+                    "Matching payment",
+                    "Without a payment reference, what a payment of the same money account and "
+                    "amount already on the document is: stop (default: a conflict, nothing "
+                    "added), is_repeat (it is this payment: return it) or is_new (it is "
+                    "another payment: add this one).",
+                    enum=["stop", "is_repeat", "is_new"],
+                ),
             ],
             "outputs": [
                 out("document_code", "text", "string"),
