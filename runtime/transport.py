@@ -333,11 +333,34 @@ def _redact(text: str, connection: Connection) -> str:
 
 
 def _redact_parsed(parsed: ParsedResponse, connection: Connection) -> None:
+    """The key removed from everything read: errors and every record's names and values.
+
+    The raw bytes were cleaned before parsing, but XML character references (``&#65;``)
+    are read only by the parser, so the parsed text is cleaned again.
+    """
     parsed.error_message = _redact(parsed.error_message, connection)
     for item in parsed.data_errors:
         for key in ("tag", "code", "message", "data"):
             if isinstance(item.get(key), str):
                 item[key] = _redact(item[key], connection)
+    parsed.tables = {
+        _redact(tag, connection): [_redact_value(row, connection) for row in rows]
+        for tag, rows in parsed.tables.items()
+    }
+    parsed.order = [_redact(tag, connection) for tag in parsed.order]
+
+
+def _redact_value(value: Any, connection: Connection) -> Any:
+    if isinstance(value, str):
+        return _redact(value, connection)
+    if isinstance(value, dict):
+        return {
+            _redact(key, connection) if isinstance(key, str) else key: _redact_value(v, connection)
+            for key, v in value.items()
+        }
+    if isinstance(value, list):
+        return [_redact_value(v, connection) for v in value]
+    return value
 
 
 def _http_error(exc: HTTPError, connection: Connection, *, mutating: bool) -> ExtensionError:
