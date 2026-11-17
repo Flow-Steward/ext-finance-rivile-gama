@@ -233,6 +233,7 @@ actions:
   - redirect_rejected
   - blocked_address
   - timeout_unknown
+  - conflict
 - action_id: create_purchase_invoice
   title: Create purchase invoice
   description: Creates a purchase invoice (EDIT_I06_FULL, I06_OP_TIP 1) with its lines in one request,
@@ -348,6 +349,7 @@ actions:
   - redirect_rejected
   - blocked_address
   - timeout_unknown
+  - conflict
 - action_id: attach_file_to_document
   title: Attach file to document
   description: Attaches a workflow file (e.g. the invoice PDF) to a purchase or sales document (EDIT_I06_DOC).
@@ -503,6 +505,7 @@ actions:
   - redirect_rejected
   - blocked_address
   - timeout_unknown
+  - conflict
 - action_id: find_or_create_product
   title: Find or create product
   description: Looks a product up by code (GET_N17_LIST) or barcode (GET_N37_LIST, then GET_N40_LIST);

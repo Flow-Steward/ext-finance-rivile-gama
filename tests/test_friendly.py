@@ -22,6 +22,12 @@ I06_CREATED = (
     "<I06><I06_KODAS_PO>010R00000050</I06_KODAS_PO><I06_OP_TIP>51</I06_OP_TIP>"
     "<I06_DOK_NR>DOK-007</I06_DOK_NR><I06_SUMA>2250.00</I06_SUMA><I06_SUMA_PVM>472.50</I06_SUMA_PVM></I06>"
 )
+#: I06_CREATED as GET_I06_LIST finds it again: the date and net amount of LINES
+#: (10 × 1000 + 10 × 250 × 0.95), so a rerun recognises it as the same invoice.
+I06_FOUND = I06_CREATED.replace(
+    "<I06_SUMA>2250.00</I06_SUMA>",
+    "<I06_SUMA>12375.00</I06_SUMA><I06_DOK_DATA>2020-04-22</I06_DOK_DATA>",
+)
 LINES = [
     {"product_code": "004", "quantity": 10, "unit_price": 1000, "vat_rate": 21, "unit": "VNT"},
     {
@@ -218,7 +224,7 @@ def test_sales_invoice_maps_header_lines_terms_and_posts(make_factory) -> None:
 
 
 def test_rerun_with_a_number_returns_the_existing_invoice(make_factory) -> None:
-    existing = I06_CREATED.replace("</I06>", "<I06_PERKELTA>2</I06_PERKELTA></I06>")
+    existing = I06_FOUND.replace("</I06>", "<I06_PERKELTA>2</I06_PERKELTA></I06>")
     opener = FakeOpener((200, ret_dok(existing)))
     response = run(
         make_factory,
@@ -228,6 +234,7 @@ def test_rerun_with_a_number_returns_the_existing_invoice(make_factory) -> None:
             {
                 "client_code": "121411842",
                 "number": "DOK-007",
+                "date": "2020-04-22",
                 "department_code": "01",
                 "lines": LINES,
             },
@@ -607,7 +614,7 @@ def test_register_payment_rerun_finds_the_same_payment(make_factory) -> None:
 
 
 def test_rerun_after_a_failed_post_posts_the_existing_invoice(make_factory) -> None:
-    unposted = I06_CREATED.replace("</I06>", "<i06_perkelta>1</i06_perkelta></I06>")
+    unposted = I06_FOUND.replace("</I06>", "<i06_perkelta>1</i06_perkelta></I06>")
     opener = FakeOpener((200, ret_dok(unposted)), (200, ret_dok(I06_CREATED)))
     response = run(
         make_factory,
@@ -617,6 +624,7 @@ def test_rerun_after_a_failed_post_posts_the_existing_invoice(make_factory) -> N
             {
                 "client_code": "121411842",
                 "number": "DOK-007",
+                "date": "2020-04-22",
                 "department_code": "01",
                 "lines": LINES,
                 "post": True,
@@ -630,14 +638,20 @@ def test_rerun_after_a_failed_post_posts_the_existing_invoice(make_factory) -> N
 
 
 def test_existing_unposted_invoice_without_post_reports_it(make_factory) -> None:
-    unposted = I06_CREATED.replace("</I06>", "<I06_PERKELTA>1</I06_PERKELTA></I06>")
+    unposted = I06_FOUND.replace("</I06>", "<I06_PERKELTA>1</I06_PERKELTA></I06>")
     opener = FakeOpener((200, ret_dok(unposted)))
     response = run(
         make_factory,
         opener,
         payload(
             "create_sales_invoice",
-            {"client_code": "1", "number": "DOK-007", "department_code": "01", "lines": LINES},
+            {
+                "client_code": "1",
+                "number": "DOK-007",
+                "date": "2020-04-22",
+                "department_code": "01",
+                "lines": LINES,
+            },
         ),
     )
     assert response["result"]["posted"] is False

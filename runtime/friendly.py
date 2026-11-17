@@ -569,7 +569,81 @@ def _existing_invoice(
         f"and i06_op_tip={op_type}"
     )
     reply = call("GET_I06_LIST", {"list": "H", "fil": fil}, None, mutating=False)
-    return reply.parsed.records[0] if reply.parsed.records else None
+    records = reply.parsed.records
+    if len(records) > 1:
+        codes = ", ".join(_value(r, "I06_KODAS_PO") or "?" for r in records[:5])
+        raise _conflict(
+            f"Rivile has {len(records)} documents numbered {number} for client {client_code} "
+            f"({codes}); they do not name one invoice, so nothing was created or posted"
+        )
+    return records[0] if records else None
+
+
+def _conflict(message: str) -> ExtensionError:
+    return ExtensionError(
+        errors.CONFLICT,
+        message,
+        failure_class="provider",
+        retryable=False,
+        definitely_no_external_effect=True,
+        external_effect_status="failed",
+    )
+
+
+def _request_net(inputs: Mapping[str, Any], lines: list[dict[str, Any]]) -> Decimal | None:
+    """The invoice's amount without VAT as the request gives it, rounded per line; None
+    when the request does not give it (prices with VAT, or in a foreign currency)."""
+    if _foreign_currency(inputs) or _bool(inputs, "prices_include_vat", False):
+        return None
+    total = Decimal(0)
+    for line in lines:
+        price = Decimal(str(line["I07_KAINA_BE"]))
+        quantity = Decimal(str(line["KIEKIS_U"]))
+        discount = Decimal(str(line.get("I07_NUOLAIDA", 0)))
+        amount = quantity * price * (HUNDRED - discount) / HUNDRED
+        total += amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return total
+
+
+def _same_invoice(
+    existing: Mapping[str, Any],
+    header: Mapping[str, Any],
+    inputs: Mapping[str, Any],
+    lines: list[dict[str, Any]],
+) -> None:
+    """Raise a conflict unless the document found is the invoice asked for: the same
+    date, currency and amount without VAT. What cannot be compared is a conflict too."""
+    code = _value(existing, "I06_KODAS_PO") or "(no code)"
+    differs: list[str] = []
+    found_date = (_value(existing, "I06_DOK_DATA") or "").replace(".", "-")[:10]
+    if found_date != header["I06_DOK_DATA"]:
+        differs.append(f"date {found_date or 'not returned'} (asked {header['I06_DOK_DATA']})")
+    asked_currency = str(header.get("I06_KODAS_VL") or "").strip().upper()
+    found_currency = (_value(existing, "I06_KODAS_VL") or "").strip().upper()
+    if asked_currency:
+        same_currency = found_currency == asked_currency
+    else:
+        same_currency = found_currency in {"", "EUR"}
+    if not same_currency:
+        differs.append(f"currency {found_currency or 'none'} (asked {asked_currency or 'EUR'})")
+    asked_net = _request_net(inputs, lines)
+    found_net = _decimal(existing, "I06_SUMA")
+    if asked_net is None:
+        differs.append(
+            "amount: it cannot be compared (the request gives prices with VAT or in a "
+            "foreign currency)"
+        )
+    elif found_net is None or found_net != asked_net:
+        shown = "not returned" if found_net is None else format(found_net, "f")
+        differs.append(f"amount without VAT {shown} (asked {format(asked_net, 'f')})")
+    if differs:
+        raise _conflict(
+            f"Rivile already has document {code} numbered {header.get('I06_DOK_NR')} for "
+            f"client {header['I06_KODAS_KS']}, but it is not this invoice: "
+            + "; ".join(differs)
+            + ". Nothing was created or posted; check document "
+            + f"{code} in Rivile"
+        )
 
 
 def _invoice_result(
@@ -662,6 +736,10 @@ def create_invoice(
             lambda: _existing_invoice(call, number, client_code, op_type),
         )
         if existing is not None:
+            try:
+                _same_invoice(existing, header, inputs, lines)
+            except ExtensionError as exc:
+                raise progress.fail(exc, "Looking for an existing invoice") from exc
             found_posted, found_error = _post_existing(call, existing, inputs)
             return _invoice_result(
                 existing,

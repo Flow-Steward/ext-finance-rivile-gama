@@ -945,7 +945,13 @@ def friendly_operation(spec: dict[str, Any]) -> dict[str, Any]:
     op["outputs"] = outputs
     op["result_fields"] = [f"result.{o['name']}" for o in outputs]
     op["error_codes"] = errors_for(None, write=write, files=files)
+    if spec["operation_id"] in CONFLICT_IDS:
+        op["error_codes"].append("conflict")
     return op
+
+
+#: Friendly steps that stop with ``conflict`` when what they find is not what was asked.
+CONFLICT_IDS = frozenset({"create_sales_invoice", "create_purchase_invoice", "register_payment"})
 
 
 def build_operations(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:

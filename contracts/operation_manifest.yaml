@@ -289,7 +289,8 @@ operations:
       title: Number
       description: Document number (I06_DOK_NR); omit when Rivile numbers documents automatically. With
         a number, a document with the same number, client and type is returned instead of creating a second
-        one, so a rerun is safe.
+        one, so a rerun is safe — only when it is one document with the same date, currency and amount
+        without VAT; otherwise the step stops with a conflict naming the document found and posts nothing.
       maxLength: 20
   - name: date
     value_type: text
@@ -519,6 +520,7 @@ operations:
   - redirect_rejected
   - blocked_address
   - timeout_unknown
+  - conflict
 - operation_id: create_purchase_invoice
   display_name: Create purchase invoice
   description: Creates a purchase invoice (EDIT_I06_FULL, I06_OP_TIP 1) with its lines in one request,
@@ -552,7 +554,8 @@ operations:
       title: Number
       description: Document number (I06_DOK_NR); omit when Rivile numbers documents automatically. With
         a number, a document with the same number, client and type is returned instead of creating a second
-        one, so a rerun is safe.
+        one, so a rerun is safe — only when it is one document with the same date, currency and amount
+        without VAT; otherwise the step stops with a conflict naming the document found and posts nothing.
       maxLength: 20
   - name: date
     value_type: text
@@ -723,6 +726,7 @@ operations:
   - redirect_rejected
   - blocked_address
   - timeout_unknown
+  - conflict
 - operation_id: attach_file_to_document
   display_name: Attach file to document
   description: Attaches a workflow file (e.g. the invoice PDF) to a purchase or sales document (EDIT_I06_DOC).
@@ -996,6 +1000,7 @@ operations:
   - redirect_rejected
   - blocked_address
   - timeout_unknown
+  - conflict
 - operation_id: find_or_create_product
   display_name: Find or create product
   description: Looks a product up by code (GET_N17_LIST) or barcode (GET_N37_LIST, then GET_N40_LIST);

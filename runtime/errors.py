@@ -30,6 +30,7 @@ BLOCKED_ADDRESS = "blocked_address"
 ARTIFACT_INPUT_UNAVAILABLE = "artifact_input_unavailable"
 ARTIFACT_OUTPUT_UNAVAILABLE = "artifact_output_unavailable"
 INTERNAL_ERROR = "internal_error"
+CONFLICT = "conflict"
 
 SAFE_ERROR_CODES: frozenset[str] = frozenset(
     {
@@ -53,6 +54,7 @@ SAFE_ERROR_CODES: frozenset[str] = frozenset(
         ARTIFACT_INPUT_UNAVAILABLE,
         ARTIFACT_OUTPUT_UNAVAILABLE,
         INTERNAL_ERROR,
+        CONFLICT,
     }
 )
 

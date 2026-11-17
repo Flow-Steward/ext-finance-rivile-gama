@@ -177,7 +177,9 @@ def invoice(kind: str) -> dict[str, Any]:
             "Number",
             "Document number (I06_DOK_NR); omit when Rivile numbers documents automatically. "
             "With a number, a document with the same number, client and type is returned "
-            "instead of creating a second one, so a rerun is safe.",
+            "instead of creating a second one, so a rerun is safe — only when it is one "
+            "document with the same date, currency and amount without VAT; otherwise the step "
+            "stops with a conflict naming the document found and posts nothing.",
             maxLength=20,
         ),
         text(
