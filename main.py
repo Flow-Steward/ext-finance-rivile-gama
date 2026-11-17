@@ -43,9 +43,42 @@ def _bounded_serialized_response(response: Mapping[str, Any]) -> tuple[dict[str,
     serialized = _json_bytes(sanitized)
     if len(serialized) + 1 <= MAX_SERIALIZED_RESPONSE_BYTES:
         return sanitized, serialized
-    error_response = _error_response(
-        "response_too_large", "The extension response exceeds its safe output limit"
-    )
+    return _too_large(sanitized)
+
+
+#: What the last-resort answer keeps of a response that is too large.
+MAX_KEPT_TEXT = 200
+MAX_KEPT_FIELDS = 50
+
+
+def _too_large(response: Mapping[str, Any]) -> tuple[dict[str, Any], bytes]:
+    """The last-resort answer: it keeps the write's facts and the result's short values.
+
+    A write may already have been made; its ``external_effect_status`` and
+    ``definitely_no_external_effect`` and its identifiers must reach the host even when
+    the full result cannot.
+    """
+    message = "The extension response exceeds its safe output limit"
+    status = response.get("external_effect_status")
+    if status == "succeeded":
+        message += "; the change was saved, its identifiers are in the result"
+    elif status == "timeout_unknown":
+        message += "; a change may have been saved, check it before running the step again"
+    error_response = _error_response("response_too_large", message)
+    for key in ("external_effect_status", "definitely_no_external_effect"):
+        if key in response:
+            error_response[key] = response[key]
+    result = response.get("result")
+    if isinstance(result, Mapping):
+        kept = {
+            key: value
+            for key, value in list(result.items())[: MAX_KEPT_FIELDS * 4]
+            if isinstance(key, str)
+            and len(key) <= MAX_KEPT_TEXT
+            and isinstance(value, (str, int, float, bool, type(None)))
+            and len(str(value)) <= MAX_KEPT_TEXT
+        }
+        error_response["result"] = dict(list(kept.items())[:MAX_KEPT_FIELDS])
     return error_response, _json_bytes(error_response)
 
 
