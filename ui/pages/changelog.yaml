@@ -8,6 +8,17 @@ components:
   type: markdown
   title: Release history
   body: |
+    ## 0.1.9 — 2026-11-17
+
+    ### Changed
+
+    - Only Rivile's `<RET_DOK>` envelope without an error is an answer. An empty body, other XML (`<html/>`), the platform's `<Map>` error or a RET_DOK with `errorMessage` now fails a read with nothing changed and leaves a write's outcome unknown, whatever the HTTP status. Test connection no longer passes on such an answer, and the find-or-create steps no longer read it as "not found".
+    - Create sales/purchase invoice: a document found by number, client and type is returned (or posted) only when it is one document with the same date, currency and amount without VAT. Anything else, or an amount that cannot be compared (prices with VAT or in a foreign currency), stops the step with a `conflict` naming the document found; nothing is posted.
+    - Register payment takes a **Payment reference** (kept as the first word of I13_PAV) and a **Matching payment** choice. Without a reference, a payment of the same money account and amount already on the document is a `conflict` unless Matching payment says `is_repeat` (return it) or `is_new` (add another).
+    - The key is removed from every record read, also where Rivile writes it with XML character references; the export file never holds it.
+    - The step deadline bounds the whole exchange: name resolution, headers and every read.
+    - A response too large for the step output keeps the write's facts and the result's short values.
+
     ## 0.1.8 — 2026-11-16
 
     ### Changed
