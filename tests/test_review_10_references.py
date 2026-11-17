@@ -31,7 +31,17 @@ def _record(value: str) -> str:
     )
 
 
+def _padded(text: str) -> str:
+    return "".join(f"&#{ord(c):012d};" for c in text)
+
+
+def _padded_hex(text: str) -> str:
+    return "".join(f"&#x{ord(c):010x};" for c in text)
+
+
 CASES = [
+    pytest.param(_padded(API_KEY), id="key-decimal-leading-zeros"),
+    pytest.param(_padded_hex(SECRET), id="secret-hex-leading-zeros"),
     pytest.param(_decimal(API_KEY), id="key-decimal"),
     pytest.param(_hex(API_KEY), id="key-hex"),
     pytest.param(_decimal(SECRET), id="secret-decimal"),
