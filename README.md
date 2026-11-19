@@ -1,133 +1,118 @@
-# Rivile GAMA for Flow Steward
+# Rivile GAMA integration for Flow Steward
 
-See the [workflow action guide](docs/workflow-actions.md) for setup, invoice examples,
-paging and advanced-action inputs.
+<img src="icon.png" width="96" alt="Rivile GAMA integration for Flow Steward">
 
-Connect the Rivile GAMA system behind Manorivile-Gateway to Flow Steward using REST API v2. Everyday operations find or create clients and products, create sales or purchase invoices with optional posting, register document payments and attach or download document files. Stock, price, client-balance and date-based change readers provide building blocks for storefront updates, accounting exchanges and debt review.
+[![CI](https://img.shields.io/github/actions/workflow/status/Flow-Steward/ext-finance-rivile-gama/ci.yml?branch=main&label=CI)](https://github.com/Flow-Steward/ext-finance-rivile-gama/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/Flow-Steward/ext-finance-rivile-gama)](https://github.com/Flow-Steward/ext-finance-rivile-gama/releases/latest)
 
-For integrations needing more of GAMA's data model, the release contains typed operations for 209 methods from its pinned API reference. Supported families include purchases and sales, general ledger, debts and payments, products and services, inventory and stocktaking, production, fixed assets, prices, payroll, personnel, point of sale, loyalty and gift vouchers, contracts and document management. Advanced steps accept the corresponding method parameters and Rivile data blocks, while list export can write paginated records to a JSONL workflow file.
+Automate Rivile GAMA with Flow Steward workflows and AI agents: create invoices, clients and products, register payments and read stock — without writing code.
 
-Each connection uses a Rivile API key and the associated user's rights. The gateway and company settings determine which functions are available. Workflows can combine everyday steps with the more detailed method operations for company-specific document and inventory processes. Configure Rivile change tracking before relying on the incremental readers that require it.
+This Flow Steward extension is an accounting integration for companies in Lithuania that work
+with Rivile GAMA. It connects Rivile GAMA to workflow automation through the Rivile API (REST
+API v2 and Manorivile-Gateway), so invoices, clients, items and stock come from any system
+without retyping.
 
-Enable the Rivile API service with a valid version-access agreement, use GAMA 119 or later and run Manorivile-Gateway beside the company database. Add the username.secret API key to a project connection and check the Rivile user rights and relevant RGI parameters, including change-tracking initialization when needed.
+## What is this
 
-| Operation | What it does |
-|---|---|
-| `test_connection` | Checks the API key and the Manorivile-Gateway with `GET_N45_LIST`. |
-| `call_method` | Sends any Rivile method with raw params and data (for methods Rivile adds later). Treated as a write. |
-| `export_list` | Reads any list method page by page and saves every record to a JSONL workflow file. |
+Rivile GAMA is an accounting and business management system by Rivile, Lithuania, installed at
+the company and reached through Rivile's API service and Manorivile-Gateway. This extension is a
+connector: it adds ready workflow steps to Flow Steward, and the same steps are available as tools
+for AI agents. Learn more about Flow Steward at
+[docs.flowsteward.org](https://docs.flowsteward.org).
 
-## Everyday operations (start here)
+## What you can automate
 
-| Operation | Rivile calls |
-|---|---|
-| `find_or_create_client` | `GET_N08_LIST` by company code → VAT code → client code; `EDIT_N08` only if none matches |
-| `create_sales_invoice` / `create_purchase_invoice` | optional client find-or-create, `EDIT_I06_FULL` (`errorAction` ROLLBACK), optional `EDIT_I06` oper P |
-| `attach_file_to_document` | `EDIT_I06_DOC` with a workflow file (`show_doc` 0) |
-| `download_document_file` | `GET_I06_DOC` → workflow file |
-| `register_payment` | `EDIT_I13` |
-| `find_or_create_product` | `GET_N17_LIST` / `GET_N37_LIST` / `GET_N40_LIST`; `EDIT_N17_FULL` with an `N40` barcode only if none matches |
-| `stock_levels` | `GET_I17_LIST` grouped by department, decimal quantities |
-| `product_prices` | `GET_PS_KAIN`, flattened |
-| `changes_since` | `GET_CLIENTS_TIME`, `GET_PROD_BY_BARCODE_TIME`, `GET_PRICES_TIME`, `GET_I17_LIST_TIME` (need `INIT_TRIGGER`), documents via `GET_I06_LIST` on `I06_R_DATE` |
-| `client_debt` | `GET_T03_LIST`: debit, credit, balance |
+- Create sales invoices in Rivile GAMA from orders in your shop — the customer is found or created, no retyping.
+- Enter supplier invoices as purchase invoices and attach the original PDF to the document.
+- Register payments against invoices from your bank or payment provider data.
+- Send stock levels and product prices from Rivile GAMA to your online shop.
+- Pass clients, products, prices and stock changed since the last run to another system.
+- Check a client's debt before a new order is shipped.
+- Export any Rivile list to a file for reporting or an exchange with another system.
 
-A composite step that fails after an earlier write (for example the client was created, then the
-invoice refused) fails with "may have an effect", lists what was already created, and is not retried.
-A failed posting after a created invoice returns success with `posted: false` and `post_error`.
+## Why teams use it
 
-### Mapping assumptions — unverified without a live key
+- **No duplicate records.** Clients and products are looked up before they are created, an invoice number Rivile already has for the client is not created again, and a payment with the same reference is not registered twice.
+- **Exact amounts.** Amounts and quantities are handled as exact decimals, never rounded through floating point.
+- **A change is never sent twice.** When the answer to a write is lost, the step reports the outcome as unknown and does not retry it.
+- **A test run changes nothing.** Every write is skipped in test runs, so you can try a workflow safely.
+- **The whole API.** Each of the 209 methods of the Rivile GAMA API v2 has its own step.
+- **The key stays secret.** It is stored encrypted, never echoed and removed from Rivile's error texts.
 
-Taken from the guide's field tables and examples, not yet confirmed against a real Rivile database:
+## What's inside
 
-1. `I06_OP_TIP` 51 = sales invoice (Pardavimai: Važtaraštis), 1 = purchase invoice (Pirkimai: Važtaraštis).
-2. Posting = `EDIT_I06` with `oper` P and `I06_KODAS_PO` ("perkėlimas").
-3. Line quantity in decimals via `KIEKIS_U` with `I07_KODAS_US`, `I07_KODAS_US_P` and `I07_KODAS_US_A` all set
-   to the line's `unit` (exactly the `EDIT_I06_FULL` example), so the quantity is in that unit. The guide
-   calls `KIEKIS_U` the alternative-unit decimal quantity; `I07_KIEKIS`/`I07_FRAKCIJA` would need each
-   unit's fraction, which only Rivile knows.
-4. Net price `I07_KAINA_BE`; gross `I07_KAINA_SU` with `I06_PVM_TIP` 1. A `currency` alone (e.g. the base
-   currency) keeps these fields; only `foreign_currency: true` sends `I07_VAL_KAINA` (net) and
-   `I06_VAL_POZ` 1, and it cannot be combined with gross prices.
-5. VAT: `vat_rate` → `I07_MOKESTIS` 1 + `I07_MOKESTIS_P`; `vat_code` → `I07_KODAS_KL` (Rivile 109+); neither → Rivile's
-   default from the product/client tax table (`I06_KODAS_XS` "fills from the client card").
-6. Due date → one `I08` term: 100 % after N days from the document date.
-7. Defaults from the guide's examples, company-specific in practice: client account relation `PT001`
-   (`N08_KODAS_DS`), product account relation `PR001` (`N17_KODAS_DS`), tax table `PVM` (`N08_KODAS_XS_P/T`).
-8. `N08_RUSIS` customer 1 / supplier 2 / both 3; `N08_TIPAS` legal entity 1 / person 2. Rivile has no
-   country field; `location_code` maps to `N08_KODAS_VS`.
-9. New product barcode as an `N40` alternative barcode (the `EDIT_N17_FULL` example), not `N37_BAR_KODAS`.
-10. Payments via `EDIT_I13` on the document; `I13_KODAS_SS` is the company's money account code.
-11. Stock quantity = `des_likutis_us` when Rivile sends it, else `I17_KIEKIS / I17_FRAKCIJA`.
-12. `lastDate` is sent in the guide's forms `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM:SS`; prices use `list` A (every
-    product, not only barcoded ones). Documents changed since a date are read by `i06_r_date >= …` (there is no
-    `*_TIME` method for documents).
-13. Debt `balance` = `t03_suma_db − t03_suma_cr` (Rivile answers T03 in lower case; every field is read
-    case-insensitively); which side means "the client owes us" is not stated. T03 codes can be padded, so
-    the filter trims them.
-14. An invoice with a `number` is looked up by number + client + `I06_OP_TIP` before it is created
-    (`I06_PERKELTA` 2 = posted) — the guard that makes a rerun after an unknown outcome safe.
+Everyday steps:
 
-### Parallel runs
+- **Test the connection** — checks the API key and the gateway with one read.
+- **Find or create customer / supplier** — by company code, VAT code or client code.
+- **Create sales invoice**, **Create purchase invoice** — with lines in one request, optionally posted; a failed line rolls the whole document back.
+- **Attach file to document**, **Download document file** — invoice PDFs and other files as workflow files.
+- **Register payment** — against a sales or purchase document, checked for repeats.
+- **Find or create product** — by code or barcode.
+- **Read stock levels**, **Read product prices** — per product and warehouse, with every price list and discount.
+- **Read records changed since a date** — clients, products, prices, stock or documents.
+- **Read client debt** — debit, credit and balance.
 
-Find-or-create steps look up before they create, so a rerun after the first run finished is safe. Two runs
-of the same step **at the same time** can both miss the lookup and both create (Rivile numbers new clients
-itself and allows duplicate company codes unless `RGI_N08_UNIK` forbids them). Don't run them in parallel
-for the same client or product. Lookups refuse several matches and conflicting identifiers rather than guess,
-and accept only codes made of letters, digits, spaces and `. _ / -`.
+All 209 Rivile GAMA API v2 methods are available as steps (223 steps in total, with **Call any Rivile method** and **Export a Rivile list to a JSONL file**): purchases and sales, general ledger, debts and payments, products and services, inventory and stocktaking, production, fixed assets, prices, payroll, personnel, point of sale, loyalty and gift vouchers, contracts and document management. The [workflow action guide](docs/workflow-actions.md) shows examples.
 
-## Requirements on the Rivile side
+## Get started
 
-- The Rivile API service ordered, a valid version access agreement, Rivile GAMA 119+.
-- Manorivile-Gateway installed next to the GAMA database and running.
-- An API key (`username.secret`). The username's Rivile rights apply; the `RGI_*`
-  parameters in Rivile GAMA control editing others' documents, payroll and personnel access.
+1. In Flow Steward, open **Extensions → Catalog** and install **Rivile GAMA**.
+2. In the extension's **Connection** page, add a connection named after the company and paste the Rivile API key (`username.secret`) that came with the Rivile API service.
+3. Press **Test connection**.
+4. Build your first workflow, for example **Create sales invoice** from a new shop order.
 
-## How operations map to Rivile
+## Requirements
 
-- Operation id = Rivile method in lower case: `EDIT_N08` → `edit_n08`, `GET_I06_LIST` → `get_i06_list`.
-- Every documented param is a typed input (`oper`, `fil`, `list`, `error_action`, `page_number`, …);
-  `data` is Rivile's data block with Rivile's field names; `extra_params` passes undocumented params.
-- Outputs: `records`, `record`, `record_type`, `other_tables`, `count`, `data_errors`, `partial_success`,
-  `http_status`, `duration_ms` (+ `page_number`, `next_page`, `pages_fetched`, `has_more` for lists).
-- Lists: `page_number`, or `fetch_all_pages` + `max_pages`. Reads stop at the last page that fits one
-  step output (the host's secret-scan budget and the 4.5 MiB output cap) and report `next_page`.
-- Files: `edit_i06_doc` / `edit_i06_docs` take a workflow file in `document_file` (sent with
-  `show_doc` 0); `get_i06_doc` saves the attachment as a workflow file (`rivile-document.bin`,
-  `application/octet-stream`; the Rivile name/type are in `original_filename` / `original_content_type`).
-- `export_list` stops reading after 360 s, saves what it has, and returns `complete: false` with
-  `resume_page` (pass it as `start_page`).
-- Page param: the guide spells it `pagenumber` on most pages and `pageNumber` on a few (`GET_N07_LIST`,
-  `GET_N09_LIST`); each operation sends the spelling its own page documents. Not verified against a live key.
+- The Rivile API service ordered from Rivile, with a valid version access agreement, and Rivile GAMA 119 or later.
+- Manorivile-Gateway installed on a Windows computer next to the Rivile GAMA database, with outbound access to `gateway.manorivile.lt`, port 5671.
+- An API key (`username.secret`). The steps work with that user's Rivile rights; the `RGI_*` parameters control editing others' documents, payroll and personnel access.
+- To read changes since a date for clients, products, prices or stock, run **Enable change tracking** (`INIT_TRIGGER`) once first.
+- Run find-or-create steps for the same client or product one at a time.
+- Flow Steward 0.9.16 or later.
 
-## Writes and failures
+## FAQ
 
-All writes (`EDIT_*`, `INIT_TRIGGER`, `GET_USER_PROC`, `call_method`) are declared external effects:
-recorded in the host ledger, suppressed in test runs. HTTP 400 fails with Rivile's `dataError` details
-and no effect; 207 succeeds with `partial_success: true`; 429 and 423 (record locked) are retried with
-1/2/4/8 s backoff; on reads 502/503 are retryable; on writes a timeout or 500/502/503/504 is
-`timeout_unknown` and is not retried. Pacing is per process (per step).
+**Can I create invoices in Rivile GAMA from an online shop?**
+Yes. **Create sales invoice** finds or creates the customer and creates the invoice with its lines in one request; it can post the document too.
 
-Responses are parsed as XML with `defusedxml` (no DTDs or entities). The API key is never echoed, and is
-redacted from any Rivile error text. Trailing padding is trimmed; leading spaces (significant in Rivile
-codes) are kept.
+**Do I need Manorivile-Gateway for the Rivile API?**
+Yes. The Rivile API reaches the Rivile GAMA database through Manorivile-Gateway, installed next to the database.
 
-## Development
+**How do I sync stock and prices from Rivile GAMA to my e-shop?**
+Use **Read stock levels** and **Read product prices**, or **Read records changed since a date** to send only what changed since the last run.
 
-The contracts are generated; do not edit them by hand.
+**What if I need a Rivile method that has no everyday step?**
+Every Rivile GAMA API v2 method has its own step, and **Call any Rivile method** sends any method with its parameters and data.
+
+**Will running a workflow again create the same invoice twice?**
+No. When Rivile GAMA already has an invoice with that number for the client, the step does not create a second one.
+
+## In your language
+
+Rivile GAMA integracija su Flow Steward per Rivile API automatizuoja apskaitą Lietuvoje: pardavimo ir pirkimo sąskaitos, klientai, prekės, mokėjimai ir likučiai keliauja iš bet kurios sistemos be rankinio įvedimo. Plėtinys apima visus 209 Rivile GAMA API v2 metodus.
+
+## Links
+
+- [Flow Steward documentation](https://docs.flowsteward.org)
+- [Flow Steward extension catalog](https://github.com/Flow-Steward/extensions)
+- [Issues](https://github.com/Flow-Steward/ext-finance-rivile-gama/issues)
+- [Rivile API guide](https://gidas.rivile.lt/internetiniai_moduliai/api_rest)
+
+## For developers
+
+The contracts are generated from the Rivile reference; do not edit them by hand.
 
 ```bash
-python3 tests/reference/build_contracts.py          # regenerate from the Rivile reference
+python3 tests/reference/build_contracts.py   # regenerate from the Rivile reference
 ```
 
-`tests/reference/` holds the reference pipeline: `html_to_text.py` (guide pages → text),
-`parse_docs.py` (text → `rivile_api_v2_spec.json`), `titles.py` (English titles and groups) and
-`build_contracts.py`. From the Flow Steward application checkout:
+From a Flow Steward checkout:
 
 ```bash
 ./flow-steward extensions validate flowsteward.rivile-gama --root <parent> --health --marketplace
 ./flow-steward extensions test flowsteward.rivile-gama --root <parent> --non-interactive
-./flow-steward extensions lock-deps flowsteward.rivile-gama --root <parent> --non-interactive --confirm
-./flow-steward extensions bundle flowsteward.rivile-gama --root <parent> --with-wheels --non-interactive --confirm
 ./core/entrypoints/cli/scripts/lint.sh --checks extension-static,extension-tests --extension-root <abs path>
 ```
+
+Rivile, Rivile GAMA and their marks belong to their owner; see [BRANDING.md](BRANDING.md).
