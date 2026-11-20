@@ -470,8 +470,8 @@ def _parse_error_body(raw: bytes, connection: Connection) -> ParsedResponse:
     try:
         parsed = xml_response.parse(raw)
     except ExtensionError:
-        # Cut or malformed: recover what can be read rather than lose every dataError.
-        parsed = xml_response.recover_errors(raw)
+        # Only parsed XML has canonical text that can be checked for credentials.
+        return ParsedResponse()
     _redact_parsed(parsed, connection)
     return parsed
 

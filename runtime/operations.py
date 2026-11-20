@@ -8,9 +8,12 @@ import json
 import re
 import time
 from collections.abc import Callable, Iterable, Mapping
+from itertools import islice
 from typing import Any
 
 from flowsteward_extension_sdk import (
+    ArtifactAccessError,
+    artifact_descriptors_from_payload,
     find_artifact_descriptor,
     read_artifact_bytes,
     write_artifact_stream,
@@ -35,6 +38,8 @@ MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 MAX_DOWNLOAD_BYTES = 40 * 1024 * 1024
 MAX_EXPORT_BYTES = 200 * 1024 * 1024
 MAX_PARAM_TEXT = 30 * 1024 * 1024
+MAX_COMPACT_WRITE_TEXT = 200
+MAX_COMPACT_WRITE_CODES = 16
 #: The entrypoint is given 600 s (extension.yaml). Every request must start early
 #: enough to finish inside it, with a margin for the response; an operation that
 #: saves a file keeps the artifact write's own timeout in reserve, so it can
@@ -449,35 +454,52 @@ def _run_method(context: _Context, method: Method) -> dict[str, Any]:
     return result
 
 
-def _fit_write_result(result: dict[str, Any]) -> dict[str, Any]:
-    """Shrink a write's echo until it fits; the write itself already happened.
+def _compact_write_scalar(value: Any) -> bool:
+    return (
+        value is None
+        or isinstance(value, (bool, int, float))
+        or (isinstance(value, str) and len(value) <= MAX_COMPACT_WRITE_TEXT)
+    )
 
-    Failing here would turn a saved document into an error the workflow might
-    retry, so the result keeps its success and loses detail instead: first the
-    extra rows, then the record's content except its codes.
-    """
+
+def _fit_write_result(result: dict[str, Any]) -> dict[str, Any]:
+    """Keep the success of an applied write while reducing its echoed data."""
     if budget.fits(result):
         return result
+    notice = {
+        "tag": "",
+        "code": "",
+        "message": "Rivile's answer was too large for the step output and was shortened; "
+        "the write was applied.",
+        "data": "",
+    }
     result["records"] = result["records"][:1]
     result["other_tables"] = {}
     result["count"] = len(result["records"])
-    result["data_errors"] = result["data_errors"][:20]
-    if not budget.fits(result):
-        record = result.get("record")
-        keys = {k: v for k, v in record.items() if "KODAS" in k} if isinstance(record, dict) else {}
-        result["records"] = [keys] if keys else []
-        result["record"] = keys or None
-        result["count"] = len(result["records"])
-    result["data_errors"].append(
-        {
-            "tag": "",
-            "code": "",
-            "message": "Rivile's answer was too large for the step output and was shortened; "
-            "the write was applied.",
-            "data": "",
-        }
+    result["data_errors"] = [*result["data_errors"][:20], notice]
+    if budget.fits(result):
+        return result
+
+    compact = _base_result(result["method"], None)
+    compact.update(
+        http_status=result["http_status"],
+        duration_ms=result["duration_ms"],
+        partial_success=result["partial_success"],
+        data_errors=[notice],
     )
-    return result
+    record = result.get("record")
+    if isinstance(record, dict):
+        codes = (
+            (key, value)
+            for key, value in record.items()
+            if "KODAS" in key
+            and len(key) <= MAX_COMPACT_WRITE_TEXT
+            and _compact_write_scalar(value)
+        )
+        compact["record"] = dict(islice(codes, MAX_COMPACT_WRITE_CODES)) or None
+    if not budget.fits(compact):
+        compact["record"] = None
+    return compact
 
 
 def _page_size(method: Method, params: Mapping[str, Any]) -> int:
@@ -595,7 +617,7 @@ def _call_method_request(
 def _call_method(context: _Context) -> dict[str, Any]:
     method, params, data = _call_method_request(context.operation_input)
     known = catalog.METHODS_BY_NAME.get(method)
-    mutating = known.write if known else not method.startswith(("GET_", "MGAMA_GET_"))
+    mutating = known.write if known else True
     reply = context.transport.call(method, params, data, mutating=mutating)
     result = _base_result(method, reply)
     if not mutating:
@@ -729,6 +751,12 @@ def _run_friendly(context: _Context, operation_id: str) -> dict[str, Any]:
     if operation_id in catalog.FRIENDLY_WRITE_IDS:
         if not budget.fits(result):
             result["record"] = None
+            if not budget.fits(result):
+                compact = friendly.neutral_result(operation_id)
+                for key, value in result.items():
+                    if key in compact and _compact_write_scalar(value):
+                        compact[key] = value
+                result = compact if budget.fits(compact) else friendly.neutral_result(operation_id)
         return _mark_write(result)
     budget.ensure_fits(result)
     return result
@@ -820,15 +848,32 @@ def _attach_upload(context: _Context, params: dict[str, Any]) -> None:
     _upload_needs_content(params, has_file=bool(handle))
     if not handle:
         return
-    declared = _declared_size(context.payload, handle)
-    if declared is not None and declared > MAX_UPLOAD_BYTES:
+    upload_payload = dict(context.payload)
+    upload_payload["artifacts"] = {
+        "inputs": [
+            descriptor
+            for descriptor in artifact_descriptors_from_payload(upload_payload, role="input")
+            if descriptor.get("binding_key") == catalog.UPLOAD_BINDING
+        ],
+    }
+    try:
+        descriptor = find_artifact_descriptor(upload_payload, artifact_id=handle)
+    except ArtifactAccessError as exc:
+        raise ExtensionError(
+            errors.ARTIFACT_INPUT_UNAVAILABLE,
+            "document_file does not have a Rivile document upload grant",
+            definitely_no_external_effect=True,
+            external_effect_status="failed",
+        ) from exc
+    declared = descriptor.get("size_bytes")
+    if isinstance(declared, int) and declared > MAX_UPLOAD_BYTES:
         raise _invalid("document_file is larger than 15 MB")
     remaining = context.transport.remaining() - MIN_CALL_WINDOW_SECONDS
     if remaining <= 0:
         raise DeadlineReached
     try:
         body = context.artifact_reader(
-            dict(context.payload),
+            upload_payload,
             artifact_id=handle,
             timeout_seconds=min(ARTIFACT_WRITE_TIMEOUT_SECONDS, remaining),
         )
@@ -846,21 +891,11 @@ def _attach_upload(context: _Context, params: dict[str, Any]) -> None:
     if len(body) > MAX_UPLOAD_BYTES:
         raise _invalid("document_file is larger than 15 MB")
     if not params.get("ext"):
-        ext = _extension_of(context.payload, handle) or _sniff_extension(bytes(body[:16]))
+        ext = _extension_of(descriptor) or _sniff_extension(bytes(body[:16]))
         if not ext:
             raise _invalid("The file type of document_file is unknown; set ext, for example .pdf")
         params["ext"] = ext
     params["doc"] = base64.b64encode(bytes(body)).decode("ascii")
-
-
-def _declared_size(payload: Mapping[str, Any], handle: str) -> int | None:
-    """The file size the host declares for an input file, before reading it."""
-    try:
-        descriptor = find_artifact_descriptor(dict(payload), artifact_id=handle)
-    except Exception:
-        return None
-    size = descriptor.get("size_bytes") if isinstance(descriptor, Mapping) else None
-    return size if isinstance(size, int) and not isinstance(size, bool) else None
 
 
 def _sniff_extension(head: bytes) -> str:
@@ -870,13 +905,9 @@ def _sniff_extension(head: bytes) -> str:
     return ""
 
 
-def _extension_of(payload: Mapping[str, Any], handle: str) -> str:
-    try:
-        descriptor = find_artifact_descriptor(dict(payload), artifact_id=handle)
-    except Exception:
-        return ""
+def _extension_of(descriptor: Mapping[str, Any]) -> str:
     for key in ("filename", "name"):
-        value = descriptor.get(key) if isinstance(descriptor, Mapping) else None
+        value = descriptor.get(key)
         if isinstance(value, str) and "." in value:
             ext = "." + value.rsplit(".", 1)[-1]
             if _EXT_RE.fullmatch(ext):

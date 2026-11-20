@@ -4,10 +4,11 @@ import base64
 import json
 from collections.abc import Iterable
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 import yaml
-from conftest import API_KEY, BUNDLE_ROOT, FakeOpener, n08, payload, ret_dok
+from conftest import API_KEY, BUNDLE_ROOT, FakeOpener, n08, payload, ret_dok, upload_grant
 from main import MAX_SERIALIZED_RESPONSE_BYTES
 
 from runtime import budget, catalog
@@ -224,7 +225,7 @@ def test_400_reports_rivile_data_errors_and_no_effect(make_factory) -> None:
     assert detail["rivile_tag"] == "I06_OP_TIP" and detail["rivile_code"] == "16016"
 
 
-def test_large_and_truncated_400_bodies_keep_their_data_errors(make_factory) -> None:
+def test_only_a_complete_error_body_supplies_provider_diagnostics(make_factory) -> None:
     errors_xml = "".join(
         f"<error><data>{'x' * 600}</data><dataErrors><dataError><tag>I07_KODAS</tag>"
         f"<code>19014</code><message>Line {i} not found</message></dataError></dataErrors></error>"
@@ -241,7 +242,8 @@ def test_large_and_truncated_400_bodies_keep_their_data_errors(make_factory) -> 
         make_factory, FakeOpener((400, cut)), payload("edit_i06", {"data": {"I06": {"A": 1}}})
     )
     assert response["error_code"] == "upstream_validation_failed"
-    assert "Line 0 not found" in response["error"]
+    assert response["error"] == "Rivile rejected the request"
+    assert len(response["errors"]) == 1
 
 
 def test_207_is_partial_success(make_factory) -> None:
@@ -524,7 +526,11 @@ def test_upload_reads_workflow_file_and_asks_rivile_not_to_echo_it(make_factory)
     response = run(
         make_factory,
         opener,
-        payload("edit_i06_doc", {"kodas_po": "010R00000170", "document_file": "artifact://inv"}),
+        payload(
+            "edit_i06_doc",
+            {"kodas_po": "010R00000170", "document_file": "artifact://inv"},
+            descriptors={"inputs": [upload_grant("artifact://inv")]},
+        ),
         artifact_reader=reader,
     )
     params = opener.requests[0]["body"]["params"]
@@ -539,7 +545,11 @@ def test_upload_of_unknown_type_needs_ext(make_factory) -> None:
     response = run(
         make_factory,
         FakeOpener(),
-        payload("edit_i06_doc", {"kodas_po": "1", "document_file": "artifact://x"}),
+        payload(
+            "edit_i06_doc",
+            {"kodas_po": "1", "document_file": "artifact://x"},
+            descriptors={"inputs": [upload_grant("artifact://x")]},
+        ),
         artifact_reader=lambda _p, *, artifact_id, **_kw: b"\x00\x01unknown",
     )
     assert response["error_code"] == "invalid_payload"
@@ -560,6 +570,30 @@ def test_upload_metadata_update_needs_no_file(make_factory) -> None:
     assert opener.requests[0]["body"]["params"]["oper"] == "U"
     response = run(make_factory, FakeOpener(), payload("edit_i06_doc", {"kodas_po": "1"}))
     assert response["error_code"] == "invalid_payload"
+
+
+def test_upload_requires_the_document_binding_before_reading(make_factory) -> None:
+    reader = Mock(return_value=b"%PDF-1.4 fixture")
+    opener = FakeOpener((200, ret_dok()))
+    response = run(
+        make_factory,
+        opener,
+        payload(
+            "edit_i06_doc",
+            {"kodas_po": "1", "document_file": "artifact://selected"},
+            descriptors={
+                "inputs": [
+                    upload_grant("artifact://document"),
+                    upload_grant("artifact://selected", binding="other_workflow_input"),
+                ],
+            },
+        ),
+        artifact_reader=reader,
+    )
+    assert response["error_code"] == "artifact_input_unavailable"
+    assert response["definitely_no_external_effect"] is True
+    reader.assert_not_called()
+    assert opener.requests == []
 
 
 def test_get_i06_docs_defaults_to_no_inline_files(make_factory) -> None:
@@ -657,6 +691,16 @@ def test_call_method_reports_a_consistent_effect_pair(make_factory) -> None:
     )
     bad = run(make_factory, FakeOpener(), payload("call_method", {"method": "DROP TABLE"}))
     assert bad["error_code"] == "invalid_payload"
+
+
+@pytest.mark.parametrize("method", ["GET_FIXTURE_EXTENSION", "MGAMA_GET_FIXTURE_EXTENSION"])
+def test_unknown_method_uses_conservative_failure_facts(make_factory, method) -> None:
+    opener = FakeOpener((503, ""))
+    response = run(make_factory, opener, payload("call_method", {"method": method}))
+    assert response["error_code"] == "timeout_unknown"
+    assert response["retryable"] is False
+    assert response["definitely_no_external_effect"] is False
+    assert len(opener.requests) == 1
 
 
 def test_unsupported_operation(make_factory) -> None:
@@ -805,16 +849,25 @@ def test_oversized_write_echo_is_shortened_not_failed(make_factory) -> None:
     assert "shortened" in response["result"]["data_errors"][-1]["message"]
 
 
-def test_recovering_errors_from_a_hostile_body_is_linear() -> None:
-    import time
-
-    from runtime import xml_response
-
-    hostile = b"<errorMessage>" + b"<dataError><tag>" * 250_000
-    started = time.monotonic()
-    parsed = xml_response.recover_errors(hostile)
-    assert time.monotonic() - started < 2.0
-    assert parsed.data_errors == []
+@pytest.mark.parametrize("operation", ["edit_n08", "call_method"])
+def test_large_write_identifier_is_omitted_without_losing_success(
+    make_factory, monkeypatch, operation
+) -> None:
+    monkeypatch.setattr(budget, "MAX_SERIALIZED_BYTES", 2048)
+    code = "x" * 4096
+    inputs: dict[str, Any] = {"data": {"N08": {"N08_PAV": "fixture"}}}
+    if operation == "call_method":
+        inputs["method"] = "EDIT_N08"
+    response = run(
+        make_factory,
+        FakeOpener((200, ret_dok(f"<N08><N08_KODAS_KS>{code}</N08_KODAS_KS></N08>"))),
+        payload(operation, inputs),
+    )
+    assert response["ok"] is True
+    assert response["external_effect_status"] == "succeeded"
+    assert response["definitely_no_external_effect"] is False
+    assert code not in json.dumps(response)
+    assert budget.fits(response["result"])
 
 
 def test_any_unlisted_status_on_a_write_is_an_unknown_outcome(make_factory) -> None:
@@ -870,20 +923,18 @@ def test_download_reads_file_fields_case_insensitively(make_factory) -> None:
     assert response["result"]["records"][0]["doc"] is None
 
 
-def test_an_oversized_upload_is_refused_before_it_is_read(make_factory, monkeypatch) -> None:
-    from runtime import operations
-
-    monkeypatch.setattr(
-        operations, "find_artifact_descriptor", lambda *_a, **_k: {"size_bytes": 16 * 1024 * 1024}
-    )
-
+def test_an_oversized_upload_is_refused_before_it_is_read(make_factory) -> None:
     def reader(*_a, **_k):
         raise AssertionError("must not be read")
 
     response = run(
         make_factory,
         FakeOpener(),
-        payload("edit_i06_doc", {"kodas_po": "1", "document_file": "artifact://big"}),
+        payload(
+            "edit_i06_doc",
+            {"kodas_po": "1", "document_file": "artifact://big"},
+            descriptors={"inputs": [upload_grant("artifact://big", size_bytes=16 * 1024 * 1024)]},
+        ),
         artifact_reader=reader,
     )
     assert response["error_code"] == "invalid_payload"

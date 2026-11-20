@@ -8,6 +8,18 @@ components:
   type: markdown
   title: Release history
   body: |
+    ## 0.1.11 — 2026-11-20
+
+    ### Fixed
+
+    - Document uploads require the file grant for the Rivile upload input.
+    - Large provider responses keep a bounded result and the outcome of an applied write.
+    - Unregistered advanced methods are treated as potentially changing data.
+    - XML responses have structural limits. The extension reports detailed provider diagnostics
+      when the error response is complete and valid.
+    - Release packaging runs separately from dependency installation and verifies the archive
+      before publication.
+
     ## 0.1.10 — 2026-11-20
 
     ### Changed

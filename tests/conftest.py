@@ -97,7 +97,7 @@ def payload(
     test_mode: bool = False,
     secrets: dict[str, Any] | None = None,
     config: dict[str, Any] | None = None,
-    descriptors: list[dict[str, Any]] | None = None,
+    descriptors: dict[str, list[dict[str, Any]]] | None = None,
 ) -> dict[str, Any]:
     body: dict[str, Any] = {
         "contract_version": "extension_host_v2",
@@ -123,6 +123,10 @@ def payload(
     if descriptors is not None:
         body["artifacts"] = descriptors
     return body
+
+
+def upload_grant(handle: str, *, binding: str = "rivile_document_upload", size_bytes: int = 0):
+    return {"artifact_handle": handle, "binding_key": binding, "size_bytes": size_bytes}
 
 
 class FakeResponse:

@@ -57,3 +57,48 @@ def test_control_characters_are_removed_from_error_text() -> None:
         b"<RET_DOK><errorMessage>bad\t thing\n\nhere</errorMessage></RET_DOK>"
     )
     assert parsed.error_message == "bad thing here"
+
+
+@pytest.mark.parametrize(
+    ("quota", "limit", "raw"),
+    [
+        ("MAX_XML_ELEMENTS", 2, b"<RET_DOK><table><field/></table></RET_DOK>"),
+        ("MAX_XML_ATTRIBUTES", 1, b'<RET_DOK a="1" b="2"/>'),
+        ("MAX_XML_ATTRIBUTES", 1, b'<RET_DOK xmlns:a="urn:a" xmlns:b="urn:b"/>'),
+        ("MAX_XML_TEXT", 8, b"<RET_DOK><value>some ordinary text</value></RET_DOK>"),
+        ("MAX_DEPTH", 2, b"<RET_DOK><errors><section/></errors></RET_DOK>"),
+    ],
+)
+def test_xml_tree_builder_enforces_structural_quotas(monkeypatch, quota, limit, raw) -> None:
+    monkeypatch.setattr(xml_response, quota, limit, raising=False)
+    with pytest.raises(ExtensionError) as info:
+        xml_response.parse(raw)
+    assert info.value.code == "invalid_xml_response"
+
+
+def test_nested_error_details_belong_to_their_own_error() -> None:
+    parsed = xml_response.parse(
+        b"<RET_DOK><errors><error><data>first row</data><dataErrors>"
+        b"<dataError><code>first</code></dataError></dataErrors>"
+        b"<error><data>second row</data><dataError><code>second</code></dataError></error>"
+        b"</error></errors></RET_DOK>"
+    )
+    assert [(error["code"], error["data"]) for error in parsed.data_errors] == [
+        ("first", "first row"),
+        ("second", "second row"),
+    ]
+
+
+def test_error_limit_applies_across_error_sections(monkeypatch) -> None:
+    monkeypatch.setattr(xml_response, "MAX_DATA_ERRORS", 1)
+    parsed = xml_response.parse(
+        b"<RET_DOK><errors><error><message>first</message></error></errors>"
+        b"<errors><error><message>second</message></error></errors></RET_DOK>"
+    )
+    assert [error["message"] for error in parsed.data_errors] == ["first"]
+
+
+def test_document_text_survives_split_input_chunks(monkeypatch) -> None:
+    monkeypatch.setattr(xml_response, "_XML_FEED_BYTES", 7)
+    parsed = xml_response.parse(b"<RET_DOK><I06><DOC>SGVsbG8gd29ybGQ=</DOC></I06></RET_DOK>")
+    assert parsed.records == [{"DOC": "SGVsbG8gd29ybGQ="}]

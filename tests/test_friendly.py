@@ -7,10 +7,10 @@ import json
 from typing import Any
 
 import yaml
-from conftest import API_KEY, BUNDLE_ROOT, FakeOpener, payload, ret_dok
+from conftest import API_KEY, BUNDLE_ROOT, FakeOpener, payload, ret_dok, upload_grant
 from test_operations import GrantWriter
 
-from runtime import catalog
+from runtime import budget, catalog
 from runtime.operations import handle_runtime
 
 N08_RIVILE = (
@@ -526,6 +526,7 @@ def test_attach_file_to_document(make_factory) -> None:
         payload(
             "attach_file_to_document",
             {"document_code": "010R00000170", "document_file": "artifact://pdf"},
+            descriptors={"inputs": [upload_grant("artifact://pdf")]},
         ),
         artifact_reader=lambda _p, *, artifact_id, **_kw: pdf,
     )
@@ -591,6 +592,32 @@ def test_register_payment_as_documented(make_factory) -> None:
     assert response["result"]["line_number"] == "1"
     assert response["result"]["created"] is True
     assert response["external_effect_status"] == "succeeded"
+
+
+def test_large_friendly_write_scalar_keeps_success_and_short_fields(
+    make_factory, monkeypatch
+) -> None:
+    monkeypatch.setattr(budget, "MAX_SERIALIZED_BYTES", 2048)
+    line = "x" * 4096
+    opener = FakeOpener(
+        (200, ret_dok()),
+        (200, ret_dok(f"<I13><I13_EIL_NR>{line}</I13_EIL_NR></I13>")),
+    )
+    response = run(
+        make_factory,
+        opener,
+        payload(
+            "register_payment",
+            {"document_code": "010R00001041", "money_account_code": "2703", "amount": 19.62},
+        ),
+    )
+    assert response["ok"] is True
+    assert response["external_effect_status"] == "succeeded"
+    assert response["definitely_no_external_effect"] is False
+    assert response["result"]["document_code"] == "010R00001041"
+    assert response["result"]["line_number"] == ""
+    assert response["result"]["created"] is True
+    assert budget.fits(response["result"])
 
 
 def test_register_payment_rerun_finds_the_same_payment(make_factory) -> None:
