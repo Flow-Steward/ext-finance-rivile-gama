@@ -1,6 +1,5 @@
-"""Review 2026-11-17, item 5: an invoice found by number, client and type is returned (or
-posted) only when it is the one asked for: one match, same date, currency and amount.
-Anything else is a conflict naming the document found, and EDIT_I06 is never sent."""
+"""Review 2026-11-17, item 5: returning a found invoice requires one match with the
+same date, currency and amount. Posting an existing draft requires a separate action."""
 
 from __future__ import annotations
 
@@ -39,10 +38,15 @@ def _i06(code: str = "010R00000050", **fields: str) -> str:
     return f"<I06><I06_KODAS_PO>{code}</I06_KODAS_PO>{inner}</I06>"
 
 
-def _run(make_factory, *answers: Any, inputs: dict[str, Any] = INPUTS) -> tuple[dict, FakeOpener]:
+def _run(
+    make_factory,
+    *answers: Any,
+    inputs: dict[str, Any] = INPUTS,
+    kind: str = "sales",
+) -> tuple[dict, FakeOpener]:
     opener = FakeOpener(*answers)
     response = handle_runtime(
-        payload("create_sales_invoice", inputs), transport_factory=make_factory(opener)
+        payload(f"create_{kind}_invoice", inputs), transport_factory=make_factory(opener)
     )
     return response, opener
 
@@ -51,11 +55,13 @@ def _methods(opener: FakeOpener) -> list[str]:
     return [r["body"]["method"] for r in opener.requests]
 
 
-def test_5_the_same_invoice_is_returned_and_posted(make_factory) -> None:
-    response, opener = _run(make_factory, (200, ret_dok(_i06())), (200, ret_dok(_i06())))
-    assert response["ok"] is True, response
-    assert response["result"]["created"] is False
-    assert _methods(opener) == ["GET_I06_LIST", "EDIT_I06"]
+@pytest.mark.parametrize("kind", ["sales", "purchase"])
+def test_post_requires_confirmation_for_a_matching_existing_invoice(make_factory, kind) -> None:
+    response, opener = _run(make_factory, (200, ret_dok(_i06())), (200, ret_dok(_i06())), kind=kind)
+    assert response["error_code"] == "conflict", response
+    assert "010R00000050" in response["error"]
+    assert response["definitely_no_external_effect"] is True
+    assert _methods(opener) == ["GET_I06_LIST"]
 
 
 def test_5_two_invoices_with_the_number_are_a_conflict(make_factory) -> None:

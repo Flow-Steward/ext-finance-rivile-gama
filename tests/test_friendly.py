@@ -223,7 +223,7 @@ def test_sales_invoice_maps_header_lines_terms_and_posts(make_factory) -> None:
     assert response["external_effect_status"] == "succeeded"
 
 
-def test_rerun_with_a_number_returns_the_existing_invoice(make_factory) -> None:
+def test_post_request_for_an_already_posted_invoice_is_a_read(make_factory) -> None:
     existing = I06_FOUND.replace("</I06>", "<I06_PERKELTA>2</I06_PERKELTA></I06>")
     opener = FakeOpener((200, ret_dok(existing)))
     response = run(
@@ -237,6 +237,7 @@ def test_rerun_with_a_number_returns_the_existing_invoice(make_factory) -> None:
                 "date": "2020-04-22",
                 "department_code": "01",
                 "lines": LINES,
+                "post": True,
             },
         ),
     )
@@ -616,30 +617,6 @@ def test_register_payment_rerun_finds_the_same_payment(make_factory) -> None:
     assert [b["method"] for b in bodies(opener)] == ["GET_I06_LIST"]
     assert response["result"]["created"] is False
     assert response["result"]["line_number"] == "2"
-
-
-def test_rerun_after_a_failed_post_posts_the_existing_invoice(make_factory) -> None:
-    unposted = I06_FOUND.replace("</I06>", "<i06_perkelta>1</i06_perkelta></I06>")
-    opener = FakeOpener((200, ret_dok(unposted)), (200, ret_dok(I06_CREATED)))
-    response = run(
-        make_factory,
-        opener,
-        payload(
-            "create_sales_invoice",
-            {
-                "client_code": "121411842",
-                "number": "DOK-007",
-                "date": "2020-04-22",
-                "department_code": "01",
-                "lines": LINES,
-                "post": True,
-            },
-        ),
-    )
-    result = response["result"]
-    assert [b["method"] for b in bodies(opener)] == ["GET_I06_LIST", "EDIT_I06"]
-    assert bodies(opener)[1]["params"] == {"oper": "P"}
-    assert result["created"] is False and result["posted"] is True
 
 
 def test_existing_unposted_invoice_without_post_reports_it(make_factory) -> None:

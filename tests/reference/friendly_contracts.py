@@ -217,8 +217,8 @@ def invoice(kind: str) -> dict[str, Any]:
         flag(
             "post",
             "Post the document",
-            "Post the document (EDIT_I06 oper P) — the new one, or an unposted one found by "
-            "number on a rerun. A failed posting leaves it unposted and is reported in post_error.",
+            "Post the document created by this step (EDIT_I06 oper P). Review and post any "
+            "existing draft separately. A provider error while posting is reported in post_error.",
         ),
     ]
     outputs = [

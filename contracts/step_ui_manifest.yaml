@@ -211,8 +211,8 @@ forms:
     label: Post the document
     widget_type: boolean
     required: false
-    help_text: Post the document (EDIT_I06 oper P) — the new one, or an unposted one found by number on
-      a rerun. A failed posting leaves it unposted and is reported in post_error.
+    help_text: Post the document created by this step (EDIT_I06 oper P). Review and post any existing
+      draft separately. A provider error while posting is reported in post_error.
 - operation_id: create_purchase_invoice
   title: Create purchase invoice
   fields:
@@ -343,8 +343,8 @@ forms:
     label: Post the document
     widget_type: boolean
     required: false
-    help_text: Post the document (EDIT_I06 oper P) — the new one, or an unposted one found by number on
-      a rerun. A failed posting leaves it unposted and is reported in post_error.
+    help_text: Post the document created by this step (EDIT_I06 oper P). Review and post any existing
+      draft separately. A provider error while posting is reported in post_error.
 - operation_id: attach_file_to_document
   title: Attach file to document
   fields:

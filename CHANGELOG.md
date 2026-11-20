@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.10 — 2026-11-20
+
+### Changed
+
+- Create sales invoice and Create purchase invoice can post an invoice they create.
+  Review and post a matching existing draft separately. A rerun can still report
+  that an invoice is already posted.
+
 ## 0.1.9 — 2026-11-17
 
 ### Changed

@@ -689,24 +689,6 @@ def _post(call: Callable[..., Reply], code: str) -> tuple[bool | None, str]:
         return False, "The step ran out of time before posting"
 
 
-def _post_existing(
-    call: Callable[..., Reply], existing: Mapping[str, Any], inputs: Mapping[str, Any]
-) -> tuple[bool | None, str]:
-    """The real posted state of a document found by number, posting it if asked.
-
-    A rerun after a failed post finds the document unposted: with post=true it is
-    posted now instead of being returned as is.
-    """
-    if _value(existing, "I06_PERKELTA") == _POSTED:
-        return True, ""
-    if not _bool(inputs, "post", False):
-        return False, ""
-    code = _value(existing, "I06_KODAS_PO")
-    if not code:
-        return False, "Rivile did not return the document code; not posted"
-    return _post(call, code)
-
-
 def create_invoice(
     call: Callable[..., Reply], inputs: Mapping[str, Any], progress: Progress, *, op_type: int
 ) -> dict[str, Any]:
@@ -740,15 +722,24 @@ def create_invoice(
                 _same_invoice(existing, header, inputs, lines)
             except ExtensionError as exc:
                 raise progress.fail(exc, "Looking for an existing invoice") from exc
-            found_posted, found_error = _post_existing(call, existing, inputs)
+            already_posted = _value(existing, "I06_PERKELTA") == _POSTED
+            if _bool(inputs, "post", False) and not already_posted:
+                code = _value(existing, "I06_KODAS_PO") or "(code unavailable)"
+                raise progress.fail(
+                    _conflict(
+                        f"The existing invoice {code} requires confirmation. "
+                        "Review it in Rivile GAMA and post it separately if it is still a draft."
+                    ),
+                    "Posting the invoice",
+                )
             return _invoice_result(
                 existing,
                 header,
                 client_code,
                 created=False,
                 client_created=client_created,
-                posted=found_posted,
-                post_error=found_error,
+                posted=already_posted,
+                post_error="",
             )
     header["I07"] = lines
     reply = progress.guard(

@@ -20,6 +20,8 @@ Enable the Rivile API service, run Manorivile-Gateway beside the company databas
 
 Replace PRODUCT01, VNT and MAIN with existing product/service, unit and department codes. Each line requires a department here or on the document. Check the connection defaults for account relations and tax tables. Leave **Post the document** disabled for an unposted document. A failed detail line rolls back the document creation; later posting failures require inspection before repeating. **Register payment** uses the Rivile document code returned by creation, not the printed invoice number.
 
+If **Post the document** encounters a matching existing draft, review the document identified by the conflict. After confirming it, post it separately in Rivile GAMA or use the Advanced `EDIT_I06` action with operation `P` and its document code.
+
 Use the purchase invoice/vendor bill action for supplier documents; check its
 partner, product and tax settings before execution. File inputs accept workflow
 files from earlier steps. Download actions return workflow files for later email,
